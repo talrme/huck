@@ -26,7 +26,7 @@ try{
   await p.locator('#end-time').fill('10:00');assert(await p.locator('[data-save-entry]').isDisabled());assert((await p.locator('#time-preview').innerText()).includes('after start'));
   await p.locator('#end-time').fill('11:00');await p.locator('[data-save-entry]').click();assert(!(await p.locator('#modal').isVisible()));
   const old=await p.evaluate(()=>HuckTest.getState().entries.filter(e=>!e.deleted).sort((a,b)=>b.start-a.start)[0]);
-  await p.locator('.last-sleep').click();await p.locator('[data-save-entry]').click();
+  await p.locator('.nap-entry').first().click();await p.locator('[data-save-entry]').click();
   const unchanged=await p.evaluate(id=>HuckTest.getState().entries.find(e=>e.id===id),old.id);assert.equal(unchanged.start,old.start);assert.equal(unchanged.end,old.end);
   await p.locator('[data-add]').click();await p.locator('[data-date-preset="start"]').selectOption('yesterday');await p.locator('#start-time').fill('23:30');await p.locator('#end-time').fill('00:15');assert.equal(await p.locator('#time-preview').innerText(),'45m sleep');await p.locator('[data-save-entry]').click();assert(!(await p.locator('#modal').isVisible()));
   await p.locator('[data-start="0"]').click();await p.clock.setFixedTime(now+5*60000);

@@ -46,15 +46,14 @@
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
     $('#review').hidden=!queue.some(c=>c.blocked);
     const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(Date.now()), start=wallTime(today), end=wallTime(shiftDate(today,1));
-    const total=list.reduce((sum,e)=>sum+Math.max(0,Math.min(e.end||Date.now(),end)-Math.max(e.start,start)),0);
-    $('#summary').innerHTML=`<span><small>Today’s sleep</small><strong>${duration(total)}</strong></span><span><small>Last sleep</small><strong>${last?duration(last.end-last.start):'—'}</strong></span><span><small>Ended</small><strong>${last?clock(last.end):'—'}</strong></span>`;
+    const todaysNaps=list.filter(e=>e.start<end&&(e.end||Date.now())>start);
+    $('#today-naps').innerHTML=`<h2>Today’s naps</h2>${todaysNaps.length?todaysNaps.map(e=>`<button class="nap-entry" data-edit="${esc(e.id)}"><span class="nap-duration"><strong>${duration((e.end||Date.now())-e.start)}</strong>${!e.end?'<small>Sleeping</small>':e.autoEnded?'<small>Auto-ended</small>':''}</span><span class="nap-times">${clock(e.start)}–${e.end?clock(e.end):'now'}</span>${icon('pencil')}</button>`).join(''):'<p class="fine">No naps yet today.</p>'}`;
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
     $('#timer-detail').innerHTML=running?`Started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`Last woke at ${clock(last.end)}`:'Ready for the first sleep';
     $('#timer-art').src=new URL(running?'shared/moon.png':'shared/sun.png',root);
     $('#timer-art').alt='';
     $('#actions').innerHTML=running?`<button class="primary" data-end="0">${icon('square')} End now</button><div class="quick-row"><button data-end="5">Ended 5m ago</button><button data-edit="${esc(running.id)}">${icon('pencil')} Edit time</button></div>`:`<button class="primary" data-start="0">${icon('play')} Start sleep</button><div class="quick-row"><button data-start="5">5m ago</button><button data-start="10">10m ago</button><button data-custom-start>${icon('clock-3')} Other</button></div>`;
-    $('#last-entry').innerHTML=last?`<button class="last-sleep" data-edit="${esc(last.id)}"><span>${last.autoEnded?icon('wand-sparkles'):icon('moon')} ${clock(last.start)}–${clock(last.end)} <b>${duration(last.end-last.start)}</b>${last.autoEnded?'<small>Auto-ended</small>':''}</span>${icon('pencil')}</button>`:'';
     renderChart(s);tick();icons();persist();
   }
   function tick(){
@@ -80,7 +79,7 @@
     $('#chart-days').innerHTML=dates.map(date=>{
       const lo=wallTime(date), hi=wallTime(shiftDate(date,1)), list=entries(s).filter(e=>e.start<hi&&(e.end||Date.now())>lo);
       const p=new Date(date+'T12:00:00Z');
-      return `<section class="day-column"><header>${new Intl.DateTimeFormat('en-US',{weekday:'short',timeZone:'UTC'}).format(p)}<strong>${Number(date.slice(5,7))}/${Number(date.slice(8))}${date===today?' · Today':''}</strong></header><div class="day-track"><div class="night-zone" style="top:${nightOffset*24}px;height:${576-nightOffset*24}px"></div>${list.map(e=>{const a=Math.max(lo,e.start),b=Math.min(hi,e.end||Date.now());const top=(a-lo)/(hi-lo)*576,h=Math.max(14,(b-a)/(hi-lo)*576);return `<button class="sleep-block ${!e.end?'running':''} ${e.autoEnded?'auto-ended':''}" style="top:${top}px;height:${h}px" data-edit="${esc(e.id)}" title="${clock(e.start)} to ${e.end?clock(e.end):'now'} · ${duration((e.end||Date.now())-e.start)}${e.autoEnded?' · Auto-ended':''}" aria-label="Edit sleep ${date}, ${clock(e.start)}, ${duration((e.end||Date.now())-e.start)}"><span>${duration((e.end||Date.now())-e.start)}</span>${e.autoEnded?'<small>Auto</small>':''}</button>`;}).join('')}</div></section>`;
+      return `<section class="day-column ${date===today?'is-today':''}" ${date===today?'aria-current="date"':''}><header> ${date===today?'Today':new Intl.DateTimeFormat('en-US',{weekday:'short',timeZone:'UTC'}).format(p)}<strong>${Number(date.slice(5,7))}/${Number(date.slice(8))}</strong></header><div class="day-track"><div class="night-zone" style="top:${nightOffset*24}px;height:${576-nightOffset*24}px"></div>${list.map(e=>{const a=Math.max(lo,e.start),b=Math.min(hi,e.end||Date.now());const top=(a-lo)/(hi-lo)*576,h=Math.max(14,(b-a)/(hi-lo)*576);return `<button class="sleep-block ${!e.end?'running':''} ${e.autoEnded?'auto-ended':''}" style="top:${top}px;height:${h}px" data-edit="${esc(e.id)}" title="${clock(e.start)} to ${e.end?clock(e.end):'now'} · ${duration((e.end||Date.now())-e.start)}${e.autoEnded?' · Auto-ended':''}" aria-label="Edit sleep ${date}, ${clock(e.start)}, ${duration((e.end||Date.now())-e.start)}"><span>${duration((e.end||Date.now())-e.start)}</span>${e.autoEnded?'<small>Auto</small>':''}</button>`;}).join('')}</div></section>`;
     }).join('');
     scroller.scrollLeft=atEnd?scroller.scrollWidth:previous;rendered=true;
     $('#chart-date').textContent=`${Number(today.slice(5,7))}/${Number(today.slice(8))} · ${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}–${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}`;

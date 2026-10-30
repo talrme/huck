@@ -14,6 +14,22 @@ body[data-design="10"]{--bg:#f7f9fb;--ink:#283b47;--accent:#596cc1;--soft:#e8ebf
 body[data-theme=night]{--bg:#151a22;--paper:#202630;--ink:#edf3f2;--muted:#a5b5b2;--line:#3b4653;--accent:#83bcb7;--soft:#334c4d;--night:#111721;--sleep:#3d6b69}body[data-theme=berry]{--bg:#fbf5f7;--paper:#fffafd;--ink:#472b3a;--muted:#8b6b7c;--line:#ecdbe3;--accent:#a34864;--soft:#f6e0e8;--night:#eee6f0;--sleep:#e8a8bb}body[data-theme=mint]{--bg:#eff7f6;--paper:#fcffff;--ink:#244543;--muted:#688680;--line:#cfe4df;--accent:#327f7b;--soft:#d7eeeb;--night:#e2e8f2;--sleep:#94ccc2}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .timer-seconds{display:block;font-size:16px;font-weight:550;line-height:20px;height:20px;color:var(--muted);font-variant-numeric:tabular-nums;margin:0 0 4px}
+.today-naps{margin-top:20px}
+.today-naps h2{font-size:14px;font-weight:650;color:var(--muted);margin-bottom:5px}
+.nap-entry{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:11px 0;justify-content:flex-start;text-align:left;gap:10px}
+.nap-duration{display:grid;gap:2px;flex:0 0 auto}
+.nap-duration strong{font-size:18px;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
+.nap-duration small{font-size:10px;font-weight:500}
+.nap-times{margin-left:auto;font-size:11px;color:var(--muted);font-weight:450;font-variant-numeric:tabular-nums}
+.nap-entry>svg{width:13px;height:13px;color:var(--muted);opacity:.7}
+.day-column.is-today{border-left:1px solid var(--accent);border-right:1px solid var(--accent)}
+.day-column.is-today>header{background:var(--soft);box-shadow:inset 0 3px 0 var(--accent);color:var(--accent);font-size:12px;font-weight:750}
+.day-column.is-today>header strong{font-size:12px;font-weight:800}
+.day-column.is-today .day-track{background-color:color-mix(in srgb,var(--accent) 7%,var(--paper))}
+.day-column.is-today .night-zone{background:color-mix(in srgb,var(--night) 70%,var(--soft))}
+.day-column.is-today .sleep-block{border:2px solid var(--accent);font-weight:800}
+.day-column:not(.is-today) .sleep-block{background:color-mix(in srgb,var(--sleep) 65%,var(--paper));border-color:var(--line);font-weight:550}
+.day-column:not(.is-today) .sleep-block:hover{background:var(--soft)}
 .time-field{padding:0 0 17px;border-bottom:1px solid var(--line)}
 .time-field legend{font-size:13px;color:var(--muted);margin-bottom:10px}
 .end-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:650}
