@@ -19,7 +19,7 @@ try{
   await p.locator('[data-date-preset="start"]').selectOption('yesterday');assert.equal(await p.locator('#start-date').inputValue(),'2026-10-29');
   await p.locator('[data-date-preset="start"]').selectOption('today');
   await p.locator('#start-time').fill('12:00');assert(await p.locator('[data-save-entry]').isDisabled());assert((await p.locator('#time-preview').innerText()).includes('past'));
-  await p.locator('[data-close]').click();
+  await p.locator('[data-ago="start:5"]').click();await p.locator('[data-close]').click();
   await p.locator('[data-add]').click();assert.equal(await p.locator('#start-time').inputValue(),'10:15');assert.equal(await p.locator('#end-time').inputValue(),'11:00');assert.equal(await p.locator('#time-preview').innerText(),'45m sleep');
   await p.screenshot({path:`/tmp/huck-time-editor-${design}.png`});
   await p.setViewportSize({width:320,height:740});assert(await p.evaluate(()=>document.querySelector('#modal').scrollWidth<=document.querySelector('#modal').clientWidth));
@@ -38,6 +38,19 @@ try{
   await p.screenshot({path:`/tmp/huck-set-end-${design}.png`});
   await p.locator('[data-toggle-end]').click();assert(!(await p.locator('#end-fields').isVisible()));await p.locator('[data-save-entry]').click();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
   await p.locator('#timer-detail [data-edit]').click();await p.locator('[data-toggle-end]').click();await p.locator('[data-save-entry]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');
+  const recentId=await p.locator('.nap-entry').last().getAttribute('data-edit');
+  await p.locator('.nap-entry').last().click();await p.locator('#start-time').fill('11:01');await p.mouse.click(2,2);assert(!(await p.locator('#modal').isVisible()));
+  assert.equal(await p.evaluate(id=>HuckTest.getState().entries.find(e=>e.id===id).start,recentId),Date.parse('2026-10-30T18:01:00Z'));
+  await p.locator('.nap-entry').last().click();await p.locator('#start-time').fill('11:02');await p.locator('[data-close]').click();
+  assert.equal(await p.evaluate(id=>HuckTest.getState().entries.find(e=>e.id===id).start,recentId),Date.parse('2026-10-30T18:02:00Z'));
+  await p.locator('.nap-entry').last().click();await p.locator('#start-time').fill('11:03');await p.keyboard.press('Escape');assert(!(await p.locator('#modal').isVisible()));
+  const revision=await p.evaluate(id=>HuckTest.getState().entries.find(e=>e.id===id).rev,recentId);
+  await p.locator('.nap-entry').last().click();await p.mouse.click(2,2);assert.equal(await p.evaluate(id=>HuckTest.getState().entries.find(e=>e.id===id).rev,recentId),revision);
+  await p.locator('.nap-entry').last().click();await p.locator('#start-time').fill('12:00');await p.mouse.click(2,2);assert(await p.locator('#modal').isVisible());
+  await p.locator('#start-time').evaluate(input=>{input.focus();input.value='13:00';input.dispatchEvent(new Event('change',{bubbles:true}));});assert(await p.locator('#start-time').evaluate(input=>document.activeElement===input));
+  await p.locator('#start-time').evaluate(input=>{input.value='13:01';input.dispatchEvent(new Event('change',{bubbles:true}));});assert(!(await p.locator('#start-time').evaluate(input=>document.activeElement===input)));
+  await p.locator('#start-time').fill('11:03');await p.locator('[data-close]').click();
+  const count=await p.evaluate(()=>HuckTest.getState().entries.length);await p.locator('[data-add]').click();await p.mouse.click(2,2);assert.equal(await p.evaluate(()=>HuckTest.getState().entries.length),count);
   const fav=await p.locator('link[rel="icon"]').getAttribute('href');assert(fav.includes('favicon.png'));const touch=await p.locator('link[rel="apple-touch-icon"]').getAttribute('href');assert(touch.includes('apple-touch-icon.png'));
   const manifest=await p.evaluate(async()=>fetch(document.querySelector('link[rel="manifest"]').href).then(r=>r.json()));assert.equal(manifest.icons.length,2);
   assert.deepEqual(errors,[]);console.log(`PASS editor ${design}: defaults, quick times, yesterday, validation, overnight, unchanged precision, phone fit, new icons`);await context.close();

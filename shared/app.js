@@ -118,7 +118,7 @@
     }
     $('#modal').showModal();icons();
   }
-  const close=()=>$('#modal').close();
+  const close=()=>editor?.kind==='entry'?saveEntry(true):$('#modal').close();
   function timeField(prefix,title,at){
     const date=dateKey(at),today=dateKey(Date.now()),yesterday=shiftDate(today,-1),preset=date===today?'today':date===yesterday?'yesterday':'other';
     return `<fieldset class="time-field" data-time-field="${prefix}"><legend>${title}</legend><div class="time-inputs"><label><span class="sr-only">${title} day</span><select data-date-preset="${prefix}"><option value="today" ${preset==='today'?'selected':''}>Today</option><option value="yesterday" ${preset==='yesterday'?'selected':''}>Yesterday</option><option value="other" ${preset==='other'?'selected':''}>Choose date…</option></select></label><label><span class="sr-only">${title} time</span><input id="${prefix}-time" type="time" step="60" required value="${inputTime(at).split('T')[1]}" data-native-picker></label></div><label class="custom-date" ${preset==='other'?'':'hidden'}><span class="sr-only">${title} date</span><input id="${prefix}-date" type="date" max="${today}" value="${date}" data-native-picker></label><div class="time-shortcuts"><button type="button" data-adjust="${prefix}:-5" aria-label="${title} five minutes earlier">${icon('minus')}5m</button><button type="button" data-adjust="${prefix}:5" aria-label="${title} five minutes later">${icon('plus')}5m</button><button type="button" data-now="${prefix}">Now</button><button type="button" data-ago="${prefix}:5">5m ago</button></div></fieldset>`;
@@ -151,12 +151,19 @@
   }
   function openEntry(id,mode){
     const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
-    editor={id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:mode!=='start'&&Boolean(e?e.end:defaults.end)};
+    editor={kind:'entry',id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:mode!=='start'&&Boolean(e?e.end:defaults.end)};
     modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Started',e?.start||defaults.start)}${mode==='start'?'':`<section ${e&&!e.end?'id="end-section"':''}>${e&&!e.end?'<div class="end-heading"><span>Ended</span><button class="text-link" data-toggle-end aria-expanded="false" aria-controls="end-fields">Set time</button></div>':''}<div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','Ended',e?.end||defaults.end||Date.now())}</div></section>`}<p id="time-preview" class="time-preview" role="status"></p>`,
       `<button class="primary" data-save-entry>${mode==='start'?'Start sleep':'Save'}</button>${e?'<button class="danger text-link" data-delete-entry>Delete</button>':''}`);
+    editor.initial={start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null};
     updateTimePreview();
   }
-  function saveEntry(){const p={id:editor.id||uuid(),childId:editor.childId,start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null,expectedRev:editor.rev};if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))close();}
+  function saveEntry(implicit=false){
+    const p={id:editor.id||uuid(),childId:editor.childId,start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null,expectedRev:editor.rev};
+    const unchanged=p.start===editor.initial.start&&p.end===editor.initial.end;
+    if(unchanged&&(implicit||editor.id)){$('#modal').close();return;}
+    if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');
+    if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))$('#modal').close();
+  }
   function settings(){
     const s=projected();editor={settingsRevision:s.revision};
     modal('Settings',`<fieldset><legend>Color</legend><div class="swatches">${['original','night','berry','mint'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!HUCK_CONFIG.backendUrl?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
@@ -178,7 +185,7 @@
     if(t.matches('[data-add]'))openEntry();
     if(t.matches('[data-close]'))close();
     if(t.matches('[data-save-entry]'))saveEntry();
-    if(t.matches('[data-delete-entry]')){const entry={...editor};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the Sheet.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
+    if(t.matches('[data-delete-entry]')){const entry={...editor,kind:'delete'};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the Sheet.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
     if(t.matches('[data-confirm-delete]')){if(enqueue('delete',{id:editor.id,childId:editor.childId,expectedRev:editor.rev}))close();}
     if(t.matches('[data-settings]'))settings();
     if(t.matches('[data-save-settings]'))saveSettings();
@@ -209,8 +216,15 @@
   });
   $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const b=e.target.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)close();}});
   $('#modal').addEventListener('close',()=>editor=null);
+  $('#modal').addEventListener('cancel',event=>{event.preventDefault();close();});
+  $('#modal').addEventListener('focusin',event=>{if(event.target.type==='time')event.target.dataset.lastMinute=event.target.value.split(':')[1]||'';});
   $('#modal').addEventListener('change',event=>{
     const t=event.target;
+    if(t.type==='time'){
+      const minute=t.value.split(':')[1]||'',previous=t.dataset.lastMinute;
+      t.dataset.lastMinute=minute;
+      if(previous!==undefined&&minute&&minute!==previous)t.blur();
+    }
     if(t.matches('[data-date-preset]')){
       const prefix=t.dataset.datePreset,date=$('#'+prefix+'-date'),custom=$(`[data-time-field="${prefix}"] .custom-date`);
       custom.hidden=t.value!=='other';
