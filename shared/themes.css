@@ -6,6 +6,7 @@ body[data-style=daybook] .timer-art{position:absolute;right:8px;top:5px;width:60
 body[data-style=daybook] .elapsed{font-size:58px}
 body[data-style=daybook] .actions{width:100%;max-width:none}
 body[data-style=daybook] .history-heading{border-top:2px solid var(--accent);padding-top:15px}
+body[data-style=daybook] .today-naps{border-top:2px solid var(--accent);padding-top:15px}
 body[data-style=orbit] .timer{border:0;background:transparent}
 body[data-style=orbit] .readout{border:9px solid var(--soft);border-top-color:var(--accent);border-radius:50%;width:210px;height:210px;margin:0 auto 15px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 body[data-style=orbit] .timer-art{width:38px;height:38px;margin:0}
@@ -18,7 +19,6 @@ body[data-style=compact] .timer-art{width:30px;height:30px}
 body[data-style=compact] .actions{margin:0;align-content:center;width:100%}
 body[data-style=compact] .quick-row{flex-wrap:wrap}
 body[data-style=compact] .quick-row button{flex:1 0 45%}
-body[data-style=compact] .today-naps{margin-top:16px}
 .style-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .swatch[data-theme=original] span{background:#596cc1}
 .style-option{display:grid;gap:7px;justify-items:center;min-height:76px;font-size:11px;padding:10px 3px;color:var(--muted);background:var(--bg)}

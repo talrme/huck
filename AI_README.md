@@ -28,4 +28,6 @@ Current layout: timer followed by #today-naps (all non-deleted sleeps intersecti
 
 Today's naps heading matches Sleep history in size, weight and color. On stacked phone layouts the history section gets extra spacing and a subtle divider; desktop side-by-side layout remains unchanged. List chronology is independent of the chart's date-column ordering (newest day still on right).
 
+Today's naps also has a 36px break above it and a horizontal divider below the active timer. Daybook uses the same 2px accent rule and 15px heading inset as Sleep history; other styles use a subtle 1px rule and 24px inset. Preserve the break in Compact as well.
+
 Entry dismissals (backdrop, X, native dialog cancel/Escape) go through saveEntry(true): save valid changed values, preserve unchanged records without revision changes, and do not create new records from untouched defaults. Invalid or conflicting edits remain open. editor.kind distinguishes entry forms from deletion confirmations/settings to prevent accidental saves with absent controls. Native time change tracks minute at focus/change and blurs only when minute changes, not hour-only changes; real OS picker behavior is not guaranteed by blur. No per-keystroke backend writes.
