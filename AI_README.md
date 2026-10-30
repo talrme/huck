@@ -30,4 +30,6 @@ Today's naps heading matches Sleep history in size, weight and color. On stacked
 
 Today's naps also has a 36px break above it and a horizontal divider below the active timer. Daybook uses the same 2px accent rule and 15px heading inset as Sleep history; other styles use a subtle 1px rule and 24px inset. Preserve the break in Compact as well.
 
+Active controls: text-only primary End nap/End sleep based on current home time and shared day/night boundaries (not the original sleep start). Below are Ended5m ago, Ended10m ago, Edit time. Both backdate controls use the existing revision-checked end action and reject end-before-start rather than inventing times. No stop-square icon. Compact may wrap shortcuts while retaining 44px+ targets.
+
 Entry dismissals (backdrop, X, native dialog cancel/Escape) go through saveEntry(true): save valid changed values, preserve unchanged records without revision changes, and do not create new records from untouched defaults. Invalid or conflicting edits remain open. editor.kind distinguishes entry forms from deletion confirmations/settings to prevent accidental saves with absent controls. Native time change tracks minute at focus/change and blurs only when minute changes, not hour-only changes; real OS picker behavior is not guaranteed by blur. No per-keystroke backend writes.

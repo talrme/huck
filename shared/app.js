@@ -54,7 +54,8 @@
     $('#timer-detail').innerHTML=running?`Started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`Last woke at ${clock(last.end)}`:'Ready for the first sleep';
     $('#timer-art').src=new URL(running?'shared/moon.png':'shared/sun.png',root);
     $('#timer-art').alt='';
-    $('#actions').innerHTML=running?`<button class="primary" data-end="0">${icon('square')} End now</button><div class="quick-row"><button data-end="5">Ended 5m ago</button><button data-edit="${esc(running.id)}">${icon('pencil')} Edit time</button></div>`:`<button class="primary" data-start="0">${icon('play')} Start sleep</button><div class="quick-row"><button data-start="5">5m ago</button><button data-start="10">10m ago</button><button data-custom-start>${icon('clock-3')} Other</button></div>`;
+    const endLabel=C.isNight(Date.now(),s.settings)?'End sleep':'End nap';
+    $('#actions').innerHTML=running?`<button class="primary" data-end="0">${endLabel}</button><div class="quick-row end-shortcuts"><button data-end="5" aria-label="Ended five minutes ago"><span>Ended</span><span>5m ago</span></button><button data-end="10" aria-label="Ended ten minutes ago"><span>Ended</span><span>10m ago</span></button><button data-edit="${esc(running.id)}" aria-label="Manually edit sleep times">${icon('pencil')}<span>Edit time</span></button></div>`:`<button class="primary" data-start="0">${icon('play')} Start sleep</button><div class="quick-row"><button data-start="5">5m ago</button><button data-start="10">10m ago</button><button data-custom-start>${icon('clock-3')} Other</button></div>`;
     renderChart(s);tick();icons();persist();
   }
   function tick(){
