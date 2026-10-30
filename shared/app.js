@@ -1,0 +1,172 @@
+(() => {
+  'use strict';
+  const C = HuckCore, $ = s => document.querySelector(s), esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const demo = new URL(location.href).searchParams.get('demo') === '1';
+  const key = demo ? 'huck-sample-v1' : 'huck-v1';
+  const root = new URL('../', document.currentScript.src);
+  let saved; try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch { saved = {}; }
+  if(!demo && HUCK_CONFIG.backendUrl && saved.localOnly && saved.base?.entries?.length) {
+    localStorage.setItem('huck-local-backup-v1', JSON.stringify(saved.base));
+  }
+  let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', motion: true, ...saved.prefs };
+  let busy = false, message = '', lastChecked = 0, editor = null, days = 7, rendered = false;
+  const uuid = () => crypto.randomUUID();
+  function parts(at) { return Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone:base.settings.timezone, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(at)).map(p=>[p.type,p.value])); }
+  function wallTime(date, hour = base.settings.dayStart, minute = 0) {
+    let target = Date.parse(date + 'T' + String(hour).padStart(2,'0') + ':' + String(minute).padStart(2,'0') + ':00Z'), t = target;
+    for (let i=0;i<3;i++) { const p=parts(t); const asUTC=Date.parse(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00Z`); t += target-asUTC; }
+    return t;
+  }
+  function dateKey(at) { const p=parts(at); return `${p.year}-${p.month}-${p.day}`; }
+  function shiftDate(date,n) { const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10); }
+  function periodDate(at) { const date=dateKey(at);return at<wallTime(date)?shiftDate(date,-1):date; }
+  function duration(ms) { const m=Math.max(0,Math.floor(ms/60000));return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:`${m}m`; }
+  function clock(t) { return new Intl.DateTimeFormat('en-US',{timeZone:base.settings.timezone,hour:'numeric',minute:'2-digit'}).format(new Date(t)); }
+  function inputTime(t) { const p=parts(t);return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
+  function parseInput(s) { const [date,time] = s.split('T');if(!time)return NaN;const [h,m]=time.split(':').map(Number);return wallTime(date,h,m); }
+  function sample() {
+    const s=C.initial(), today=periodDate(Date.now());
+    for(let d=-6;d<=0;d++) for(const [hour,minute,length] of [[8,20,45],[11,10,80],[14,30,55],[17,0,35],[21,10,130],[2,15,100]]) {
+      const date=shiftDate(today,d+(hour<7?1:0)),start=wallTime(date,hour,minute);
+      if(start+length*60000<Date.now())s.entries.push({id:uuid(),childId:'avi',start,end:start+length*60000,rev:1,deleted:false,autoEnded:false});
+    }
+    return s;
+  }
+  if(demo && !saved.base)base=sample();
+  function persist(){localStorage.setItem(key,JSON.stringify({base,queue,prefs,localOnly:!HUCK_CONFIG.backendUrl}));}
+  function projected(){let s=JSON.parse(JSON.stringify(base));for(const cmd of queue.filter(c=>!c.blocked)){try{s=C.apply(s,cmd,cmd.createdAt);}catch{}}return C.settle(s,Date.now());}
+  function child(s=projected()){return s.children.find(c=>c.id===prefs.child&&!c.archived)||s.children.find(c=>!c.archived);}
+  function entries(s=projected()){return s.entries.filter(e=>e.childId===child(s)?.id&&!e.deleted).sort((a,b)=>b.start-a.start);}
+  const icon=(name)=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
+  function icons(){window.lucide?.createIcons();}
+  function stateLabel(){return demo?'Sample data · this browser only':!HUCK_CONFIG.backendUrl?'This device only · Sheet not connected':queue.some(c=>c.blocked)?'Sync needs review':queue.length?'Saved here · sync pending':busy?'Syncing…':message?'Connection unavailable · showing saved data':lastChecked?'Synced '+clock(lastChecked):'Connecting…';}
+  function render(){
+    const s=projected(), c=child(s);prefs.child=c.id;
+    document.body.dataset.theme=prefs.theme;document.body.classList.toggle('reduce-motion',!prefs.motion);
+    $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
+    $('#review').hidden=!queue.some(c=>c.blocked);
+    const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(Date.now()), start=wallTime(today), end=wallTime(shiftDate(today,1));
+    const total=list.reduce((sum,e)=>sum+Math.max(0,Math.min(e.end||Date.now(),end)-Math.max(e.start,start)),0);
+    $('#summary').innerHTML=`<span><small>Today’s sleep</small><strong>${duration(total)}</strong></span><span><small>Last sleep</small><strong>${last?duration(last.end-last.start):'—'}</strong></span><span><small>Ended</small><strong>${last?clock(last.end):'—'}</strong></span>`;
+    $('#timer').dataset.asleep=Boolean(running);
+    $('#timer-status').textContent=running?'Sleeping':'Awake';
+    $('#timer-detail').innerHTML=running?`Started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`Last woke at ${clock(last.end)}`:'Ready for the first sleep';
+    $('#timer-art').src=new URL(running?'shared/moon.png':'shared/sun.png',root);
+    $('#timer-art').alt='';
+    $('#actions').innerHTML=running?`<button class="primary" data-end="0">${icon('square')} End now</button><div class="quick-row"><button data-end="5">Ended 5m ago</button><button data-edit="${esc(running.id)}">${icon('pencil')} Edit time</button></div>`:`<button class="primary" data-start="0">${icon('play')} Start sleep</button><div class="quick-row"><button data-start="5">5m ago</button><button data-start="10">10m ago</button><button data-custom-start>${icon('clock-3')} Other</button></div>`;
+    $('#last-entry').innerHTML=last?`<button class="last-sleep" data-edit="${esc(last.id)}"><span>${last.autoEnded?icon('wand-sparkles'):icon('moon')} ${clock(last.start)}–${clock(last.end)} <b>${duration(last.end-last.start)}</b>${last.autoEnded?'<small>Auto-ended</small>':''}</span>${icon('pencil')}</button>`:'';
+    renderChart(s);tick();icons();persist();
+  }
+  function tick(){const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end);$('#elapsed').textContent=r?duration(Date.now()-r.start):last?duration(Date.now()-last.end):'—';}
+  function renderChart(s){
+    const scroller=$('#chart-scroll'), previous=scroller.scrollLeft, atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
+    const today=periodDate(Date.now()), dates=Array.from({length:days},(_,i)=>shiftDate(today,i-days+1));
+    const nightOffset=(Number(s.settings.nightStart)-Number(s.settings.dayStart)+24)%24;
+    $('#time-axis').innerHTML='<div class="axis-top"></div>'+Array.from({length:25},(_,i)=>`<span style="top:${40+i*24}px">${(Number(s.settings.dayStart)+i)%12||12}${(Number(s.settings.dayStart)+i)%24<12?'a':'p'}</span>`).join('');
+    $('#chart-days').style.width=`${dates.length*94}px`;
+    $('#chart-days').innerHTML=dates.map(date=>{
+      const lo=wallTime(date), hi=wallTime(shiftDate(date,1)), list=entries(s).filter(e=>e.start<hi&&(e.end||Date.now())>lo);
+      const p=new Date(date+'T12:00:00Z');
+      return `<section class="day-column"><header>${new Intl.DateTimeFormat('en-US',{weekday:'short',timeZone:'UTC'}).format(p)}<strong>${Number(date.slice(5,7))}/${Number(date.slice(8))}${date===today?' · Today':''}</strong></header><div class="day-track"><div class="night-zone" style="top:${nightOffset*24}px;height:${576-nightOffset*24}px"></div>${list.map(e=>{const a=Math.max(lo,e.start),b=Math.min(hi,e.end||Date.now());const top=(a-lo)/(hi-lo)*576,h=Math.max(14,(b-a)/(hi-lo)*576);return `<button class="sleep-block ${!e.end?'running':''} ${e.autoEnded?'auto-ended':''}" style="top:${top}px;height:${h}px" data-edit="${esc(e.id)}" title="${clock(e.start)} to ${e.end?clock(e.end):'now'} · ${duration((e.end||Date.now())-e.start)}${e.autoEnded?' · Auto-ended':''}" aria-label="Edit sleep ${date}, ${clock(e.start)}, ${duration((e.end||Date.now())-e.start)}"><span>${duration((e.end||Date.now())-e.start)}</span>${e.autoEnded?'<small>Auto</small>':''}</button>`;}).join('')}</div></section>`;
+    }).join('');
+    scroller.scrollLeft=atEnd?scroller.scrollWidth:previous;rendered=true;
+    $('#chart-date').textContent=`${Number(today.slice(5,7))}/${Number(today.slice(8))} · ${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}–${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}`;
+  }
+  function enqueue(type,payload){
+    if(queue.some(c=>c.blocked)){notice('Resolve the pending sync issue first.');return false;}
+    const command={id:uuid(),type,payload,createdAt:Date.now()};
+    try{C.apply(projected(),command,Date.now());}catch(e){notice(e.message);return false;}
+    if(demo||!HUCK_CONFIG.backendUrl){base=C.apply(projected(),command,Date.now());persist();render();}
+    else{queue.push(command);persist();render();sync();}return true;
+  }
+  function request(action,payload){return new Promise((resolve,reject)=>{
+    const callback='huck_'+uuid().replaceAll('-',''),url=new URL(HUCK_CONFIG.backendUrl);url.searchParams.set('action',action);url.searchParams.set('callback',callback);url.searchParams.set('_',Date.now());if(payload)url.searchParams.set('payload',JSON.stringify(payload));
+    const script=document.createElement('script');const done=()=>{clearTimeout(timer);delete window[callback];script.remove();};
+    const timer=setTimeout(()=>{done();reject(Error('Connection timed out. Saved changes will retry.'));},35000);
+    window[callback]=data=>{done();resolve(data);};script.onerror=()=>{done();reject(Error('Offline. Saved changes will retry.'));};script.src=url;document.body.append(script);
+  });}
+  async function sync(){
+    if(busy||demo||!HUCK_CONFIG.backendUrl||document.hidden)return;
+    busy=true;$('#connection').textContent=stateLabel();
+    try{
+      const result=await request('snapshot');if(!result.ok)throw Error(result.error);base=result.state;
+      while(queue.length&&!queue[0].blocked){
+        const cmd=queue[0],response=await request('command',cmd);
+        if(!response.ok){cmd.blocked=response.error;notice(response.error);persist();break;}
+        base=response.state;queue.shift();persist();
+      }
+      lastChecked=Date.now();message='';
+    }catch(e){message=e.message;notice(message);}finally{busy=false;persist();render();}
+  }
+  function notice(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(notice.timeout);notice.timeout=setTimeout(()=>$('#toast').hidden=true,6500);}
+  function modal(title,body,footer=''){
+    $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML=footer;
+    if(title==='Settings'&&!demo&&HUCK_CONFIG.backendUrl&&localStorage.getItem('huck-local-backup-v1')){
+      $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
+    }
+    $('#modal').showModal();icons();
+  }
+  const close=()=>$('#modal').close();
+  function openEntry(id,mode){
+    const s=projected(),e=s.entries.find(e=>e.id===id);editor={id,mode,rev:e?.rev,childId:child(s).id};
+    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}<label>Started<input id="start-time" type="datetime-local" required value="${inputTime(e?.start||Date.now()-3600000)}"></label>${mode==='start'?'':`<label>Ended<input id="end-time" type="datetime-local" value="${e?.end?inputTime(e.end):!e?inputTime(Date.now()):''}"></label>${e&&!e.end?'<small>Leave the end blank while sleep is still running.</small>':''}`}`,
+      `<button class="primary" data-save-entry>Save</button>${e?'<button class="danger text-link" data-delete-entry>Delete</button>':''}`);
+  }
+  function saveEntry(){const p={id:editor.id||uuid(),childId:editor.childId,start:parseInput($('#start-time').value),end:$('#end-time')?.value?parseInput($('#end-time').value):null,expectedRev:editor.rev};if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))close();}
+  function settings(){
+    const s=projected();editor={settingsRevision:s.revision};
+    modal('Settings',`<fieldset><legend>Color</legend><div class="swatches">${['original','night','berry','mint'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!HUCK_CONFIG.backendUrl?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
+  }
+  function hours(selected){return Array.from({length:24},(_,h)=>`<option value="${h}" ${Number(selected)===h?'selected':''}>${h%12||12}:00 ${h<12?'AM':'PM'}</option>`).join('');}
+  function saveSettings(){const s=projected(),settings={...s.settings};for(const k of ['dayStart','nightStart','dayLimit','dayReplace','nightLimit','nightReplace'])settings[k]=Number($('#'+k).value);prefs.child=$('#child-select').value;prefs.motion=$('#motion').checked;persist();if(JSON.stringify(settings)!==JSON.stringify(s.settings)){if(!enqueue('settings',{settings,expectedRevision:editor.settingsRevision}))return;}close();render();}
+  function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/moon.png',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
+  document.addEventListener('click',event=>{
+    const t=event.target.closest('button,a');if(!t)return;
+    if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
+    if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
+    if(t.matches('[data-edit]'))openEntry(t.dataset.edit);
+    if(t.matches('[data-custom-start]'))openEntry(null,'start');
+    if(t.matches('[data-add]'))openEntry();
+    if(t.matches('[data-close]'))close();
+    if(t.matches('[data-save-entry]'))saveEntry();
+    if(t.matches('[data-delete-entry]')){const entry={...editor};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the Sheet.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
+    if(t.matches('[data-confirm-delete]')){if(enqueue('delete',{id:editor.id,childId:editor.childId,expectedRev:editor.rev}))close();}
+    if(t.matches('[data-settings]'))settings();
+    if(t.matches('[data-save-settings]'))saveSettings();
+    if(t.matches('[data-theme]')){prefs.theme=t.dataset.theme;persist();render();document.querySelectorAll('button[data-theme]').forEach(b=>{b.classList.toggle('chosen',b===t);b.setAttribute('aria-pressed',b===t);});}
+    if(t.matches('[data-add-child]')){const name=$('#new-child').value;if(enqueue('child',{id:'child-'+uuid(),name}))settings();}
+    if(t.matches('[data-archive]')){const id=t.dataset.archive, archived=t.dataset.archived==='true';modal(archived?'Archive child?':'Restore child?',`<p>${archived?'Sleep history will be kept.':'This child will be available again.'}</p>`,`<button data-close>Cancel</button><button class="primary" data-confirm-archive="${esc(id)}" data-archived="${archived}">${archived?'Archive':'Restore'}</button>`);}
+    if(t.matches('[data-confirm-archive]')){if(enqueue('archive',{childId:t.dataset.confirmArchive,archived:t.dataset.archived==='true'}))settings();}
+    if(t.matches('[data-share]'))share();
+    if(t.matches('[data-copy]')){const input=$('#share-url');navigator.clipboard?.writeText(input.value).then(()=>notice('Link copied.')).catch(()=>{input.select();notice('Select and copy the link.');});}
+    if(t.matches('[data-sync]')){sync();notice(HUCK_CONFIG.backendUrl?'Checking connection…':'Backend not connected yet.');}
+    if(t.matches('[data-older]')){days+=7;render();$('#chart-scroll').scrollLeft=0;}
+    if(t.matches('[data-today]')){$('#chart-scroll').scrollLeft=$('#chart-scroll').scrollWidth;}
+    if(t.matches('[data-review]'))modal('Sync needs review',`<p>${esc(queue.find(c=>c.blocked)?.blocked||message)}</p><p>The other phone’s saved version is preserved. Discard this pending change, then try again with the updated entry.</p>`,'<button class="primary" data-discard>Discard pending change</button>');
+    if(t.matches('[data-discard]')){queue=queue.filter(c=>!c.blocked);persist();close();sync();render();}
+    if(t.matches('[data-reset-demo]')){base=sample();queue=[];persist();close();render();}
+    if(t.matches('[data-download-local]')){const blob=new Blob([localStorage.getItem('huck-local-backup-v1')],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='huck-local-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+    if(t.matches('[data-import-local]')){
+      try{
+        const backup=JSON.parse(localStorage.getItem('huck-local-backup-v1'));let next=projected();const commands=[];
+        for(const c of backup.children.filter(c=>!c.archived)){if(!next.children.some(other=>other.id===c.id)){const cmd={id:uuid(),type:'child',payload:{id:c.id,name:c.name},createdAt:Date.now()};next=C.apply(next,cmd,Date.now());commands.push(cmd);}}
+        for(const e of backup.entries.filter(e=>!e.deleted).sort((a,b)=>a.start-b.start)){
+          if(next.entries.some(other=>other.id===e.id))continue;
+          const cmd={id:uuid(),type:e.end?'add':'start',payload:{id:e.id,childId:e.childId,start:e.start,end:e.end},createdAt:Date.now()};next=C.apply(next,cmd,Date.now());commands.push(cmd);
+        }
+        queue.push(...commands);persist();close();render();sync();notice(commands.length?'Import queued. Backup is kept.':'All local entries are already present.');
+      }catch(e){notice('Import stopped; backup kept. '+e.message);}
+    }
+  });
+  $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const b=e.target.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)close();}});
+  $('#modal').addEventListener('close',()=>editor=null);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
+  window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
+  window.addEventListener('online',sync);
+  window.addEventListener('pageshow',e=>{if(e.persisted)sync();});
+  const requested=new URL(location.href).searchParams.get('child');if(requested)prefs.child=requested;
+  render();sync();
+  setInterval(()=>{if(!document.hidden)tick();},1000);
+  setInterval(()=>{if(!document.hidden){if(!$('#modal').open)render();sync();}},15000);
+  window.HuckTest={getState:projected,enqueue,sync,periodDate,wallTime,parseInput};
+})();

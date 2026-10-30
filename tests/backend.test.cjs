@@ -1,0 +1,20 @@
+const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
+const rows=[];let copies=0;
+const sheet={appendRow:r=>rows.push(r),getLastRow:()=>rows.length,setFrozenRows:()=>{},getRange:(r,c,h,w)=>({getValues:()=>rows.slice(r-1,r-1+h).map(row=>row.slice(c-1,c-1+w))})};
+const ss={getSheetByName:()=>copies?sheet:null,insertSheet:()=>{copies++;return sheet;},getUrl:()=> 'https://example.invalid/sheet'};
+const context=vm.createContext({console,Intl,Date,SpreadsheetApp:{openById:()=>ss},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},ContentService:{MimeType:{JAVASCRIPT:'js'},createTextOutput:text=>({setMimeType:()=>text})}});
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../backend.sample.gs'),'utf8'),context);
+function call(action,payload){const output=context.doGet({parameter:{action,payload:JSON.stringify(payload||{}),callback:'test'}});let data;vm.runInNewContext(output,{test:r=>data=r});return data;}
+context.setupHuck();context.setupHuck();assert.equal(copies,1);assert.equal(rows.length,1);
+const at=Date.now()-600000,cmd={id:'request-1',type:'start',payload:{id:'sleep-1',childId:'avi',start:at}};
+assert(call('command',cmd).ok);assert(call('command',cmd).ok);assert.equal(rows.length,2,'Retry must be idempotent');
+assert(!call('command',{id:'request-2',type:'start',payload:{id:'sleep-2',childId:'avi',start:Date.now()}}).ok);assert.equal(rows.length,2);
+assert(call('command',{id:'end-1',type:'end',payload:{id:'sleep-1',childId:'avi',expectedRev:1,end:Date.now()}}).ok);
+assert(!call('command',{id:'stale-1',type:'delete',payload:{id:'sleep-1',childId:'avi',expectedRev:1}}).ok);
+assert.equal(call('snapshot').state.entries[0].deleted,false);
+assert(call('command',{id:'other-child',type:'child',payload:{id:'test-child',name:'Other'}}).ok);
+assert(call('command',{id:'forgotten',type:'start',payload:{id:'old-sleep',childId:'test-child',start:Date.now()-3*86400000}}).ok);
+const expired=call('snapshot').state.entries.find(e=>e.id==='old-sleep');assert.equal(expired.autoEnded,true);assert(expired.end);
+const afterExpiry=rows.length;call('snapshot');assert.equal(rows.length,afterExpiry,'Auto-end is persisted once');
+rows[0][0]='unexpected';assert(!call('snapshot').ok);assert.equal(rows.length,afterExpiry,'Unknown headers must never clear data');
+console.log('PASS backend: idempotent setup and retries, duplicate active timer rejected, revision protection, deterministic replay, unexpected headers preserved');

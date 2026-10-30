@@ -1,0 +1,16 @@
+{
+  "name": "Huck",
+  "short_name": "Huck",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7f6",
+  "theme_color": "#26765d",
+  "icons": [
+    {
+      "src": "../shared/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
