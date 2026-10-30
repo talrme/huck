@@ -4,6 +4,9 @@ assert.equal(W.age('2026-09-18',today).weeks,6);assert.equal(W.age('2026-09-18',
 assert.equal(W.age('2026-11-01',today),null);assert.equal(W.age('2026-02-30',today),null);assert.equal(W.age('',today),null);
 assert.equal(W.age('2026-01-31','2026-02-28').months,1);
 const profile={birthday:'2026-09-18',mode:'auto'};assert.equal(W.range(profile,today).min,60);assert.equal(W.range(profile,today).max,120);
+const edited={...profile,ranges:{3:{min:45,max:90}}};assert.equal(W.range(edited,today).max,90);assert.equal(W.range(profile,today).max,120);
+assert.equal(W.configuredRanges(edited)[0].max,60);assert.equal(W.validRange({min:100,max:50}),false);
+assert.equal(W.range({...profile,ranges:{3:{min:100,max:50}}},today).max,120);
 function last(minutes,extra={}){return {start:now-(minutes+45)*60000,end:now-minutes*60000,...extra};}
 assert.equal(W.assess(last(30),profile,now,today).phase,'early');
 assert.equal(W.assess(last(90),profile,now,today).phase,'range');

@@ -7,6 +7,17 @@ try{
  await a.p.locator('[data-settings]').click();await a.p.getByText('Wake-window settings',{exact:true}).click();await a.p.locator('#wake-birthday').fill('2026-11-01');await a.p.locator('[data-save-settings]').click();assert(await a.p.locator('#modal').isVisible());assert(!state.settings.wakeProfiles);
  await a.p.locator('#wake-birthday').fill('2026-09-18');assert((await a.p.locator('#wake-profile-preview').innerText()).includes('6 weeks'));await a.p.locator('[data-save-settings]').click();await a.p.waitForFunction(()=>document.querySelector('#connection').textContent.startsWith('Synced'));assert.equal(state.settings.wakeProfiles.avi.birthday,'2026-09-18');
  const b=await device();assert.equal(await b.p.locator('#wake-window').getAttribute('data-phase'),'range');
+ assert.equal(await a.p.locator('.topbar [data-add]').count(),0);assert.equal(await a.p.locator('#today-naps [data-add]').count(),1);
+ await a.p.locator('#today-naps [data-add]').click();assert(await a.p.getByRole('heading',{name:'Add sleep',exact:true}).isVisible());await a.p.mouse.click(2,2);
+ await a.p.locator('[data-settings]').click();await a.p.getByText('Wake-window settings',{exact:true}).click();
+ assert.equal(await a.p.locator('[data-wake-age]').count(),6);assert.equal(await a.p.locator('[data-wake-age="3"]').getAttribute('class'),'is-current');
+ for(const width of [320,390,1280]){await a.p.setViewportSize({width,height:844});assert(await a.p.evaluate(()=>document.querySelector('#modal').scrollWidth<=document.querySelector('#modal').clientWidth));}
+ await a.p.setViewportSize({width:390,height:844});await a.p.evaluate(()=>document.querySelector('#toast').hidden=true);await a.p.locator('.wake-age-table').scrollIntoViewIfNeeded();await a.p.screenshot({path:'/tmp/huck-age-ranges-phone.png'});
+ const ageRow=a.p.locator('[data-wake-age="3"]');await ageRow.locator('[data-range-min]').fill('150');await a.p.locator('[data-save-settings]').click();assert(await a.p.locator('#modal').isVisible());
+ await ageRow.locator('[data-range-min]').fill('40');await ageRow.locator('[data-range-max]').fill('100');await a.p.locator('[data-save-settings]').click();await a.p.waitForFunction(()=>document.querySelector('#connection').textContent.startsWith('Synced'));
+ assert.equal(state.settings.wakeProfiles.avi.ranges[3].max,100);await b.p.evaluate(()=>HuckTest.sync());assert.equal(await b.p.locator('#wake-window').getAttribute('data-phase'),'past');
+ await b.p.locator('[data-settings]').click();await b.p.getByText('Wake-window settings',{exact:true}).click();assert.equal(await b.p.locator('[data-wake-age="3"] [data-range-max]').inputValue(),'100');
+ await b.p.locator('[data-reset-wake-ranges]').click();assert.equal(await b.p.locator('[data-wake-age="3"] [data-range-max]').inputValue(),'120');await b.p.locator('[data-save-settings]').click();await b.p.waitForFunction(()=>document.querySelector('#connection').textContent.startsWith('Synced'));assert(!state.settings.wakeProfiles.avi.ranges);await a.p.evaluate(()=>HuckTest.sync());
  for(const style of ['daybook','orbit','compact']){
   await a.p.locator('[data-settings]').click();await a.p.locator(`button[data-style="${style}"]`).click();
   for(const theme of ['original','night','berry','mint']){await a.p.locator(`button[data-theme="${theme}"]`).click();assert(await a.p.locator('#modal').isVisible());}
