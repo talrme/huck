@@ -57,7 +57,20 @@
     $('#last-entry').innerHTML=last?`<button class="last-sleep" data-edit="${esc(last.id)}"><span>${last.autoEnded?icon('wand-sparkles'):icon('moon')} ${clock(last.start)}–${clock(last.end)} <b>${duration(last.end-last.start)}</b>${last.autoEnded?'<small>Auto-ended</small>':''}</span>${icon('pencil')}</button>`:'';
     renderChart(s);tick();icons();persist();
   }
-  function tick(){const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end);$('#elapsed').textContent=r?duration(Date.now()-r.start):last?duration(Date.now()-last.end):'—';}
+  function tick(){
+    const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end),elapsed=$('#elapsed');
+    elapsed.setAttribute('role','timer');elapsed.setAttribute('aria-live','off');
+    if(r){
+      const ms=Math.max(0,Date.now()-r.start),seconds=Math.floor(ms/1000)%60;
+      if(!$('#elapsed-main'))elapsed.innerHTML='<span id="elapsed-main"></span><small class="timer-seconds" id="elapsed-seconds"></small>';
+      $('#elapsed-main').textContent=duration(ms);
+      $('#elapsed-seconds').textContent=String(seconds).padStart(2,'0')+'s';
+      elapsed.setAttribute('aria-label',`${duration(ms)} ${seconds} seconds asleep`);
+    }else{
+      elapsed.textContent=last?duration(Date.now()-last.end):'—';
+      elapsed.removeAttribute('aria-label');
+    }
+  }
   function renderChart(s){
     const scroller=$('#chart-scroll'), previous=scroller.scrollLeft, atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
     const today=periodDate(Date.now()), dates=Array.from({length:days},(_,i)=>shiftDate(today,i-days+1));
