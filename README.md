@@ -46,6 +46,7 @@ After deployment, the Sheet can remain private. Anyone who knows the endpoint ca
 ## Tracking and cleanup
 
 - Start now, five minutes ago, ten minutes ago, or at a custom time. End now or five minutes ago; edit any start/end time and add past sleep manually.
+- The phone time editor separates Today / Yesterday / Choose date from the native time picker, with five-minute adjustments and Now / 5m ago shortcuts. Custom starts default to five minutes ago. Past sleep defaults to a 45-minute gap ending now, or the most recent available gap. Existing entries retain their original timestamps when saved unchanged. A live duration preview flags invalid or future times before saving. Running sleep has an explicit Still sleeping switch; turn it off to set an end time.
 - Time is saved as absolute timestamps, not a background stopwatch. Closing the app does not stop a running sleep.
 - The chart runs from 7 AM to 7 AM, with newest dates on the right and a stationary time axis. Night shading begins at 8 PM. Sleep is split visually at day boundaries but remains one editable record. Durations use actual elapsed time. On daylight-saving transition days, the 24-hour chart compresses/stretches that day's time spacing; the saved timestamps and durations remain accurate.
 - Daytime sleeps running four hours are corrected to 90 minutes. Nighttime sleeps running 12 hours are corrected to four hours. These are provisional bookkeeping defaults, not baby sleep recommendations. Rules use the start time of each sleep and the shared America/Los_Angeles timezone. All cutoffs, replacements, day start, and night start are editable in Settings.
@@ -73,5 +74,7 @@ Appearance and ordinary frontend changes do not require redeployment. Backend ac
 `node tests/core.test.cjs` checks data rules without dependencies. `node tests/browser.cjs` uses Playwright and Chrome to test all ten phone layouts, desktop layouts, settings, sleep editing, samples, chart scrolling, and multi-device sync through a simulated backend. Tests do not access your real Sheet. Screenshots are generated into `previews/` and a temporary test directory.
 
 Assets: moon and sun artwork from Twitter Twemoji, CC BY 4.0, https://github.com/twitter/twemoji . Icons: Lucide, ISC license included in shared/LUCIDE-LICENSE.
+
+Favicon and home-screen artwork: Lucide Lab baby-pacifier, https://github.com/lucide-icons/lucide-lab/blob/main/icons/baby-pacifier.svg ; license in shared/LUCIDE-LAB-LICENSE. Run `node tools/icons.cjs` with sharp installed to regenerate 32/180/192/512-pixel PNGs. Moon/sun remain timer-state artwork. Run `node tests/time-editor.cjs` against the local preview server for additional editor and icon checks. Native mobile picker sheets are provided by the phone OS; automated checks verify browser behavior/layout, not a physical iOS/Android picker.
 
 Google setup references: https://developers.google.com/apps-script/guides/web and https://developers.google.com/apps-script/reference/lock/lock-service .

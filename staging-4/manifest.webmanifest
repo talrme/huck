@@ -8,8 +8,13 @@
   "theme_color": "#26765d",
   "icons": [
     {
-      "src": "../shared/app-icon.png",
+      "src": "../shared/app-icon.png?v=20261030-pacifier",
       "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "../shared/app-icon-192.png?v=20261030-pacifier",
+      "sizes": "192x192",
       "type": "image/png"
     }
   ]

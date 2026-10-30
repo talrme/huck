@@ -107,21 +107,57 @@
     $('#modal').showModal();icons();
   }
   const close=()=>$('#modal').close();
-  function openEntry(id,mode){
-    const s=projected(),e=s.entries.find(e=>e.id===id);editor={id,mode,rev:e?.rev,childId:child(s).id};
-    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}<label>Started<input id="start-time" type="datetime-local" required value="${inputTime(e?.start||Date.now()-3600000)}"></label>${mode==='start'?'':`<label>Ended<input id="end-time" type="datetime-local" value="${e?.end?inputTime(e.end):!e?inputTime(Date.now()):''}"></label>${e&&!e.end?'<small>Leave the end blank while sleep is still running.</small>':''}`}`,
-      `<button class="primary" data-save-entry>Save</button>${e?'<button class="danger text-link" data-delete-entry>Delete</button>':''}`);
+  function timeField(prefix,title,at){
+    const date=dateKey(at),today=dateKey(Date.now()),yesterday=shiftDate(today,-1),preset=date===today?'today':date===yesterday?'yesterday':'other';
+    return `<fieldset class="time-field" data-time-field="${prefix}"><legend>${title}</legend><div class="time-inputs"><label><span class="sr-only">${title} day</span><select data-date-preset="${prefix}"><option value="today" ${preset==='today'?'selected':''}>Today</option><option value="yesterday" ${preset==='yesterday'?'selected':''}>Yesterday</option><option value="other" ${preset==='other'?'selected':''}>Choose date…</option></select></label><label><span class="sr-only">${title} time</span><input id="${prefix}-time" type="time" step="60" required value="${inputTime(at).split('T')[1]}" data-native-picker></label></div><label class="custom-date" ${preset==='other'?'':'hidden'}><span class="sr-only">${title} date</span><input id="${prefix}-date" type="date" max="${today}" value="${date}" data-native-picker></label><div class="time-shortcuts"><button type="button" data-adjust="${prefix}:-5" aria-label="${title} five minutes earlier">${icon('minus')}5m</button><button type="button" data-adjust="${prefix}:5" aria-label="${title} five minutes later">${icon('plus')}5m</button><button type="button" data-now="${prefix}">Now</button><button type="button" data-ago="${prefix}:5">5m ago</button></div></fieldset>`;
   }
-  function saveEntry(){const p={id:editor.id||uuid(),childId:editor.childId,start:parseInput($('#start-time').value),end:$('#end-time')?.value?parseInput($('#end-time').value):null,expectedRev:editor.rev};if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))close();}
+  function entryTime(prefix){
+    const date=$('#'+prefix+'-date')?.value,time=$('#'+prefix+'-time')?.value;
+    if(!date||!time)return NaN;
+    const original=editor?.original?.[prefix];
+    return original&&inputTime(original)===`${date}T${time}`?original:parseInput(`${date}T${time}`);
+  }
+  function setEntryTime(prefix,at){
+    const date=dateKey(at),today=dateKey(Date.now());$('#'+prefix+'-date').value=date;$('#'+prefix+'-time').value=inputTime(at).split('T')[1];
+    const select=$(`[data-date-preset="${prefix}"]`);select.value=date===today?'today':date===shiftDate(today,-1)?'yesterday':'other';
+    $(`[data-time-field="${prefix}"] .custom-date`).hidden=select.value!=='other';updateTimePreview();
+  }
+  function updateTimePreview(){
+    if(!$('#time-preview'))return;
+    const start=entryTime('start'),end=editor.mode==='start'||$('#still-sleeping')?.checked?null:entryTime('end');
+    let error='';if(!Number.isFinite(start)||(!end&&end!==null))error='Choose a date and time.';
+    else if(start>Date.now()||end>Date.now())error='Choose a time in the past or now.';
+    else if(end!==null&&end<=start)error='End must be after start.';
+    $('#time-preview').textContent=error|| (end?`${duration(end-start)} sleep`:`Started ${duration(Date.now()-start)} ago`);
+    $('#time-preview').classList.toggle('time-invalid',Boolean(error));
+    $('[data-save-entry]').disabled=Boolean(error);
+  }
+  function pastDefaults(s){
+    const list=entries(s).sort((a,b)=>a.start-b.start),now=Date.now();let finish=now;
+    for(let i=list.length-1;i>=0;i--){const e=list[i];if(e.end&&finish-e.end>=5*60000)return {start:Math.max(e.end,finish-45*60000),end:finish};finish=e.start;}
+    return {start:finish-45*60000,end:finish};
+  }
+  function openEntry(id,mode){
+    const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
+    editor={id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null};
+    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Started',e?.start||defaults.start)}${e&&!e.end?'<label class="toggle">Still sleeping<input id="still-sleeping" type="checkbox" checked></label>':''}${mode==='start'?'':`<div id="end-fields" ${e&&!e.end?'hidden':''}>${timeField('end','Ended',e?.end||defaults.end||Date.now())}</div>`}<p id="time-preview" class="time-preview" role="status"></p>`,
+      `<button class="primary" data-save-entry>${mode==='start'?'Start sleep':'Save'}</button>${e?'<button class="danger text-link" data-delete-entry>Delete</button>':''}`);
+    updateTimePreview();
+  }
+  function saveEntry(){const p={id:editor.id||uuid(),childId:editor.childId,start:entryTime('start'),end:editor.mode==='start'||$('#still-sleeping')?.checked?null:entryTime('end'),expectedRev:editor.rev};if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))close();}
   function settings(){
     const s=projected();editor={settingsRevision:s.revision};
     modal('Settings',`<fieldset><legend>Color</legend><div class="swatches">${['original','night','berry','mint'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!HUCK_CONFIG.backendUrl?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
   }
   function hours(selected){return Array.from({length:24},(_,h)=>`<option value="${h}" ${Number(selected)===h?'selected':''}>${h%12||12}:00 ${h<12?'AM':'PM'}</option>`).join('');}
   function saveSettings(){const s=projected(),settings={...s.settings};for(const k of ['dayStart','nightStart','dayLimit','dayReplace','nightLimit','nightReplace'])settings[k]=Number($('#'+k).value);prefs.child=$('#child-select').value;prefs.motion=$('#motion').checked;persist();if(JSON.stringify(settings)!==JSON.stringify(s.settings)){if(!enqueue('settings',{settings,expectedRevision:editor.settingsRevision}))return;}close();render();}
-  function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/moon.png',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
+  function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
+    const native=event.target.closest('[data-native-picker]');if(native){try{native.showPicker?.();}catch{}}
     const t=event.target.closest('button,a');if(!t)return;
+    if(t.matches('[data-adjust]')){const [prefix,minutes]=t.dataset.adjust.split(':'),current=entryTime(prefix);setEntryTime(prefix,Math.min(Date.now(),(Number.isFinite(current)?current:Date.now())+Number(minutes)*60000));}
+    if(t.matches('[data-now]'))setEntryTime(t.dataset.now,Date.now());
+    if(t.matches('[data-ago]')){const [prefix,minutes]=t.dataset.ago.split(':');setEntryTime(prefix,Date.now()-Number(minutes)*60000);}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
     if(t.matches('[data-edit]'))openEntry(t.dataset.edit);
@@ -160,6 +196,18 @@
   });
   $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const b=e.target.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)close();}});
   $('#modal').addEventListener('close',()=>editor=null);
+  $('#modal').addEventListener('change',event=>{
+    const t=event.target;
+    if(t.matches('[data-date-preset]')){
+      const prefix=t.dataset.datePreset,date=$('#'+prefix+'-date'),custom=$(`[data-time-field="${prefix}"] .custom-date`);
+      custom.hidden=t.value!=='other';
+      if(t.value!=='other')date.value=shiftDate(dateKey(Date.now()),t.value==='yesterday'?-1:0);
+      else{date.focus({preventScroll:true});try{date.showPicker?.();}catch{}}
+    }
+    if(t.id==='still-sleeping'){$('#end-fields').hidden=t.checked;if(!t.checked)setEntryTime('end',Date.now());}
+    updateTimePreview();
+  });
+  $('#modal').addEventListener('input',updateTimePreview);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',sync);
