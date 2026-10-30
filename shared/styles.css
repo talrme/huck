@@ -15,7 +15,7 @@ body[data-theme=night]{--bg:#151a22;--paper:#202630;--ink:#edf3f2;--muted:#a5b5b
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .timer-seconds{display:block;font-size:16px;font-weight:550;line-height:20px;height:20px;color:var(--muted);font-variant-numeric:tabular-nums;margin:0 0 4px}
 .today-naps{margin-top:20px}
-.today-naps h2{font-size:14px;font-weight:650;color:var(--muted);margin-bottom:5px}
+.today-naps h2{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:10px}
 .nap-entry{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:11px 0;justify-content:flex-start;text-align:left;gap:10px}
 .nap-duration{display:grid;gap:2px;flex:0 0 auto}
 .nap-duration strong{font-size:18px;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
@@ -30,6 +30,7 @@ body[data-theme=night]{--bg:#151a22;--paper:#202630;--ink:#edf3f2;--muted:#a5b5b
 .day-column.is-today .sleep-block{border:2px solid var(--accent);font-weight:800}
 .day-column:not(.is-today) .sleep-block{background:color-mix(in srgb,var(--sleep) 65%,var(--paper));border-color:var(--line);font-weight:550}
 .day-column:not(.is-today) .sleep-block:hover{background:var(--soft)}
+@media(max-width:849px){body .current + .history{margin-top:36px;padding-top:24px;border-top:1px solid var(--line)}}
 .time-field{padding:0 0 17px;border-bottom:1px solid var(--line)}
 .time-field legend{font-size:13px;color:var(--muted);margin-bottom:10px}
 .end-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:650}

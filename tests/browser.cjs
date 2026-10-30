@@ -21,12 +21,14 @@ const now=Date.parse('2026-10-30T18:00:00Z');
    assert(await p.locator('#chart-scroll').evaluate(e=>e.scrollLeft+e.clientWidth>=e.scrollWidth-5));
    await p.screenshot({path:path.join(root,`previews/${i}.png`)});
    await p.locator('[data-start="5"]').click();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');assert.equal(await p.locator('#elapsed-main').innerText(),'5m');assert.equal(await p.locator('#elapsed-seconds').innerText(),'00s');
+   assert(await p.evaluate(()=>{const entries=HuckTest.getState().entries;const starts=[...document.querySelectorAll('.nap-entry')].map(row=>entries.find(e=>e.id===row.dataset.edit).start);return starts.every((s,i)=>!i||s>=starts[i-1]);}));
+   assert(await p.evaluate(()=>{const a=getComputedStyle(document.querySelector('#today-naps h2')),b=getComputedStyle(document.querySelector('.history h2'));return a.fontSize===b.fontSize&&a.fontWeight===b.fontWeight&&a.color===b.color;}));
    await p.clock.setFixedTime(now+1000);await p.waitForFunction(()=>document.querySelector('#elapsed-seconds')?.textContent==='01s');
    await p.screenshot({path:`/tmp/huck-live-seconds-${i}.png`});
    await p.reload();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
    await p.locator('[data-end="0"]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');assert.equal(await p.locator('#elapsed-seconds').count(),0);
-   await p.locator('.nap-entry').first().click();assert(await p.locator('#modal').isVisible());await p.locator('[data-save-entry]').click();assert(!(await p.locator('#modal').isVisible()));
-   await p.locator('.nap-entry').first().click();await p.locator('[data-delete-entry]').click();await p.locator('[data-confirm-delete]').click();assert(!(await p.locator('#modal').isVisible()));
+   await p.locator('.nap-entry').last().click();assert(await p.locator('#modal').isVisible());await p.locator('[data-save-entry]').click();assert(!(await p.locator('#modal').isVisible()));
+   await p.locator('.nap-entry').last().click();await p.locator('[data-delete-entry]').click();await p.locator('[data-confirm-delete]').click();assert(!(await p.locator('#modal').isVisible()));
    await p.locator('[data-settings]').click();
    for(const theme of ['night','berry','mint','original']){await p.locator(`[data-theme="${theme}"]`).click();assert.equal(await p.locator('body').getAttribute('data-theme'),theme);assert(await p.locator('[data-close]').isVisible());}
    await p.locator('[data-save-settings]').click();

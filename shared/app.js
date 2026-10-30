@@ -46,7 +46,7 @@
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
     $('#review').hidden=!queue.some(c=>c.blocked);
     const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(Date.now()), start=wallTime(today), end=wallTime(shiftDate(today,1));
-    const todaysNaps=list.filter(e=>e.start<end&&(e.end||Date.now())>start);
+    const todaysNaps=list.filter(e=>e.start<end&&(e.end||Date.now())>start).reverse();
     $('#today-naps').innerHTML=`<h2>Today’s naps</h2>${todaysNaps.length?todaysNaps.map(e=>`<button class="nap-entry" data-edit="${esc(e.id)}"><span class="nap-duration"><strong>${duration((e.end||Date.now())-e.start)}</strong>${!e.end?'<small>Sleeping</small>':e.autoEnded?'<small>Auto-ended</small>':''}</span><span class="nap-times">${clock(e.start)}–${e.end?clock(e.end):'now'}</span>${icon('pencil')}</button>`).join(''):'<p class="fine">No naps yet today.</p>'}`;
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
