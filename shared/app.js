@@ -124,7 +124,7 @@
   }
   function updateTimePreview(){
     if(!$('#time-preview'))return;
-    const start=entryTime('start'),end=editor.mode==='start'||$('#still-sleeping')?.checked?null:entryTime('end');
+    const start=entryTime('start'),end=editor.hasEnd?entryTime('end'):null;
     let error='';if(!Number.isFinite(start)||(!end&&end!==null))error='Choose a date and time.';
     else if(start>Date.now()||end>Date.now())error='Choose a time in the past or now.';
     else if(end!==null&&end<=start)error='End must be after start.';
@@ -139,12 +139,12 @@
   }
   function openEntry(id,mode){
     const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
-    editor={id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null};
-    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Started',e?.start||defaults.start)}${e&&!e.end?'<label class="toggle">Still sleeping<input id="still-sleeping" type="checkbox" checked></label>':''}${mode==='start'?'':`<div id="end-fields" ${e&&!e.end?'hidden':''}>${timeField('end','Ended',e?.end||defaults.end||Date.now())}</div>`}<p id="time-preview" class="time-preview" role="status"></p>`,
+    editor={id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:mode!=='start'&&Boolean(e?e.end:defaults.end)};
+    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Started',e?.start||defaults.start)}${mode==='start'?'':`<section ${e&&!e.end?'id="end-section"':''}>${e&&!e.end?'<div class="end-heading"><span>Ended</span><button class="text-link" data-toggle-end aria-expanded="false" aria-controls="end-fields">Set time</button></div>':''}<div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','Ended',e?.end||defaults.end||Date.now())}</div></section>`}<p id="time-preview" class="time-preview" role="status"></p>`,
       `<button class="primary" data-save-entry>${mode==='start'?'Start sleep':'Save'}</button>${e?'<button class="danger text-link" data-delete-entry>Delete</button>':''}`);
     updateTimePreview();
   }
-  function saveEntry(){const p={id:editor.id||uuid(),childId:editor.childId,start:entryTime('start'),end:editor.mode==='start'||$('#still-sleeping')?.checked?null:entryTime('end'),expectedRev:editor.rev};if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))close();}
+  function saveEntry(){const p={id:editor.id||uuid(),childId:editor.childId,start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null,expectedRev:editor.rev};if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))close();}
   function settings(){
     const s=projected();editor={settingsRevision:s.revision};
     modal('Settings',`<fieldset><legend>Color</legend><div class="swatches">${['original','night','berry','mint'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!HUCK_CONFIG.backendUrl?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
@@ -155,6 +155,7 @@
   document.addEventListener('click',event=>{
     const native=event.target.closest('[data-native-picker]');if(native){try{native.showPicker?.();}catch{}}
     const t=event.target.closest('button,a');if(!t)return;
+    if(t.matches('[data-toggle-end]')){editor.hasEnd=!editor.hasEnd;$('#end-fields').hidden=!editor.hasEnd;t.textContent=editor.hasEnd?'Clear':'Set time';t.setAttribute('aria-expanded',String(editor.hasEnd));if(editor.hasEnd)setEntryTime('end',Date.now());updateTimePreview();}
     if(t.matches('[data-adjust]')){const [prefix,minutes]=t.dataset.adjust.split(':'),current=entryTime(prefix);setEntryTime(prefix,Math.min(Date.now(),(Number.isFinite(current)?current:Date.now())+Number(minutes)*60000));}
     if(t.matches('[data-now]'))setEntryTime(t.dataset.now,Date.now());
     if(t.matches('[data-ago]')){const [prefix,minutes]=t.dataset.ago.split(':');setEntryTime(prefix,Date.now()-Number(minutes)*60000);}
@@ -204,7 +205,6 @@
       if(t.value!=='other')date.value=shiftDate(dateKey(Date.now()),t.value==='yesterday'?-1:0);
       else{date.focus({preventScroll:true});try{date.showPicker?.();}catch{}}
     }
-    if(t.id==='still-sleeping'){$('#end-fields').hidden=t.checked;if(!t.checked)setEntryTime('end',Date.now());}
     updateTimePreview();
   });
   $('#modal').addEventListener('input',updateTimePreview);
