@@ -4,10 +4,10 @@ const now=Date.parse('2026-10-30T18:00:00Z');
 (async()=>{
 const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
 try{
- for(let design=1;design<=10;design++){
+ for(const design of ['daybook','orbit','compact']){
   const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await context.newPage(),errors=[];
   p.on('pageerror',e=>errors.push(e.message));await p.clock.setFixedTime(now);
-  await p.goto(`http://127.0.0.1:5190/staging-${design}/?demo=1`);
+  await p.goto('http://127.0.0.1:5190/?demo=1');await p.locator('[data-settings]').click();await p.locator(`button[data-style="${design}"]`).click();await p.locator('[data-save-settings]').click();
   await p.locator('[data-custom-start]').click();
   assert.equal(await p.locator('#start-time').inputValue(),'10:55');
   assert.equal(await p.locator('[data-date-preset="start"]').inputValue(),'today');

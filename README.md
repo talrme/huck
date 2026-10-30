@@ -4,17 +4,17 @@
 
 **Repository:** https://github.com/talrme/huck
 
-Phone-first sleep tracking for Avi, with support for additional children. Ten staging apps share the same working engine and Google Sheets backend. No account is required to use the website.
+Phone-first sleep tracking for Avi, with support for additional children. The selected Daybook design is the main app. No account is required to use the website.
 
 ## Current connection
 
-Apps Script is deployed and permanently configured in config.js for all ten options. Its public snapshot was verified successfully with Avi, an empty sleep history, and the expected schedule settings. You do not need to configure anything on either phone. **Open tracker** uses shared real records; **Preview with samples** remains device-local and never calls the backend. Real write/cross-phone verification has not yet been performed against the household Sheet; automated write tests use a simulated backend.
+Apps Script is deployed and permanently configured in config.js for the app. Its public snapshot was verified successfully with Avi, an empty sleep history, and the expected schedule settings. You do not need to configure anything on either phone. The root app uses shared real records. Optional ?demo=1 uses a separate browser-only sample sandbox and never calls the backend. Real write/cross-phone verification has not yet been performed against the household Sheet; automated write tests use a simulated backend.
 
-## Try the designs
+## Use Huck
 
-Run `node tools/serve.cjs`, then open http://127.0.0.1:5190/ . Cursor Live Server can also serve `huck/` from Websites For Fun. There are ten staging directories, `staging-1` through `staging-10`. Each has the full timer, history, editing, settings, child management, and sharing functionality.
+Open the live link above, or run `node tools/serve.cjs` and open http://127.0.0.1:5190/ . Cursor Live Server can also serve `huck/` from Websites For Fun. All staging folders, the chooser and preview images have been removed.
 
-The chooser's **Preview with samples** links explicitly enable `?demo=1`. Sample history is fictional, stays in a separate browser-storage key, and is NEVER uploaded. **Open tracker** starts with an empty real tracker. Before the backend is connected, real records save only on that browser; cross-phone syncing is not available yet. Do not clear browser data while relying on local-only records.
+Settings offers independent Style (Daybook, Orbit, Compact) and Color theme (original periwinkle, Night, Berry, Mint) choices. They apply immediately, persist on this device, and do not affect sleep data. Fresh devices default to Daybook. Existing device color preferences and saved records are preserved. For explicitly fictional sample data only, open ?demo=1; samples remain separate and are never uploaded.
 
 ## Connect your Google Sheet, step by step
 
@@ -33,15 +33,15 @@ Your Sheet: https://docs.google.com/spreadsheets/d/1y7s7IP4Un91hPcqQMFYW6NAZ_S6c
 11. Set **Description** to `Huck v1`, **Execute as** to **Me**, and **Who has access** to **Anyone** (not “Anyone with a Google account”). This exposes the app endpoint, not the spreadsheet itself.
 12. Click **Deploy** and finish any authorization prompts. Deployment makes this saved version callable by the website.
 13. Under **Web app**, copy the full URL ending in `/exec`. Send that URL to me. Do not send the deployment ID or the `/dev` test URL instead.
-14. I will put the URL permanently in `config.js`, verify read/write sync using disposable test records with your approval, and connect all ten staging apps. Neither phone needs to paste any configuration.
+14. I will put the URL permanently in `config.js`, verify read/write sync using disposable test records with your approval, and connect the app. Neither phone needs to paste any configuration.
 
 After deployment, the Sheet can remain private. Anyone who knows the endpoint can read/change these shared records: this is a simple family tool, not an authenticated private medical record system. Avoid putting sensitive personal details in it or distributing the URL broadly.
 
 ## What still needs to happen
 
-- Apps Script deployment and permanent URL configuration are complete. Reload an Open tracker page to connect; no configuration is needed on individual phones.
-- GitHub repository: https://github.com/talrme/huck . In its Settings → Pages, choose Deploy from a branch, main, / (root), and Save. The root page is the ten-design chooser. The website will appear at the live link above after GitHub finishes deploying.
-- After a design is selected, promote it and remove the other staging designs. Install the selected app on both phones, rather than installing the design chooser.
+- Apps Script deployment and permanent URL configuration are complete. Reload Huck to connect; no configuration is needed on individual phones.
+- GitHub repository: https://github.com/talrme/huck . In its Settings → Pages, choose Deploy from a branch, main, / (root), and Save. The root page is the selected Daybook app. The website will appear at the live link above after GitHub finishes deploying.
+- Install the main root app on both phones. Old staging links are retired; use the root live link. No new Apps Script deployment is needed for this promotion.
 
 ## Tracking and cleanup
 
@@ -62,7 +62,7 @@ Check immediately on opening, refresh, foreground return, and reconnection; poll
 
 Edits update the screen immediately and enter a durable browser-local outbox before networking. They retry on reconnect/reopen. Backend script locks serialize commands; unique request IDs make retries idempotent. Entry revisions reject stale edits, concurrent starts cannot create two active timers, and overlapping sleeps are rejected. Conflicting changes stay marked for review, rather than silently replacing another phone's work. Discard the conflicting pending change to use the shared record and retry your edit.
 
-Shared: children, sleeps, schedule/cleanup rules. Device-local: theme, motion, selected child. Staging samples never sync. The app loads no data or pages through a service-worker cache. JSONP is used for Apps Script compatibility with a static website.
+Shared: children, sleeps, schedule/cleanup rules. Device-local: color theme, layout style, motion, selected child. Sample mode never syncs. The app loads no data or pages through a service-worker cache. JSONP is used for Apps Script compatibility with a static website.
 
 If you saved real records before connecting the backend, the original local state is backed up automatically in this browser. Settings → Earlier local records lets you import them explicitly or download the JSON backup. Imports validate for overlaps before queuing anything, skip existing IDs, and keep the backup. They never include demo records. Already synced records remain authoritative until you choose to import.
 
@@ -72,9 +72,9 @@ Appearance and ordinary frontend changes do not require redeployment. Backend ac
 
 ## Development and tests
 
-`node tools/build.mjs` regenerates staging HTML, chooser, manifests, and backend.sample.gs. Edit the shared files and generator, not generated staging HTML.
+`node tools/build.mjs` copies tools/page.html to the production index.html and regenerates the root manifest and backend.sample.gs. Edit tools/page.html and shared files, not generated index.html. It never recreates staging folders.
 
-`node tests/core.test.cjs` checks data rules without dependencies. `node tests/browser.cjs` uses Playwright and Chrome to test all ten phone layouts, desktop layouts, settings, sleep editing, samples, chart scrolling, and multi-device sync through a simulated backend. Tests do not access your real Sheet. Screenshots are generated into `previews/` and a temporary test directory.
+`node tests/core.test.cjs` checks data rules without dependencies. `node tests/browser.cjs` uses Playwright and Chrome to test all three styles on phones and desktop, settings, sleep editing, samples, chart scrolling, and multi-device sync through a simulated backend. Tests do not access your real Sheet. Screenshots are generated into a temporary test directory, not committed previews.
 
 Assets: moon and sun artwork from Twitter Twemoji, CC BY 4.0, https://github.com/twitter/twemoji . Icons: Lucide, ISC license included in shared/LUCIDE-LICENSE.
 

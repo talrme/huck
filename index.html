@@ -1,1 +1,53 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Huck · Pick a direction</title><link rel="icon" href="shared/favicon.png?v=20261030-pacifier"><style>*{box-sizing:border-box}body{margin:0;background:#f4f7f6;color:#23382f;font:15px system-ui}main{max-width:1000px;margin:auto;padding:32px 20px}header{display:flex;align-items:center;gap:14px}header img{width:52px;height:52px}h1{margin:0;font-size:38px}p{color:#63756a}section{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-top:25px}article{background:#fff;border:1px solid #d8e4dc;border-radius:8px;overflow:hidden}article>img{width:100%;aspect-ratio:390/500;object-fit:cover;object-position:top;background:#e8efea}article>div{padding:16px}h2{font-size:18px;margin:0}article p{font-size:13px;min-height:40px}a{color:#26765d;font-weight:650;display:inline-block;margin-right:16px;padding:8px 0}small{display:block;color:#68796e;font-size:12px}.notice{padding:12px 16px;background:#fff0c9;border-radius:6px;color:#684911}footer{margin-top:24px}</style></head><body><main><header><img src="shared/app-icon.png?v=20261030-pacifier" alt=""><div><h1>Huck</h1><p>Ten directions. One shared sleep tracker.</p></div></header><p class="notice">Sheet connection pending. Preview links use clearly labeled sample history, saved only on this browser.</p><section><article><img src="previews/1.png" alt="Little Hours phone preview" loading="lazy"><div><h2>1. Little Hours</h2><p>Quiet green, balanced timer and history</p><a href="staging-1/?demo=1">Preview with samples</a><a href="staging-1/">Open tracker</a></div></article><article><img src="previews/2.png" alt="Moonroom phone preview" loading="lazy"><div><h2>2. Moonroom</h2><p>Soft lilac, moon-led and bookish</p><a href="staging-2/?demo=1">Preview with samples</a><a href="staging-2/">Open tracker</a></div></article><article><img src="previews/3.png" alt="Clear Day phone preview" loading="lazy"><div><h2>3. Clear Day</h2><p>Monochrome, crisp and typographic</p><a href="staging-3/?demo=1">Preview with samples</a><a href="staging-3/">Open tracker</a></div></article><article><img src="previews/4.png" alt="Tidepool phone preview" loading="lazy"><div><h2>4. Tidepool</h2><p>Airy blue, chunky blocks and quick stats</p><a href="staging-4/?demo=1">Preview with samples</a><a href="staging-4/">Open tracker</a></div></article><article><img src="previews/5.png" alt="Field Journal phone preview" loading="lazy"><div><h2>5. Field Journal</h2><p>Paper journal, serif numerals and fine rules</p><a href="staging-5/?demo=1">Preview with samples</a><a href="staging-5/">Open tracker</a></div></article><article><img src="previews/6.png" alt="Playdate phone preview" loading="lazy"><div><h2>6. Playdate</h2><p>Bold pink, playful outlines and offset shadows</p><a href="staging-6/?demo=1">Preview with samples</a><a href="staging-6/">Open tracker</a></div></article><article><img src="previews/7.png" alt="Night Console phone preview" loading="lazy"><div><h2>7. Night Console</h2><p>Dark instrument panel, precise and compact</p><a href="staging-7/?demo=1">Preview with samples</a><a href="staging-7/">Open tracker</a></div></article><article><img src="previews/8.png" alt="Orbit phone preview" loading="lazy"><div><h2>8. Orbit</h2><p>Circular timer, soft plum and centered controls</p><a href="staging-8/?demo=1">Preview with samples</a><a href="staging-8/">Open tracker</a></div></article><article><img src="previews/9.png" alt="Pocket phone preview" loading="lazy"><div><h2>9. Pocket</h2><p>Split compact console, history arrives sooner</p><a href="staging-9/?demo=1">Preview with samples</a><a href="staging-9/">Open tracker</a></div></article><article><img src="previews/10.png" alt="Daybook phone preview" loading="lazy"><div><h2>10. Daybook</h2><p>Left-aligned daybook, periwinkle and clean rails</p><a href="staging-10/?demo=1">Preview with samples</a><a href="staging-10/">Open tracker</a></div></article></section><footer><small>No sample records are written to your Google Sheet. All ten designs share one backend once connected.</small><a href="README.md">Setup instructions</a></footer></main><script src="config.js"></script><script>if(window.HUCK_CONFIG.backendUrl){const notice=document.querySelector('.notice');notice.textContent='Sheet connected. Preview links use sample history only. Open tracker uses your shared real records.';notice.style.background='#e1f0e8';notice.style.color='#23382f';}</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Huck</title>
+  <meta name="theme-color" content="#596cc1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" href="shared/favicon.png?v=20261030-pacifier" type="image/png">
+  <link rel="apple-touch-icon" href="shared/apple-touch-icon.png?v=20261030-pacifier">
+  <link rel="manifest" href="manifest.webmanifest?v=20261030-main">
+  <link rel="stylesheet" href="shared/styles.css?v=20261030-main">
+  <link rel="stylesheet" href="shared/themes.css?v=20261030-main">
+</head>
+<body data-style="daybook">
+  <main>
+    <header class="topbar">
+      <div class="identity"><img class="brand-icon" src="shared/app-icon.png?v=20261030-pacifier" alt=""><div><h1>Huck</h1><span class="child-name" id="child-name">Avi</span></div></div>
+      <button class="top-add" data-add aria-label="Add past sleep" title="Add past sleep"><i data-lucide="plus"></i></button>
+    </header>
+    <p class="sample-note" id="sample-note" hidden>Sample data · only on this browser · never sent to the Sheet</p>
+    <section class="current" aria-label="Current sleep">
+      <div class="timer" id="timer">
+        <div class="readout">
+          <div class="timer-heading"><span class="status-dot"></span><span id="timer-status">Awake</span></div>
+          <img id="timer-art" class="timer-art" src="shared/sun.png" alt="">
+          <div id="elapsed" class="elapsed">—</div>
+          <div id="timer-detail" class="timer-detail"></div>
+        </div>
+        <div id="actions" class="actions"></div>
+      </div>
+      <section id="today-naps" class="today-naps" aria-label="Today’s naps"></section>
+    </section>
+    <section class="history" aria-label="Sleep history">
+      <header class="history-heading"><div><h2>Sleep history</h2><small id="chart-date"></small></div><button class="text-link" data-today>Today <i data-lucide="arrow-right"></i></button></header>
+      <div class="chart-shell"><div class="time-axis" id="time-axis" aria-hidden="true"></div><div class="chart-scroll" id="chart-scroll" tabindex="0" aria-label="Sleep timeline; scroll for older days"><div class="chart-days" id="chart-days"></div></div></div>
+      <div class="history-tools"><button class="text-link" data-older><i data-lucide="arrow-left"></i> Older days</button><span class="night-key">Nighttime</span></div>
+    </section>
+    <footer class="footer"><button data-settings><i data-lucide="settings"></i>Settings</button><button data-share><i data-lucide="share-2"></i>Save / Share</button></footer>
+    <p class="connection" id="connection" role="status"></p>
+    <button id="review" class="review text-link" data-review hidden>Review sync issue</button>
+  </main>
+  <dialog id="modal" aria-labelledby="modal-title">
+    <header class="modal-head"><h2 id="modal-title"></h2><button class="close" data-close aria-label="Close"><i data-lucide="x"></i></button></header>
+    <div class="modal-body" id="modal-body"></div><footer class="modal-footer" id="modal-footer"></footer>
+  </dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script src="config.js"></script>
+  <script src="shared/lucide.min.js"></script>
+  <script src="shared/core.js"></script>
+  <script src="shared/app.js?v=20261030-main"></script>
+</body>
+</html>
