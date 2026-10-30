@@ -60,6 +60,7 @@
     renderChart(s);tick();icons();persist();
   }
   function tick(){
+    if(editor?.kind==='entry')updateNowButtons();
     const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end),elapsed=$('#elapsed');
     elapsed.setAttribute('role','timer');elapsed.setAttribute('aria-live','off');
     if(r){
@@ -145,7 +146,7 @@
   const close=()=>editor?.kind==='entry'?saveEntry(true):$('#modal').close();
   function timeField(prefix,title,at){
     const date=dateKey(at),today=dateKey(Date.now()),yesterday=shiftDate(today,-1),preset=date===today?'today':date===yesterday?'yesterday':'other';
-    return `<fieldset class="time-field" data-time-field="${prefix}"><legend>${title}</legend><div class="time-inputs"><label><span class="sr-only">${title} day</span><select data-date-preset="${prefix}"><option value="today" ${preset==='today'?'selected':''}>Today</option><option value="yesterday" ${preset==='yesterday'?'selected':''}>Yesterday</option><option value="other" ${preset==='other'?'selected':''}>Choose date…</option></select></label><label><span class="sr-only">${title} time</span><input id="${prefix}-time" type="time" step="60" required value="${inputTime(at).split('T')[1]}" data-native-picker></label></div><label class="custom-date" ${preset==='other'?'':'hidden'}><span class="sr-only">${title} date</span><input id="${prefix}-date" type="date" max="${today}" value="${date}" data-native-picker></label><div class="time-shortcuts"><button type="button" data-adjust="${prefix}:-5" aria-label="${title} five minutes earlier">${icon('minus')}5m</button><button type="button" data-adjust="${prefix}:5" aria-label="${title} five minutes later">${icon('plus')}5m</button><button type="button" data-now="${prefix}">Now</button><button type="button" data-ago="${prefix}:5">5m ago</button></div></fieldset>`;
+    return `<fieldset class="time-field" data-time-field="${prefix}"><legend>${title}</legend><div class="time-inputs"><label><span class="sr-only">${title} day</span><select data-date-preset="${prefix}"><option value="today" ${preset==='today'?'selected':''}>Today</option><option value="yesterday" ${preset==='yesterday'?'selected':''}>Yesterday</option><option value="other" ${preset==='other'?'selected':''}>Choose date…</option></select></label><label><span class="sr-only">${title} time</span><input id="${prefix}-time" type="time" step="60" required value="${inputTime(at).split('T')[1]}" data-native-picker></label><button type="button" class="text-link time-now" data-now="${prefix}" aria-label="${title}: set to now">Now</button></div><label class="custom-date" ${preset==='other'?'':'hidden'}><span class="sr-only">${title} date</span><input id="${prefix}-date" type="date" max="${today}" value="${date}" data-native-picker></label><div class="time-shortcuts"><button type="button" data-adjust="${prefix}:-5" aria-label="${title} five minutes earlier">${icon('minus')}5m</button><button type="button" data-adjust="${prefix}:5" aria-label="${title} five minutes later">${icon('plus')}5m</button><button type="button" data-ago="${prefix}:5">5m ago</button></div></fieldset>`;
   }
   function entryTime(prefix){
     const date=$('#'+prefix+'-date')?.value,time=$('#'+prefix+'-time')?.value;
@@ -158,8 +159,15 @@
     const select=$(`[data-date-preset="${prefix}"]`);select.value=date===today?'today':date===shiftDate(today,-1)?'yesterday':'other';
     $(`[data-time-field="${prefix}"] .custom-date`).hidden=select.value!=='other';updateTimePreview();
   }
+  function updateNowButtons(){
+    document.querySelectorAll('[data-now]').forEach(button=>{
+      const prefix=button.dataset.now,current=$('#'+prefix+'-date')?.value+'T'+$('#'+prefix+'-time')?.value===inputTime(Date.now());
+      button.classList.toggle('is-current',current);button.disabled=current;button.setAttribute('aria-hidden',String(current));
+    });
+  }
   function updateTimePreview(){
     if(!$('#time-preview'))return;
+    updateNowButtons();
     const start=entryTime('start'),end=editor.hasEnd?entryTime('end'):null;
     let error='';if(!Number.isFinite(start)||(!end&&end!==null))error='Choose a date and time.';
     else if(start>Date.now()||end>Date.now())error='Choose a time in the past or now.';

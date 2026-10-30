@@ -63,10 +63,13 @@ body[data-theme=night] .wake-window[data-phase=past]{--wake-color:#e8a9b7}
 .end-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin-bottom:8px;color:var(--muted);font-size:13px;font-weight:650}
 .end-heading button{min-height:44px;padding:4px 8px}
 #end-section .time-field legend{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
-.time-inputs{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:8px}
+.time-inputs{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) 32px;gap:6px;align-items:center}
+.time-inputs label{min-width:0}
+.time-inputs .time-now{font-size:11px;min-height:44px;padding:0;justify-self:center}
+.time-now.is-current{visibility:hidden;pointer-events:none}
 .time-inputs input,.time-inputs select{padding-left:8px;padding-right:6px}
 .time-inputs input,.time-inputs select,.custom-date input{font-size:16px;min-height:50px;max-width:100%;cursor:pointer}
-.time-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin-top:10px}
+.time-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin-top:10px}
 .time-shortcuts button{min-width:0;min-height:44px;font-size:12px;padding:7px 2px;gap:2px;background:transparent;font-weight:600}
 .time-shortcuts svg{width:13px;height:13px}
 .custom-date{margin-top:10px}

@@ -15,6 +15,9 @@ try{
   assert((await p.locator('#time-preview').innerText()).includes('5m'));
   await p.locator('[data-adjust="start:-5"]').click();assert.equal(await p.locator('#start-time').inputValue(),'10:50');
   await p.locator('[data-now="start"]').click();assert.equal(await p.locator('#start-time').inputValue(),'11:00');
+  assert(!(await p.locator('[data-now="start"]').isVisible()));assert.equal(await p.locator('.time-inputs [data-now="start"]').count(),1);
+  await p.locator('#start-time').fill('10:59');assert(await p.locator('[data-now="start"]').isVisible());
+  await p.locator('[data-now="start"]').click();assert(!(await p.locator('[data-now="start"]').isVisible()));
   await p.locator('[data-ago="start:5"]').click();assert.equal(await p.locator('#start-time').inputValue(),'10:55');
   await p.locator('[data-date-preset="start"]').selectOption('yesterday');assert.equal(await p.locator('#start-date').inputValue(),'2026-10-29');
   await p.locator('[data-date-preset="start"]').selectOption('today');
