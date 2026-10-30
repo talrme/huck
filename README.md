@@ -56,6 +56,14 @@ After deployment, the Sheet can remain private. Anyone who knows the endpoint ca
 - With Sheets connected, automatic cleanup is persisted during the next server request, even if the app was closed at the cutoff. No background job or notification is required. Local/sample mode derives the same correction on reopening.
 - Child archive preserves history and supports restoration. At least one child stays active; end an active sleep before archiving its child.
 
+## Wake-window guide
+
+While awake, the detail shows the last nap's duration rather than repeating its end time. Settings → Wake-window settings lets you enter each child's birthday, use age defaults, or set a custom minimum/maximum in minutes. No birthday is assumed for Avi. Birthdays and custom ranges sync through the existing backend; Show wake-window info is an immediate, device-local toggle. No Apps Script redeployment is needed.
+
+Cues move from Recently awake to Within usual nap range to Beyond usual range. These are approximate ranges, not deadlines or instructions to keep a baby awake. Follow sleepy and hunger cues. Nighttime uses neutral wording rather than daytime urgency. The guide links to [Cleveland Clinic's wake-window guidance](https://health.clevelandclinic.org/wake-windows-by-age) and [AAP infant sleep information](https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx). Defaults use completed-month bands: under 1 month 30–60 minutes; 1–2 months 60–120; 3–4 months 75–150; 5–6 months 120–240; 7–9 months 150–270; 10–11 months 180–360. From 12 months, use a custom range. For premature babies or individual concerns, ask your pediatrician which timing to use.
+
+Auto-ended records show an estimated wake time without a colored range judgment. Missing, invalid, or stale wake times show a dash and neutral explanation. Stale means at least three hours or twice the selected upper range, whichever is longer (six hours without a range). This is only a missing-log heuristic, not a clinical threshold; unrecorded naps cannot reliably be detected.
+
 ## Sync behavior
 
 Check immediately on opening, refresh, foreground return, and reconnection; poll every 15 seconds while visible, including for active naps, and pause when hidden. Timer display itself updates each second locally without network calls.

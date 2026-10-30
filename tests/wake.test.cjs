@@ -1,0 +1,20 @@
+const assert=require('node:assert/strict'),W=require('../shared/wake.js');
+const today='2026-10-30',now=Date.parse('2026-10-30T18:00:00Z');
+assert.equal(W.age('2026-09-18',today).weeks,6);assert.equal(W.age('2026-09-18',today).months,1);
+assert.equal(W.age('2026-11-01',today),null);assert.equal(W.age('2026-02-30',today),null);assert.equal(W.age('',today),null);
+assert.equal(W.age('2026-01-31','2026-02-28').months,1);
+const profile={birthday:'2026-09-18',mode:'auto'};assert.equal(W.range(profile,today).min,60);assert.equal(W.range(profile,today).max,120);
+function last(minutes,extra={}){return {start:now-(minutes+45)*60000,end:now-minutes*60000,...extra};}
+assert.equal(W.assess(last(30),profile,now,today).phase,'early');
+assert.equal(W.assess(last(90),profile,now,today).phase,'range');
+assert.equal(W.assess(last(130),profile,now,today).phase,'past');
+assert.equal(W.assess(last(240),profile,now,today).quality,'stale');
+assert.equal(W.assess(last(30,{autoEnded:true}),profile,now,today).quality,'estimated');
+assert.equal(W.assess(null,profile,now,today).quality,'unknown');
+assert.equal(W.assess(last(-1),profile,now,today).quality,'unknown');
+assert.equal(W.assess(last(90),profile,now,today,true).phase,'night');
+assert.equal(W.assess(last(30),{},now,today).phase,'unconfigured');
+assert.equal(W.range({birthday:'2024-01-01'},today),null);
+assert.equal(W.range({mode:'custom',min:40,max:70},today).max,70);
+assert.equal(W.range({mode:'custom',min:80,max:70},today),null);
+console.log('PASS wake logic: six-week age, calendar boundaries, invalid/future birthdays, ranges, early/within/past, stale and auto-ended data, night suppression, custom ranges');

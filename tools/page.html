@@ -9,7 +9,7 @@
   <link rel="icon" href="shared/favicon.png?v=20261030-pacifier" type="image/png">
   <link rel="apple-touch-icon" href="shared/apple-touch-icon.png?v=20261030-pacifier">
   <link rel="manifest" href="manifest.webmanifest?v=20261030-main">
-  <link rel="stylesheet" href="shared/styles.css?v=20261030-end-controls">
+  <link rel="stylesheet" href="shared/styles.css?v=20261030-wake-windows">
   <link rel="stylesheet" href="shared/themes.css?v=20261030-section-break">
 </head>
 <body data-style="daybook">
@@ -27,6 +27,7 @@
           <div id="elapsed" class="elapsed">—</div>
           <div id="timer-detail" class="timer-detail"></div>
         </div>
+        <div id="wake-window" class="wake-window" hidden></div>
         <div id="actions" class="actions"></div>
       </div>
       <section id="today-naps" class="today-naps" aria-label="Today’s naps"></section>
@@ -48,6 +49,7 @@
   <script src="config.js"></script>
   <script src="shared/lucide.min.js"></script>
   <script src="shared/core.js"></script>
-  <script src="shared/app.js?v=20261030-end-controls"></script>
+  <script src="shared/wake.js?v=20261030-wake-windows"></script>
+  <script src="shared/app.js?v=20261030-wake-windows"></script>
 </body>
 </html>

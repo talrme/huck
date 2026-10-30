@@ -13,10 +13,13 @@ body[data-style=orbit] .timer-art{width:38px;height:38px;margin:0}
 body[data-style=orbit] .elapsed{font-size:43px}
 body[data-style=orbit] .timer-heading,body[data-style=orbit] .timer-detail{font-size:12px}
 body[data-style=compact] .timer{border:0;border-left:3px solid var(--accent);border-radius:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);text-align:left;gap:12px;padding:14px 10px;background:var(--paper)}
+body[data-style=compact] .timer{grid-template-areas:"readout actions" "wake wake"}
+body[data-style=compact] .readout{grid-area:readout}
+body[data-style=compact] .wake-window{grid-area:wake;margin-top:0}
 body[data-style=compact] .timer-heading{justify-content:flex-start}
 body[data-style=compact] .elapsed{font-size:36px}
 body[data-style=compact] .timer-art{width:30px;height:30px}
-body[data-style=compact] .actions{margin:0;align-content:center;width:100%}
+body[data-style=compact] .actions{grid-area:actions;margin:0;align-content:center;width:100%}
 body[data-style=compact] .quick-row{flex-wrap:wrap}
 body[data-style=compact] .quick-row button{flex:1 0 45%}
 .style-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}

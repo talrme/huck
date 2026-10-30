@@ -8,7 +8,7 @@
   if(!demo && HUCK_CONFIG.backendUrl && saved.localOnly && saved.base?.entries?.length) {
     localStorage.setItem('huck-local-backup-v1', JSON.stringify(saved.base));
   }
-  let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', motion: true, ...saved.prefs };
+  let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
   let busy = false, message = '', lastChecked = 0, editor = null, days = 7, rendered = false;
   const uuid = () => crypto.randomUUID();
@@ -51,7 +51,8 @@
     $('#today-naps').innerHTML=`<h2>Today’s naps</h2>${todaysNaps.length?todaysNaps.map(e=>`<button class="nap-entry" data-edit="${esc(e.id)}"><span class="nap-duration"><strong>${duration((e.end||Date.now())-e.start)}</strong>${!e.end?'<small>Sleeping</small>':e.autoEnded?'<small>Auto-ended</small>':''}</span><span class="nap-times">${clock(e.start)}–${e.end?clock(e.end):'now'}</span>${icon('pencil')}</button>`).join(''):'<p class="fine">No naps yet today.</p>'}`;
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
-    $('#timer-detail').innerHTML=running?`Started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`Last woke at ${clock(last.end)}`:'Ready for the first sleep';
+    const lastLabel=last&&C.isNight(last.start,s.settings)?'Last sleep':'Last nap';
+    $('#timer-detail').innerHTML=running?`Started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${duration(last.end-last.start)}</button>${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
     $('#timer-art').src=new URL(running?'shared/moon.png':'shared/sun.png',root);
     $('#timer-art').alt='';
     const endLabel=C.isNight(Date.now(),s.settings)?'End sleep':'End nap';
@@ -68,9 +69,25 @@
       $('#elapsed-seconds').textContent=String(seconds).padStart(2,'0')+'s';
       elapsed.setAttribute('aria-label',`${duration(ms)} ${seconds} seconds asleep`);
     }else{
-      elapsed.textContent=last?duration(Date.now()-last.end):'—';
+      const info=wakeState(s,last);
+      elapsed.textContent=info.quality==='unknown'||info.quality==='stale'?'—':(info.quality==='estimated'?'~':'')+duration(info.elapsed);
+      $('#timer-status').textContent=info.quality==='unknown'||info.quality==='stale'?'Wake time unknown':info.quality==='estimated'?'Awake · estimated':'Awake';
       elapsed.removeAttribute('aria-label');
     }
+    renderWakeCue(s,r,last);
+  }
+  function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],Date.now(),dateKey(Date.now()),C.isNight(Date.now(),s.settings));}
+  function renderWakeCue(s,running,last){
+    const box=$('#wake-window');box.hidden=Boolean(running)||!prefs.wakeInfo;if(box.hidden)return;
+    const info=wakeState(s,last),range=info.window;
+    const detail=info.quality==='stale'?'Last wake-up may be missing':info.quality==='unknown'?'Log sleep to start a wake timer':info.quality==='estimated'?'Last sleep was auto-ended':info.phase==='night'?'Follow baby’s cues':range?`${duration(range.min*60000)}–${duration(range.max*60000)} · approximate`:'Optional age-based guide';
+    box.dataset.phase=info.phase;
+    const markup=`<button class="wake-info" data-wake-details><span class="wake-caption"><span class="wake-dot" aria-hidden="true"></span><span>${esc(info.label)}</span>${icon('circle-help')}</span><small>${esc(detail)}</small></button>${['early','range','past'].includes(info.phase)?`<div class="wake-meter" role="meter" aria-label="Recorded awake time compared with the approximate upper range" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${info.percent}"><span style="width:${info.percent}%"></span></div>`:''}`;
+    if(box._markup!==markup){box._markup=markup;box.innerHTML=markup;icons();}
+  }
+  function wakeDetails(){
+    const s=projected(),info=wakeState(s,entries(s).find(e=>e.end));
+    modal('Wake-window guide',`<p class="callout">Broad ranges, not deadlines. Follow sleepy and hunger cues; don’t keep baby awake to reach a number.</p>${info.age?`<p>${esc(child(s).name)} · ${esc(info.age.label)}${info.window?` · ${duration(info.window.min*60000)}–${duration(info.window.max*60000)}`:''}</p>`:'<p>Add a birthday in Settings for an age-based starting point, or choose a custom range.</p>'}<p class="fine">Based on the last recorded sleep, not a prediction. Missing entries and auto-ended timers make wake time uncertain. For premature babies or individual sleep concerns, ask your pediatrician which timing to use.</p><table class="wake-ranges"><thead><tr><th>Age</th><th>Approximate range</th></tr></thead><tbody>${HuckWake.ranges.map(r=>`<tr><td>${r.label}</td><td>${duration(r.min*60000)}–${duration(r.max*60000)}</td></tr>`).join('')}</tbody></table><a href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Source: Cleveland Clinic</a><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx" target="_blank" rel="noreferrer">AAP: infant sleep guidance</a>`, '<button class="primary" data-settings>Settings</button>');editor=null;
   }
   function renderChart(s){
     const scroller=$('#chart-scroll'), previous=scroller.scrollLeft, atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
@@ -117,6 +134,11 @@
     $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML=footer;
     if(title==='Settings'&&!demo&&HUCK_CONFIG.backendUrl&&localStorage.getItem('huck-local-backup-v1')){
       $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
+    }
+    if(title==='Settings'){
+      editor.wakeChild=$('#child-select').value;editor.wakeDrafts={};
+      $('#child-select').closest('label').insertAdjacentHTML('afterend',`<section class="wake-settings"><label class="toggle">Show wake-window info<input id="show-wake-info" type="checkbox" ${prefs.wakeInfo?'checked':''}></label><details><summary>Wake-window settings</summary><div id="wake-fields"></div></details></section>`);
+      renderWakeFields();
     }
     $('#modal').showModal();icons();
   }
@@ -171,7 +193,29 @@
     modal('Settings',`<fieldset><legend>Style</legend><div class="style-options">${[['daybook','Daybook','notebook-pen'],['orbit','Orbit','circle'],['compact','Compact','columns-2']].map(([id,label,glyph])=>`<button class="style-option" data-style="${id}" aria-pressed="${prefs.style===id}">${icon(glyph)}<span>${label}</span></button>`).join('')}</div></fieldset><fieldset><legend>Color theme</legend><div class="swatches">${['original','night','berry','mint'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!HUCK_CONFIG.backendUrl?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
   }
   function hours(selected){return Array.from({length:24},(_,h)=>`<option value="${h}" ${Number(selected)===h?'selected':''}>${h%12||12}:00 ${h<12?'AM':'PM'}</option>`).join('');}
-  function saveSettings(){const s=projected(),settings={...s.settings};for(const k of ['dayStart','nightStart','dayLimit','dayReplace','nightLimit','nightReplace'])settings[k]=Number($('#'+k).value);prefs.child=$('#child-select').value;prefs.motion=$('#motion').checked;persist();if(JSON.stringify(settings)!==JSON.stringify(s.settings)){if(!enqueue('settings',{settings,expectedRevision:editor.settingsRevision}))return;}close();render();}
+  function wakeProfile(s,id){const p=s.settings.wakeProfiles?.[id]||{};return {birthday:typeof p.birthday==='string'?p.birthday:'',mode:p.mode==='custom'?'custom':'auto',...(p.mode==='custom'?{min:Number(p.min),max:Number(p.max)}:{})};}
+  function captureWakeDraft(){if(!$('#wake-birthday'))return;editor.wakeDrafts[editor.wakeChild]={birthday:$('#wake-birthday').value,mode:$('#wake-mode').value,...($('#wake-mode').value==='custom'?{min:Number($('#wake-min').value),max:Number($('#wake-max').value)}:{})};}
+  function renderWakeFields(){
+    const s=projected(),p=editor.wakeDrafts[editor.wakeChild]||wakeProfile(s,editor.wakeChild),range=HuckWake.range(p,dateKey(Date.now()));
+    $('#wake-fields').innerHTML=`<label>Birthday<input id="wake-birthday" type="date" data-native-picker max="${dateKey(Date.now())}" value="${esc(p.birthday)}"></label><label>Wake range<select id="wake-mode"><option value="auto" ${p.mode==='auto'?'selected':''}>Age defaults</option><option value="custom" ${p.mode==='custom'?'selected':''}>Custom range</option></select></label><div id="wake-custom" class="field-grid" ${p.mode==='custom'?'':'hidden'}><label>Minimum (minutes)<input id="wake-min" type="number" min="5" max="720" value="${p.min||range?.min||60}"></label><label>Maximum (minutes)<input id="wake-max" type="number" min="5" max="720" value="${p.max||range?.max||120}"></label></div><p id="wake-profile-preview" class="fine"></p><p class="fine">Approximate cues, not deadlines. Follow baby’s sleepy and hunger cues.</p><a class="text-link" href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Age ranges & source</a>`;
+    updateWakeProfilePreview();
+  }
+  function updateWakeProfilePreview(){
+    if(!$('#wake-birthday'))return;
+    const p={birthday:$('#wake-birthday').value,mode:$('#wake-mode').value,min:Number($('#wake-min').value),max:Number($('#wake-max').value)},a=HuckWake.age(p.birthday,dateKey(Date.now())),r=HuckWake.range(p,dateKey(Date.now()));
+    $('#wake-profile-preview').textContent=(a?a.label+' · ':'')+(r?`${duration(r.min*60000)}–${duration(r.max*60000)}`:p.birthday?'No age default; choose a custom range if useful.':'Add birthday for age defaults.');
+  }
+  function saveSettings(){
+    const s=projected(),settings={...s.settings};captureWakeDraft();
+    for(const k of ['dayStart','nightStart','dayLimit','dayReplace','nightLimit','nightReplace'])settings[k]=Number($('#'+k).value);
+    for(const [id,p] of Object.entries(editor.wakeDrafts)){
+      if(p.birthday&&(!HuckWake.validDate(p.birthday)||p.birthday>dateKey(Date.now())))return notice('Choose a birthday in the past or today.');
+      if(p.mode==='custom'&&!HuckWake.range(p,dateKey(Date.now())))return notice('Choose a wake range from 5 to 720 minutes, with maximum at least minimum.');
+      if(JSON.stringify(p)!==JSON.stringify(wakeProfile(s,id)))settings.wakeProfiles={...(settings.wakeProfiles||{}),[id]:p};
+    }
+    if(JSON.stringify(settings)!==JSON.stringify(s.settings)){if(!enqueue('settings',{settings,expectedRevision:editor.settingsRevision}))return;}
+    prefs.child=$('#child-select').value;prefs.motion=$('#motion').checked;prefs.wakeInfo=$('#show-wake-info').checked;persist();close();render();
+  }
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
     const native=event.target.closest('[data-native-picker]');if(native){try{native.showPicker?.();}catch{}}
@@ -190,6 +234,7 @@
     if(t.matches('[data-delete-entry]')){const entry={...editor,kind:'delete'};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the Sheet.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
     if(t.matches('[data-confirm-delete]')){if(enqueue('delete',{id:editor.id,childId:editor.childId,expectedRev:editor.rev}))close();}
     if(t.matches('[data-settings]'))settings();
+    if(t.matches('[data-wake-details]'))wakeDetails();
     if(t.matches('[data-save-settings]'))saveSettings();
     if(t.matches('[data-theme]')){prefs.theme=t.dataset.theme;persist();render();document.querySelectorAll('button[data-theme]').forEach(b=>{b.classList.toggle('chosen',b===t);b.setAttribute('aria-pressed',b===t);});}
     if(t.matches('[data-style]')){prefs.style=t.dataset.style;persist();render();document.querySelectorAll('button[data-style]').forEach(b=>b.setAttribute('aria-pressed',String(b===t)));}
@@ -223,6 +268,9 @@
   $('#modal').addEventListener('focusin',event=>{if(event.target.type==='time')event.target.dataset.lastMinute=event.target.value.split(':')[1]||'';});
   $('#modal').addEventListener('change',event=>{
     const t=event.target;
+    if(t.id==='child-select'&&editor?.wakeDrafts){captureWakeDraft();editor.wakeChild=t.value;renderWakeFields();}
+    if(t.id==='show-wake-info'){prefs.wakeInfo=t.checked;persist();render();}
+    if(t.id==='wake-mode'){$('#wake-custom').hidden=t.value!=='custom';updateWakeProfilePreview();}
     if(t.type==='time'){
       const minute=t.value.split(':')[1]||'',previous=t.dataset.lastMinute;
       t.dataset.lastMinute=minute;
@@ -236,7 +284,7 @@
     }
     updateTimePreview();
   });
-  $('#modal').addEventListener('input',updateTimePreview);
+  $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',sync);
