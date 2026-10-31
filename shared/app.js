@@ -54,7 +54,7 @@
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
     const lastLabel=last&&C.isNight(last.start,s.settings)?'Last sleep':'Last nap';
-    $('#timer-detail').innerHTML=running?`Started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
+    $('#timer-detail').innerHTML=running?`Sleep started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
     $('#timer-art').src=new URL(running?'shared/moon.png':'shared/sun.png',root);
     $('#timer-art').alt='';
     renderActions(s,running);
@@ -64,19 +64,21 @@
     const box=$('#actions'),mode=running?'end':'start',context=child(s).id+':'+(running?.id||'awake');
     if(box.dataset.context!==context){
       box.dataset.context=context;
-      box.innerHTML=`<button class="primary" data-${mode}="0">${running?'End sleep now':icon('play')+' Start sleep now'}</button><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label">3 min ago</span></label><input id="sleep-delay" type="range" min="0" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>Now</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply>${icon('check')}<span><strong id="delay-action"></strong><small id="delay-clock"></small></span></button></div><button class="text-link manual-time" ${running?`data-edit="${esc(running.id)}"`:'data-custom-start'}>${icon('clock-3')}${running?'Enter end time':'Enter start time'}</button>`;
+      box.innerHTML=`${running?`<div class="manual-time-row"><span>Sleep ended</span><button class="text-link manual-time" data-edit="${esc(running.id)}" data-open-end>Enter end time</button></div>`:''}<div class="action-main"><button class="primary" data-${mode}="0">${running?'End sleep now':icon('play')+' Start sleep now'}</button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span></label><input id="sleep-delay" type="range" min="0" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>Now</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span><strong id="delay-action"></strong><small id="delay-clock"></small></span></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
     }
     updateDelay(s,running);
   }
   function updateDelay(s=projected(),running=C.active(s,child(s).id)){
     const input=$('#sleep-delay');if(!input)return;
-    const mode=running?'end':'start',now=Date.now(),last=entries(s).find(e=>e.end),boundary=running?running.start:last?.end;
-    const max=boundary?Math.min(10,Math.max(0,Math.floor((now-boundary-(running?1:0))/60000))):10;
-    const selected=Math.min(max,delays[mode]);input.max=max;input.disabled=max===0;
+    const mode=running?'end':'start',now=Date.now(),last=entries(s).find(e=>e.end),selected=delays[mode],at=now-selected*60000;
+    const invalid=running?at<=running.start:Boolean(last&&at<last.end);input.max=10;input.disabled=false;
     if(input.value!==String(selected))input.value=selected;
     input.setAttribute('aria-valuetext',selected+' minutes ago');
-    $('#delay-label').textContent=selected===0?'Just now':selected+' min ago';$('#delay-max').textContent=max+'m';
-    $('#delay-action').textContent=(running?'Ended':'Started')+(selected?' '+selected+'m ago':' just now');
+    $('#delay-label').textContent=running?'Earlier end time':'Earlier start time';$('#delay-max').textContent='10m';
+    const noun=C.isNight(now,s.settings)?'sleep':'nap';
+    $('#delay-action').textContent=(running?'End ':'Start ')+noun+(selected?' '+selected+'m ago':' now');
+    $('#delay-error').hidden=!invalid;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
+    $('[data-delay-apply]').disabled=invalid;$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');
     $('#delay-clock').textContent=clock(now-selected*60000);
   }
   function animateArrival(){
@@ -279,7 +281,7 @@
     if(t.matches('[data-delay-apply]')){const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
-    if(t.matches('[data-edit]'))openEntry(t.dataset.edit);
+    if(t.matches('[data-edit]')){openEntry(t.dataset.edit);if(t.hasAttribute('data-open-end')&&!editor.hasEnd){editor.hasEnd=true;$('#end-fields').hidden=false;const toggle=$('[data-toggle-end]');toggle.textContent='Still napping';toggle.setAttribute('aria-expanded','true');setEntryTime('end',Date.now());}}
     if(t.matches('[data-custom-start]'))openEntry(null,'start');
     if(t.matches('[data-add]'))openEntry();
     if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(Date.now());expandedNaps=expandedNaps===napKey?'':napKey;render();}
