@@ -45,6 +45,8 @@ After deployment, the Sheet can remain private. Anyone who knows the endpoint ca
 
 ## Tracking and cleanup
 
+The Now action and backdated controls have extra spacing and a faint divider. Sleeping artwork has drifting Zs and stronger breathing motion; awake artwork bounces with sparkles. A completed duration takes a roughly one-second curved flight into Recent naps, followed by a landing bounce/highlight. Local animation settings and OS reduced-motion preferences still disable these effects.
+
 The active timer uses a compact linked time span, such as 9:06 PM to Enter end time, inside Daybook's vertical accent line. Both links use the same font/color. The start link edits the start; Enter end time opens the end fields directly.
 
 Nap/sleep wording follows the session's start time in the shared home timezone and day/night schedule (defaults: daytime 7 AM–8 PM). Start now uses the current time; the slider's start action uses its proposed backdated time. End actions, started/ended details, editor labels and Still napping/Still sleeping use the recorded start, so labels do not switch just because the clock crosses morning/evening. Editing a start across that boundary updates the wording. No data or backend change is needed.

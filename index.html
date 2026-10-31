@@ -9,8 +9,8 @@
   <link rel="icon" href="shared/favicon.png?v=20261030-pacifier" type="image/png">
   <link rel="apple-touch-icon" href="shared/apple-touch-icon.png?v=20261030-pacifier">
   <link rel="manifest" href="manifest.webmanifest?v=20261030-main">
-  <link rel="stylesheet" href="shared/styles.css?v=20261030-time-span">
-  <link rel="stylesheet" href="shared/themes.css?v=20261030-inline-seconds">
+  <link rel="stylesheet" href="shared/styles.css?v=20261030-more-motion">
+  <link rel="stylesheet" href="shared/themes.css?v=20261030-more-motion">
 </head>
 <body data-style="daybook">
   <main>
@@ -23,7 +23,7 @@
       <div class="timer" id="timer">
         <div class="readout">
           <div class="timer-heading"><span class="status-dot"></span><span id="timer-status">Awake</span></div>
-          <img id="timer-art" class="timer-art" src="shared/awake.png" alt="">
+          <span class="timer-mascot" aria-hidden="true"><img id="timer-art" class="timer-art" src="shared/awake.png" alt=""><span class="sleep-zs"><span>Z</span><span>Z</span><span>Z</span></span><span class="awake-sparks"><i data-lucide="sparkles"></i></span></span>
           <div id="elapsed" class="elapsed">—</div>
           <div id="timer-detail" class="timer-detail"></div>
         </div>
@@ -50,6 +50,6 @@
   <script src="shared/lucide.min.js"></script>
   <script src="shared/core.js"></script>
   <script src="shared/wake.js?v=20261030-birthday-required"></script>
-  <script src="shared/app.js?v=20261030-time-span"></script>
+  <script src="shared/app.js?v=20261030-more-motion"></script>
 </body>
 </html>
