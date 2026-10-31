@@ -97,7 +97,8 @@
     $('#primary-action').textContent=(running?'End ':'Start ')+mainNoun+' now';
     input.setAttribute('aria-label',(running?'End ':'Start ')+noun+', minutes ago');
     $('#delay-action').textContent=(running?'End ':'Start ')+noun;
-    $('#delay-offset').textContent=selected+' '+(selected===1?'minute':'minutes')+' ago';
+    $('#delay-offset').textContent=selected+'m ago';
+    $('[data-delay-apply]').setAttribute('aria-label',$('#delay-action').textContent+' '+selected+' '+(selected===1?'minute':'minutes')+' ago');
     const showError=invalid&&$('#actions').dataset.delayTouched==='true';
     $('#delay-error').hidden=!showError;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
     $('[data-delay-apply]').disabled=showError;if(showError)$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');else $('[data-delay-apply]').removeAttribute('aria-describedby');

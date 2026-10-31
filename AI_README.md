@@ -162,7 +162,7 @@ Invalid selections stay selected. #actions.dataset.delayTouched starts false per
 
 `renderActions` preserves its DOM for the same child/running entry/awake context, avoiding lost slider focus or a dropped drag during polling. Keep form DOM stable across sync as well.
 
-The backdated confirmation button stacks #delay-action above #delay-offset. updateDelay keeps the latter in sync (1 minute ago / N minutes ago). Keep the subtitle small, muted, centered and inside the button across compact/phone layouts. Do not add it to the main Now action or change validation/save timing.
+The backdated confirmation button stacks #delay-action above #delay-offset. updateDelay keeps the latter in sync (1m ago / Nm ago), with full wording in the button aria-label. The user found spelled-out minutes too prominent: keep the subtitle9px/400, muted, centered, with tight padding and a44px minimum touch target across compact/phone layouts. Do not add it to the main Now action or change validation/save timing.
 
 Daybook is default with periwinkle original palette. Orbit and Compact remain usable alternatives, not staging sites. Check all three with all four themes, particularly Night contrast.
 

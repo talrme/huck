@@ -30,7 +30,7 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 
 ## Time entry and history
 
-The slider's Start/End confirmation button includes a centered, muted second line (for example, **3 minutes ago**) that follows the selected offset. The main Now action is unchanged.
+The slider's Start/End confirmation button includes a tiny, muted second line (for example, **3m ago**) that follows the selected offset. Screen readers get the full wording. The main Now action is unchanged.
 
 The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.
 

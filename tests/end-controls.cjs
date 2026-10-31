@@ -1,6 +1,6 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 const now=Date.parse('2026-10-30T18:00:00Z');
-async function select(p,n){await p.locator('#sleep-delay').evaluate((input,n)=>{input.value=n;input.dispatchEvent(new Event('input',{bubbles:true}));},n);const value=Math.max(1,Math.min(10,n));assert.equal(await p.locator('#delay-offset').innerText(),value+' '+(value===1?'minute':'minutes')+' ago');}
+async function select(p,n){await p.locator('#sleep-delay').evaluate((input,n)=>{input.value=n;input.dispatchEvent(new Event('input',{bubbles:true}));},n);const value=Math.max(1,Math.min(10,n));assert.equal(await p.locator('#delay-offset').innerText(),value+'m ago');assert((await p.locator('[data-delay-apply]').getAttribute('aria-label')).endsWith(value+' '+(value===1?'minute':'minutes')+' ago'));}
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{for(const style of ['daybook','orbit','compact']){
