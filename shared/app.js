@@ -57,7 +57,7 @@
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
     const lastLabel=last&&C.isNight(last.start,s.settings)?'Last sleep':'Last nap';
-    $('#timer-detail').innerHTML=running?`<div class="session-time"><span>${sleepName(running.start,s)==='nap'?'Nap':'Sleep'} started</span> <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button></div><div class="session-time manual-time-row"><span id="session-ending"></span><button class="text-link manual-time" data-open-end="${esc(running.id)}">Enter end time</button></div>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
+    $('#timer-detail').innerHTML=running?`<div class="session-time"><button class="text-link" data-edit="${esc(running.id)}" aria-label="Edit start time, ${clock(running.start)}">${clock(running.start)}</button><span class="time-separator">to</span><button id="session-ending" class="text-link manual-time" data-open-end="${esc(running.id)}" aria-label="End time not set. Enter end time">Enter end time</button></div>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
     $('#timer-art').src=new URL(running?'shared/sleeping.png':'shared/awake.png',root);
     $('#timer-art').alt='';
     renderActions(s,running);
@@ -67,7 +67,7 @@
     const box=$('#actions'),mode=running?'end':'start',context=child(s).id+':'+(running?.id||'awake');
     if(box.dataset.context!==context){
       box.dataset.context=context;
-      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span><strong id="delay-action"></strong><small id="delay-clock"></small></span></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
+      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
     }
     updateDelay(s,running);
   }
@@ -77,12 +77,12 @@
     const invalid=running?at<=running.start:Boolean(last&&at<last.end);input.max=10;input.disabled=false;
     if(input.value!==String(selected))input.value=selected;
     input.setAttribute('aria-valuetext',selected+' minutes ago');
-    $('#delay-label').textContent=running?'Earlier end time':'Earlier start time';$('#delay-max').textContent='10m';
+    $('#delay-prompt').textContent=running?'Ended a few minutes ago?':'Started a few minutes ago?';
+    $('#delay-label').textContent=selected+' '+(selected===1?'minute':'minutes')+' ago';$('#delay-max').textContent='10m';
     const noun=sleepName(running?running.start:at,s),mainNoun=sleepName(running?running.start:now,s);
     $('#primary-action').textContent=(running?'End ':'Start ')+mainNoun+' now';
-    if($('#session-ending'))$('#session-ending').textContent=(mainNoun==='nap'?'Nap':'Sleep')+' ended';
     input.setAttribute('aria-label',(running?'End ':'Start ')+noun+', minutes ago');
-    $('#delay-action').textContent=(running?'End ':'Start ')+noun+(selected?' '+selected+'m ago':' now');
+    $('#delay-action').textContent=(running?'End ':'Start ')+noun;
     $('#delay-error').hidden=!invalid;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
     $('[data-delay-apply]').disabled=invalid;$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');
     $('#delay-clock').textContent=clock(now-selected*60000);
