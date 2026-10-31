@@ -7,12 +7,12 @@ async function select(p,n){await p.locator('#sleep-delay').evaluate((input,n)=>{
   const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await context.newPage(),errors=[];
   p.on('pageerror',e=>errors.push(e.message));await p.clock.setFixedTime(now);await p.goto('http://127.0.0.1:5190/?demo=1');
   await p.locator('[data-settings]').click();await p.locator('button[data-style="'+style+'"]').click();await p.locator('[data-save-settings]').click();
-  assert.equal(await p.locator('[data-start="0"]').innerText(),'Start sleep now');assert.equal(await p.locator('#sleep-delay').inputValue(),'3');assert.equal(await p.locator('#delay-clock').innerText(),'10:57 AM');
+  assert.equal(await p.locator('[data-start="0"]').innerText(),'Start nap now');assert.equal(await p.locator('#sleep-delay').inputValue(),'3');assert.equal(await p.locator('#delay-clock').innerText(),'10:57 AM');
   const before=await p.evaluate(()=>HuckTest.getState().entries.length);await select(p,7);assert.equal(await p.evaluate(()=>HuckTest.getState().entries.length),before);
   assert.equal(await p.locator('#sleep-delay').getAttribute('min'),'1');await select(p,0);assert.equal(await p.locator('#sleep-delay').inputValue(),'1');assert((await p.locator('#delay-action').innerText()).includes('1m ago'));await select(p,7);
   assert(await p.locator('#sleep-delay').evaluate(input=>{const s=HuckTest.getState();HuckTest.enqueue('settings',{settings:s.settings,expectedRevision:s.revision});return input===document.querySelector('#sleep-delay');}));assert.equal(await p.locator('#sleep-delay').inputValue(),'7');
   await p.locator('[data-delay-apply]').click();const active=await p.evaluate(()=>HuckTest.getState().entries.find(e=>!e.end&&!e.deleted));assert.equal(active.start,now-7*60000);
-  assert.equal(await p.locator('.nap-entry[data-edit="'+active.id+'"]').count(),0);assert.equal(await p.locator('[data-end="0"]').innerText(),'End sleep now');assert.equal(await p.locator('#sleep-delay').inputValue(),'3');assert.equal(await p.locator('#sleep-delay').getAttribute('max'),'10');
+  assert.equal(await p.locator('.nap-entry[data-edit="'+active.id+'"]').count(),0);assert.equal(await p.locator('[data-end="0"]').innerText(),'End nap now');assert.equal(await p.locator('#sleep-delay').inputValue(),'3');assert.equal(await p.locator('#sleep-delay').getAttribute('max'),'10');
   await select(p,10);assert.equal(await p.locator('#sleep-delay').inputValue(),'10');assert(await p.locator('[data-delay-apply]').isDisabled());assert.equal(await p.locator('[data-delay-apply] svg').count(),0);await select(p,3);
   for(const width of [320,390,1280]){
    await p.setViewportSize({width,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

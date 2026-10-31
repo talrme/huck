@@ -45,6 +45,8 @@ After deployment, the Sheet can remain private. Anyone who knows the endpoint ca
 
 ## Tracking and cleanup
 
+Nap/sleep wording follows the session's start time in the shared home timezone and day/night schedule (defaults: daytime 7 AM–8 PM). Start now uses the current time; the slider's start action uses its proposed backdated time. End actions, started/ended details, editor labels and Still napping/Still sleeping use the recorded start, so labels do not switch just because the clock crosses morning/evening. Editing a start across that boundary updates the wording. No data or backend change is needed.
+
 Ending a sleep animates a small duration badge down to its new Recent naps row and briefly highlights the row. This occurs only after a locally validated save, not on refresh/sync replay. With reduced motion or animations disabled, a short saved confirmation replaces movement. The outbox/sync status still indicates pending backend writes.
 
 Awake detail spells out the last duration, for example Last nap 26 minutes long. Recent naps shows today's latest three completed entries newest first; Show all of today's naps expands the remainder, and Show fewer collapses them. Expansion resets on reload or a different child/day. Add sleep stays at the bottom. Editing an existing sleep offers Still napping to clear the end; Save or valid dismissal resumes that same record. Reopening cannot overlap another sleep. Toggling the end back on restores the original end for an existing completed record.

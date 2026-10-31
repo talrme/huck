@@ -23,7 +23,7 @@ try{
   await p.locator('[data-date-preset="start"]').selectOption('today');
   await p.locator('#start-time').fill('12:00');assert(await p.locator('[data-save-entry]').isDisabled());assert((await p.locator('#time-preview').innerText()).includes('past'));
   await p.locator('[data-ago="start:5"]').click();await p.locator('[data-close]').click();
-  await p.locator('[data-add]').click();assert.equal(await p.locator('#start-time').inputValue(),'10:15');assert.equal(await p.locator('#end-time').inputValue(),'11:00');assert.equal(await p.locator('#time-preview').innerText(),'45m sleep');
+  await p.locator('[data-add]').click();assert.equal(await p.locator('#start-time').inputValue(),'10:15');assert.equal(await p.locator('#end-time').inputValue(),'11:00');assert.equal(await p.locator('#time-preview').innerText(),'45m nap');
   await p.screenshot({path:`/tmp/huck-time-editor-${design}.png`});
   await p.setViewportSize({width:320,height:740});assert(await p.evaluate(()=>document.querySelector('#modal').scrollWidth<=document.querySelector('#modal').clientWidth));
   await p.locator('#end-time').fill('10:00');assert(await p.locator('[data-save-entry]').isDisabled());assert((await p.locator('#time-preview').innerText()).includes('after start'));
