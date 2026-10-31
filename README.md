@@ -45,6 +45,14 @@ After deployment, the Sheet can remain private. Anyone who knows the endpoint ca
 
 ## Tracking and cleanup
 
+Awake detail spells out the last duration, for example Last nap 26 minutes long. Recent naps shows today's latest three entries newest first; Show all of today's naps expands the remainder, and Show fewer collapses them. Expansion resets on reload or a different child/day. Add sleep stays at the bottom. Editing an existing sleep offers Still napping to clear the end; Save or valid dismissal resumes that same record. Reopening cannot overlap another sleep. Toggling the end back on restores the original end for an existing completed record.
+
+## Safe testing
+
+Settings → Advanced settings → Open testing sandbox opens ?demo=1 with separate, device-only sample records. It never sends reads or writes to the household backend. Reset sample history is available there, and Open real tracker returns to normal mode in another tab. Use the sandbox to try starting/ending, backdating, editing/deleting, wake ranges, themes and layouts. A separate clearly named Test child in the real tracker is useful specifically for two-phone sync tests, but those records are real shared records. A simulated clock/scenario picker is not implemented; do not change the phone clock to test production records.
+
+## Time entry and display
+
 Each time field has a subtle Now link immediately beside it, visible only when the selected date/time differs from the current minute. It resets both date and time. Its space stays reserved to avoid shifting inputs. This link sits outside the phone's native picker; dismiss that picker to use it. Native picker appearance depends on the actual OS/browser, not desktop phone emulation.
 
 - Start now, five minutes ago, ten minutes ago, or at a custom time. While sleeping, the primary button reads End nap during daytime or End sleep at night (based on the current shared home time). Three subtle controls below it offer Ended 5m ago, Ended 10m ago, and Edit time. Edit any start/end time and add past sleep manually.
