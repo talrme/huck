@@ -4,6 +4,7 @@ body[data-style=daybook] .readout{border-left:4px solid var(--accent);padding:0 
 body[data-style=daybook] .timer-heading{justify-content:flex-start}
 body[data-style=daybook] .timer-art{position:absolute;right:8px;top:5px;width:60px;height:60px}
 body[data-style=daybook] .elapsed{font-size:58px}
+body[data-style=daybook] .elapsed.has-seconds{width:calc(100% - 72px)}
 body[data-style=daybook] .actions{width:100%;max-width:none}
 body[data-style=daybook] .history-heading{border-top:2px solid var(--accent);padding-top:15px}
 body[data-style=daybook] .today-naps{border-top:2px solid var(--accent);padding-top:15px}
@@ -23,6 +24,7 @@ body[data-style=compact] .actions{grid-area:actions;margin:0;align-content:cente
 body[data-style=compact] .quick-row{flex-wrap:wrap}
 body[data-style=compact] .quick-row button{flex:1 0 45%}
 .style-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media(max-width:350px){body[data-style=daybook] .elapsed.has-seconds{width:calc(100% - 56px)}}
 .swatch[data-theme=original] span{background:#596cc1}
 .style-option{display:grid;gap:7px;justify-items:center;min-height:76px;font-size:11px;padding:10px 3px;color:var(--muted);background:var(--bg)}
 .style-option svg{width:23px;height:23px}

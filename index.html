@@ -9,20 +9,21 @@
   <link rel="icon" href="shared/favicon.png?v=20261030-pacifier" type="image/png">
   <link rel="apple-touch-icon" href="shared/apple-touch-icon.png?v=20261030-pacifier">
   <link rel="manifest" href="manifest.webmanifest?v=20261030-main">
-  <link rel="stylesheet" href="shared/styles.css?v=20261030-slim-controls">
-  <link rel="stylesheet" href="shared/themes.css?v=20261030-section-break">
+  <link rel="stylesheet" href="shared/styles.css?v=20261030-inline-seconds">
+  <link rel="stylesheet" href="shared/themes.css?v=20261030-inline-seconds">
 </head>
 <body data-style="daybook">
   <main>
     <header class="topbar">
       <div class="identity"><img class="brand-icon" src="shared/app-icon.png?v=20261030-pacifier" alt=""><div><h1>Huck</h1><span class="child-name" id="child-name">Avi</span></div></div>
+      <span id="sync-activity" class="sync-activity" role="status" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i><span>Syncing</span></span>
     </header>
     <p class="sample-note" id="sample-note" hidden>Sample data · only on this browser · never sent to the Sheet</p>
     <section class="current" aria-label="Current sleep">
       <div class="timer" id="timer">
         <div class="readout">
           <div class="timer-heading"><span class="status-dot"></span><span id="timer-status">Awake</span></div>
-          <img id="timer-art" class="timer-art" src="shared/sun.png" alt="">
+          <img id="timer-art" class="timer-art" src="shared/awake.png" alt="">
           <div id="elapsed" class="elapsed">—</div>
           <div id="timer-detail" class="timer-detail"></div>
         </div>
@@ -49,6 +50,6 @@
   <script src="shared/lucide.min.js"></script>
   <script src="shared/core.js"></script>
   <script src="shared/wake.js?v=20261030-birthday-required"></script>
-  <script src="shared/app.js?v=20261030-session-names"></script>
+  <script src="shared/app.js?v=20261030-inline-seconds"></script>
 </body>
 </html>

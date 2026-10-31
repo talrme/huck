@@ -44,7 +44,9 @@
   const icon=(name)=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
   function icons(){window.lucide?.createIcons();}
   function stateLabel(){return demo?'Sample data · this browser only':!HUCK_CONFIG.backendUrl?'This device only · Sheet not connected':queue.some(c=>c.blocked)?'Sync needs review':queue.length?'Saved here · sync pending':busy?'Syncing…':message?'Connection unavailable · showing saved data':lastChecked?'Synced '+clock(lastChecked):'Connecting…';}
+  function renderSyncActivity(){$('#sync-activity').hidden=!busy;}
   function render(){
+    renderSyncActivity();
     const s=projected(), c=child(s);prefs.child=c.id;
     document.body.dataset.theme=prefs.theme;document.body.dataset.style=prefs.style;document.body.classList.toggle('reduce-motion',!prefs.motion);
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
@@ -56,7 +58,7 @@
     $('#timer-status').textContent=running?'Sleeping':'Awake';
     const lastLabel=last&&C.isNight(last.start,s.settings)?'Last sleep':'Last nap';
     $('#timer-detail').innerHTML=running?`${sleepName(running.start,s)==='nap'?'Nap':'Sleep'} started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
-    $('#timer-art').src=new URL(running?'shared/moon.png':'shared/sun.png',root);
+    $('#timer-art').src=new URL(running?'shared/sleeping.png':'shared/awake.png',root);
     $('#timer-art').alt='';
     renderActions(s,running);
     renderChart(s);tick();icons();persist();animateArrival();
@@ -100,6 +102,7 @@
   function tick(){
     if(editor?.kind==='entry')updateNowButtons();
     const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end),elapsed=$('#elapsed');
+    elapsed.classList.toggle('has-seconds',Boolean(r));
     elapsed.setAttribute('role','timer');elapsed.setAttribute('aria-live','off');
     if(r){
       const ms=Math.max(0,Date.now()-r.start),seconds=Math.floor(ms/1000)%60;
@@ -115,6 +118,12 @@
     }
     renderWakeCue(s,r,last);
     updateDelay(s,r);
+    requestAnimationFrame(fitElapsed);
+  }
+  function fitElapsed(){
+    const main=$('#elapsed-main'),seconds=$('#elapsed-seconds'),box=$('#elapsed');if(!main||!seconds||!box.clientWidth)return;
+    main.style.fontSize='';const size=parseFloat(getComputedStyle(box).fontSize),available=box.clientWidth-seconds.getBoundingClientRect().width-6,width=main.getBoundingClientRect().width;
+    if(width>available)main.style.fontSize=Math.max(18,Math.floor(size*available/width))+'px';
   }
   function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],Date.now(),dateKey(Date.now()),C.isNight(Date.now(),s.settings));}
   function renderWakeCue(s,running,last){
@@ -160,7 +169,7 @@
   });}
   async function sync(){
     if(busy||demo||!HUCK_CONFIG.backendUrl||document.hidden)return;
-    busy=true;$('#connection').textContent=stateLabel();
+    busy=true;renderSyncActivity();$('#connection').textContent=stateLabel();
     try{
       const result=await request('snapshot');if(!result.ok)throw Error(result.error);base=result.state;
       while(queue.length&&!queue[0].blocked){
@@ -353,6 +362,7 @@
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',sync);
+  window.addEventListener('resize',()=>requestAnimationFrame(fitElapsed));
   window.addEventListener('pageshow',e=>{if(e.persisted)sync();});
   const requested=new URL(location.href).searchParams.get('child');if(requested)prefs.child=requested;
   render();sync();
