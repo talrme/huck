@@ -1,111 +1,190 @@
 # Huck
 
-**Live site:** https://talrme.github.io/huck/ (available once GitHub Pages is enabled)
+**Live site:** [talrme.github.io/huck](https://talrme.github.io/huck/)
 
-**Repository:** https://github.com/talrme/huck
+**Repository:** [talrme/huck](https://github.com/talrme/huck)
 
-Phone-first sleep tracking for Avi, with support for additional children. The selected Daybook design is the main app. No account is required to use the website.
+A phone-first sleep tracker for Tal and Sophie to track Avi's sleep across both phones. Additional children are supported. No account or per-phone backend configuration is required.
 
-## Current connection
+## Current status
 
-Apps Script is deployed and permanently configured in config.js for the app. Its public snapshot was verified successfully with Avi, an empty sleep history, and the expected schedule settings. You do not need to configure anything on either phone. The root app uses shared real records. Optional ?demo=1 uses a separate browser-only sample sandbox and never calls the backend. Real write/cross-phone verification has not yet been performed against the household Sheet; automated write tests use a simulated backend.
+The production app is connected to Google Sheets through the Apps Script URL in `config.js`. Daybook, originally staging option 10, is the default design. The staging folders and chooser were removed; use the root live link.
 
-## Use Huck
+On October 30, 2026, 24 user-approved sleep records were imported from two screenshots covering October 19–30. Times were estimated to about five minutes in Pacific time; blank periods were left alone, existing records were preserved, and the saved entries were verified by reading the backend again. This history is approximate and incomplete, not a complete account of sleep. Automated tests use isolated samples or a simulated backend, not the household Sheet. Two actual phones have not been used in an automated end-to-end test.
 
-Open the live link above, or run `node tools/serve.cjs` and open http://127.0.0.1:5190/ . Cursor Live Server can also serve `huck/` from Websites For Fun. All staging folders, the chooser and preview images have been removed.
+The app is already configured. The setup instructions below are for recreating or changing the backend, not something either phone needs to repeat.
 
-Settings offers independent Style (Daybook, Orbit, Compact) and Color theme (original periwinkle, Night, Berry, Mint) choices. They apply immediately, persist on this device, and do not affect sleep data. Fresh devices default to Daybook. Existing device color preferences and saved records are preserved. For explicitly fictional sample data only, open ?demo=1; samples remain separate and are never uploaded.
+## Everyday use
 
-## Connect your Google Sheet, step by step
+- **Start nap now / Start sleep now** begins a timer immediately. The start time determines whether it is called a nap or sleep, using the shared day/night schedule.
+- **End nap now / End sleep now** ends that same session. Its name does not change just because it crosses morning or evening.
+- For a delayed entry, use **Started/Ended a few minutes ago?** The slider stays at **1–10 minutes**, defaulting to three. The preview shows the offset and clock time; the small Start/End button records it. Dragging alone never saves. Invalid choices explain the conflict and disable confirmation without changing the slider's scale.
+- During sleep, the linked time row reads **9:06 PM to Enter end time**. Tap the start time to edit it or Enter end time to open the end fields. Both links sit inside the timer's accent area.
+- A clock button beside Start now opens manual start entry. **Add sleep**, below Recent naps, adds an older completed sleep.
+- While awake, the detail emphasizes the last duration: **Last nap 26 minutes long**.
+- **Recent naps** shows today's latest three completed entries, newest first. Expand to see all of today's entries. Active sleep stays in the timer and chart, not this list.
+- Tap a recent entry or chart block to edit. **Still napping / Still sleeping** clears an accidental end time and resumes the same record, provided it does not overlap another sleep.
+- Save, tapping outside, X, or Escape saves valid changed entry times. Invalid edits stay open for correction. Unchanged existing entries are not rewritten, and closing an untouched new-entry editor does not create a record.
 
-Your Sheet: https://docs.google.com/spreadsheets/d/1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ/edit
+## Time entry and history
 
-1. Open the Sheet while signed into the Google account that owns it. Keep the Sheet private. No public editing or publishing is needed.
-2. In the Sheet's top menu, choose **Extensions → Apps Script**. A new editor tab opens.
-3. Click the project name, usually **Untitled project**, at the top. Rename it **Huck**.
-4. Open `Code.gs` in the editor. Select all its starter code and replace it with the COMPLETE contents of `backend.sample.gs` from this folder. This is one self-contained file; do not paste only `tools/backend-tail.gs`.
-5. Click the disk-shaped **Save** icon, or press Command+S. Wait for the saving indicator to finish.
-6. In the function dropdown next to **Run**, select **setupHuck**. Click **Run**.
-7. Google will ask for authorization. Click **Review permissions**, choose your account, review the permissions, and approve. For your own unverified script, Google may show **Advanced → Go to Huck (unsafe)**; proceed only after confirming this is the script you just created in your account. Organizational policies can block this flow.
-8. Wait for **Execution completed**. Go back to the Sheet: a new **HuckEvents** tab should exist. Leave its headers and contents alone. Setup never clears other tabs, and it does not add dummy sleep records.
-9. Return to Apps Script. Click **Deploy → New deployment**.
-10. Beside **Select type**, click the gear and choose **Web app**.
-11. Set **Description** to `Huck v1`, **Execute as** to **Me**, and **Who has access** to **Anyone** (not “Anyone with a Google account”). This exposes the app endpoint, not the spreadsheet itself.
-12. Click **Deploy** and finish any authorization prompts. Deployment makes this saved version callable by the website.
-13. Under **Web app**, copy the full URL ending in `/exec`. Send that URL to me. Do not send the deployment ID or the `/dev` test URL instead.
-14. I will put the URL permanently in `config.js`, verify read/write sync using disposable test records with your approval, and connect the app. Neither phone needs to paste any configuration.
+Native time pickers depend on the real phone OS/browser. Desktop Chrome's phone emulation does not reproduce Android or iOS picker sheets. The editor separates Today / Yesterday / Choose date from the time input and offers +/-5 minutes and 5m ago.
 
-After deployment, the Sheet can remain private. Anyone who knows the endpoint can read/change these shared records: this is a simple family tool, not an authenticated private medical record system. Avoid putting sensitive personal details in it or distributing the URL broadly.
+A subtle **Now** link appears beside each time field only when its selected date/time differs from the current minute. It resets both date and time. It is outside the native picker, so dismiss that picker first. Selecting a different minute attempts to dismiss the picker; actual OS behavior varies.
 
-## What still needs to happen
+Manual starts default to five minutes ago. Adding past sleep defaults to an available gap of up to 45 minutes. Saving an unchanged record preserves its original timestamp precision.
 
-- Apps Script deployment and permanent URL configuration are complete. Reload Huck to connect; no configuration is needed on individual phones.
-- GitHub repository: https://github.com/talrme/huck . In its Settings → Pages, choose Deploy from a branch, main, / (root), and Save. The root page is the selected Daybook app. The website will appear at the live link above after GitHub finishes deploying.
-- Install the main root app on both phones. Old staging links are retired; use the root live link. No new Apps Script deployment is needed for this promotion.
+The timer uses saved timestamps, not a background stopwatch. Closing the app does not stop it. Active hours/minutes stay large, with smaller ticking seconds on the same baseline. Seconds update locally without network requests or per-second screen-reader announcements.
 
-## Tracking and cleanup
+History columns are chronological, newest on the right and initially in view. The time axis stays fixed while dates scroll horizontally. By default each column covers **7 AM to the next 7 AM**, with nighttime shading from **8 PM**. Today is emphasized; older columns are quieter. Sleeps crossing a boundary are split visually but remain one editable record. Recent naps uses the full duration for each record intersecting the current period.
 
-The Now action and backdated controls have extra spacing and a faint divider. Sleeping artwork has drifting Zs and stronger breathing motion; awake artwork bounces with sparkles. A completed duration takes a roughly one-second curved flight into Recent naps, followed by a landing bounce/highlight. Local animation settings and OS reduced-motion preferences still disable these effects.
+Durations are actual elapsed time. On daylight-saving transition days, the actual 23/25-hour period is scaled into the fixed-height chart; spacing is approximate but timestamps and durations remain accurate. Blank chart areas mean no recorded sleep, not necessarily no sleep.
 
-The active timer uses a compact linked time span, such as 9:06 PM to Enter end time, inside Daybook's vertical accent line. Both links use the same font/color. The start link edits the start; Enter end time opens the end fields directly.
+## Settings and shared data
 
-Nap/sleep wording follows the session's start time in the shared home timezone and day/night schedule (defaults: daytime 7 AM–8 PM). Start now uses the current time; the slider's start action uses its proposed backdated time. End actions, started/ended details, editor labels and Still napping/Still sleeping use the recorded start, so labels do not switch just because the clock crosses morning/evening. Editing a start across that boundary updates the wording. No data or backend change is needed.
+| Saved to the child's/shared backend | Saved only on this browser/device |
+| --- | --- |
+| Children and sleep entries | Selected child |
+| Each child's birthday and edited age ranges | Show wake-window info |
+| Day/night schedule and forgotten-timer rules | Style, color theme, animations |
+| Archive/restore state | Temporary Recent naps expansion |
 
-Ending a sleep animates a small duration badge down to its new Recent naps row and briefly highlights the row. This occurs only after a locally validated save, not on refresh/sync replay. With reduced motion or animations disabled, a short saved confirmation replaces movement. The outbox/sync status still indicates pending backend writes.
+Styles are **Daybook, Orbit, Compact**. Colors are **Original** (periwinkle), **Night, Berry, Mint**. Style/color choices apply immediately; other form fields use Save. The wake visibility toggle also applies immediately.
 
-Awake detail spells out the last duration, for example Last nap 26 minutes long. Recent naps shows today's latest three completed entries newest first; Show all of today's naps expands the remainder, and Show fewer collapses them. Expansion resets on reload or a different child/day. Add sleep stays at the bottom. Editing an existing sleep offers Still napping to clear the end; Save or valid dismissal resumes that same record. Reopening cannot overlap another sleep. Toggling the end back on restores the original end for an existing completed record.
+The pacifier icon is used for browser tabs and phone installation. **Save / Share** includes iPhone/Android installation instructions and a share link for the selected child. Installed apps use the same website/backend, not a separate native database.
 
-## Safe testing
-
-Settings → Advanced settings → Open testing sandbox opens ?demo=1 with separate, device-only sample records. It never sends reads or writes to the household backend. Reset sample history is available there, and Open real tracker returns to normal mode in another tab. Use the sandbox to try starting/ending, backdating, editing/deleting, wake ranges, themes and layouts. A separate clearly named Test child in the real tracker is useful specifically for two-phone sync tests, but those records are real shared records. A simulated clock/scenario picker is not implemented; do not change the phone clock to test production records.
-
-## Time entry and display
-
-Each time field has a subtle Now link immediately beside it, visible only when the selected date/time differs from the current minute. It resets both date and time. Its space stays reserved to avoid shifting inputs. This link sits outside the phone's native picker; dismiss that picker to use it. Native picker appearance depends on the actual OS/browser, not desktop phone emulation.
-
-- Start sleep now or End sleep now is the primary action. A fixed 1–10 minute slider defaults to three minutes, with the prompt Ended/Started a few minutes ago? and a live preview such as 3 minutes ago · 2:34 PM above it. A small End nap/Start nap button records the previewed time. Dragging only previews; it never saves by itself. Selecting an invalid time leaves the scale/selection unchanged, disables confirmation, and explains whether it precedes the current sleep or overlaps the previous sleep. While sleeping, the linked time span ends with Enter end time, opening the end fields directly. While awake, a clock icon beside Start sleep now opens manual start entry.
-- The phone time editor separates Today / Yesterday / Choose date from the native time picker, with five-minute adjustments and Now / 5m ago shortcuts. Custom starts default to five minutes ago. Past sleep defaults to a 45-minute gap ending now, or the most recent available gap. Existing entries retain their original timestamps when saved unchanged. A live duration preview flags invalid or future times before saving. Running sleep shows Ended with a Set time button. Tap it to reveal the end controls, defaulted to now. Clear hides them again without ending sleep. Saving without an end time keeps the timer running.
-- Valid changed times also save when you tap outside the editor, press its X, or press Escape. Invalid changes keep the editor open for correction. Merely opening/closing an editor does not create or rewrite records. A committed minute change blurs the native time field to dismiss its picker where the browser supports it; hour-only changes keep focus. Native picker behavior still varies by phone OS.
-- Time is saved as absolute timestamps, not a background stopwatch. Closing the app does not stop a running sleep.
-- Active sleep shows hours/minutes with smaller, ticking seconds on the same baseline, even for longer sleeps. Awake time, history and totals stay at minute precision. The seconds update locally, without extra network calls or screen-reader announcements every second.
-- Below the current timer, Recent naps lists completed sleep intersecting the current 7 AM–7 AM period, newest first, with the latest three initially visible. Active sleep appears only in the current timer, not this list. Durations are bold and times are muted; tap a row to edit. The former three summary stats and separate last-sleep row are removed. Today's chart column has a tinted background, accented header/edges and stronger blocks; older blocks use quieter fills while keeping labels readable. A sleep crossing a day boundary is listed once with its full duration, matching the editable record.
-- The chart runs from 7 AM to 7 AM, with newest dates on the right and a stationary time axis. Night shading begins at 8 PM. Sleep is split visually at day boundaries but remains one editable record. Durations use actual elapsed time. On daylight-saving transition days, the 24-hour chart compresses/stretches that day's time spacing; the saved timestamps and durations remain accurate.
-- Daytime sleeps running four hours are corrected to 90 minutes. Nighttime sleeps running 12 hours are corrected to four hours. These are provisional bookkeeping defaults, not baby sleep recommendations. Rules use the start time of each sleep and the shared America/Los_Angeles timezone. All cutoffs, replacements, day start, and night start are editable in Settings.
-- With Sheets connected, automatic cleanup is persisted during the next server request, even if the app was closed at the cutoff. No background job or notification is required. Local/sample mode derives the same correction on reopening.
-- Child archive preserves history and supports restoration. At least one child stays active; end an active sleep before archiving its child.
+State artwork indicates sleeping/awake, not nighttime/daytime. Sleeping has floating Zs; awake has a playful baby face and sparkles. Completed naps make a curved flight into Recent naps with a landing bounce. Both the app's animation toggle and OS reduced-motion preference are respected.
 
 ## Wake-window guide
 
-Add sleep is a subtle link below Recent naps, rather than a header button. Settings → Wake-window settings displays every supported age band with editable minimum/maximum minutes, highlights the selected child's current band, and offers Reset to defaults. Save applies edits or the reset. Edited age ranges belong to that child and sync to both phones; the app automatically uses the matching band as the child grows. There is no separate fixed/custom mode: the birthday selects the applicable editable row automatically. Reset restores only the age table and preserves the birthday.
+Open **Settings → Wake-window settings**. Turn on Show wake-window info and enter the child's birthday. Without a valid birthday, guidance stays hidden and a red birthday-required message appears. A missing birthday does not prevent saving unrelated settings.
 
-While awake, the detail shows the last nap's duration rather than repeating its end time. Settings → Wake-window settings lets you enter each child's birthday and edit the minimum/maximum minutes for each age band. No birthday is assumed for Avi. Birthdays and age ranges sync through the existing backend; Show wake-window info is an immediate, device-local toggle inside Wake-window settings. Without a valid birthday, guidance is hidden and enabling the toggle shows a red birthday-required message. Missing birthdays do not block saving unrelated settings. No Apps Script redeployment is needed.
+There is no separate custom-range mode. The birthday selects a row from the editable age table automatically. Birthday and edited ranges sync to both phones as part of the child's profile. **Reset to defaults** restores the age table when saved, preserving the birthday. Clearing a birthday does not erase edited ranges. No birthday is assumed for Avi.
 
-Cues move from Recently awake to Within usual nap range to Beyond usual range. These are approximate ranges, not deadlines or instructions to keep a baby awake. Follow sleepy and hunger cues. Nighttime uses neutral wording rather than daytime urgency. The guide links to [Cleveland Clinic's wake-window guidance](https://health.clevelandclinic.org/wake-windows-by-age) and [AAP infant sleep information](https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx). Defaults use completed-month bands: under 1 month 30–60 minutes; 1–2 months 60–120; 3–4 months 75–150; 5–6 months 120–240; 7–9 months 150–270; 10–11 months 180–360. From 12 months, no supported age band is currently available. For premature babies or individual concerns, ask your pediatrician which timing to use.
+| Completed age | Initial approximate range |
+| --- | --- |
+| Under 1 month | 30–60 minutes |
+| 1–2 months | 60–120 minutes |
+| 3–4 months | 75–150 minutes |
+| 5–6 months | 120–240 minutes |
+| 7–9 months | 150–270 minutes |
+| 10–11 months | 180–360 minutes |
 
-Auto-ended records show an estimated wake time without a colored range judgment. Missing, invalid, or stale wake times show a dash and neutral explanation. Stale means at least three hours or twice the selected upper range, whichever is longer (six hours without a range). This is only a missing-log heuristic, not a clinical threshold; unrecorded naps cannot reliably be detected.
+From 12 months there is currently no supported age band. These broad ranges are adapted from [Cleveland Clinic](https://health.clevelandclinic.org/wake-windows-by-age); see also [AAP infant sleep guidance](https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx). They are approximate cues, not deadlines, predictions, or instructions to keep a baby awake. Follow sleepy/hunger cues and ask your pediatrician about individual needs or prematurity.
 
-## Sync behavior
+Daytime cues progress from Recently awake to Within usual nap range to Beyond usual range. Nighttime is neutral. Auto-ended logs produce estimated wake time without a colored range judgment. Missing/invalid/stale wake time shows a dash rather than a misleading long timer.
 
-Check immediately on opening, refresh, foreground return, and reconnection; poll every 15 seconds while visible, including for active naps, and pause when hidden. Timer display itself updates each second locally without network calls. A small animated Syncing indicator beside the title remains visible while the current snapshot/write cycle is in progress and clears on completion or failure. It does not add requests. Reduced-motion preferences stop the spinner and state-art movement without hiding status text.
+The missing-log heuristic marks a wake time stale after the longer of three hours or twice the upper range; without a range the fallback is six hours. This is a bookkeeping heuristic, not a medical threshold, and cannot detect every unrecorded nap.
 
-Edits update the screen immediately and enter a durable browser-local outbox before networking. They retry on reconnect/reopen. Backend script locks serialize commands; unique request IDs make retries idempotent. Entry revisions reject stale edits, concurrent starts cannot create two active timers, and overlapping sleeps are rejected. Conflicting changes stay marked for review, rather than silently replacing another phone's work. Discard the conflicting pending change to use the shared record and retry your edit.
+## Forgotten timers
 
-Shared: children, sleeps, schedule/cleanup rules. Device-local: color theme, layout style, motion, selected child. Sample mode never syncs. The app loads no data or pages through a service-worker cache. JSONP is used for Apps Script compatibility with a static website.
+Initial rules are **daytime: four-hour cutoff → 90-minute replacement**, and **nighttime: 12-hour cutoff → four-hour replacement**. These are editable under Sleep schedule & timer cleanup. Classification uses when the sleep started in the shared `America/Los_Angeles` timezone.
 
-If you saved real records before connecting the backend, the original local state is backed up automatically in this browser. Settings → Earlier local records lets you import them explicitly or download the JSON backup. Imports validate for overlaps before queuing anything, skip existing IDs, and keep the backup. They never include demo records. Already synced records remain authoritative until you choose to import.
+These rules correct forgotten records; they do not advise how long a baby should sleep. Corrected entries are labeled Auto-ended and remain editable. New settings can affect still-running sleeps.
 
-## Updating Apps Script later
+With Sheets connected, corrections are persisted during the next backend request, not by a scheduled alarm. There are no background notifications. Local/sample mode derives the same correction on reopening.
 
-Appearance and ordinary frontend changes do not require redeployment. Backend actions, validation, data model, and the rules in `shared/core.js` do. Run `node tools/build.mjs` to regenerate the self-contained script, replace Code.gs, save, then **Deploy → Manage deployments → pencil → Version: New version → Deploy**. Keep the deployment URL unchanged. Changes in the editor alone do not update the deployed web app.
+## How syncing works
 
-## Development and tests
+The website talks to a small Apps Script API backed by the private [household Sheet](https://docs.google.com/spreadsheets/d/1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ/edit). The permanent endpoint is in `config.js`; neither phone pastes it.
 
-`node tools/build.mjs` copies tools/page.html to the production index.html and regenerates the root manifest and backend.sample.gs. Edit tools/page.html and shared files, not generated index.html. It never recreates staging folders.
+1. A valid edit updates the screen and is saved in a durable local outbox before networking.
+2. The app requests a shared snapshot, submits queued edits, and receives the authoritative state.
+3. Request IDs prevent retry duplicates. Backend locks serialize requests; revisions and overlap checks reject conflicting edits.
+4. Network failures remain pending and retry on a later sync. Conflicts remain visible for explicit review rather than silently replacing the other phone's work.
 
-`node tests/core.test.cjs` checks data rules without dependencies. `node tests/browser.cjs` uses Playwright and Chrome to test all three styles on phones and desktop, settings, sleep editing, samples, chart scrolling, and multi-device sync through a simulated backend. Tests do not access your real Sheet. Screenshots are generated into a temporary test directory, not committed previews.
+Checks run on opening/reload, foreground return, reconnection, and every 15 seconds while the page is visible. Hidden tabs do not start new sync cycles. Display seconds are independent of polling. A small animated **Syncing** indicator beside the title is visible during requests; the footer reports pending, synced, unavailable, or conflict status. Apps Script requests can take several seconds; this is not instant push synchronization.
 
-Assets: sleeping-face (1f634) and baby-face (1f476) artwork from Twitter Twemoji v14.0.2, CC BY 4.0, https://github.com/twitter/twemoji . Icons: Lucide, ISC license included in shared/LUCIDE-LICENSE.
+Settings writes also check the shared revision. If another phone changed things meanwhile, reopen settings before retrying. A blocked outbox item must be resolved/discarded before new edits can be queued.
 
-Favicon and home-screen artwork: Lucide Lab baby-pacifier, https://github.com/lucide-icons/lucide-lab/blob/main/icons/baby-pacifier.svg ; license in shared/LUCIDE-LAB-LICENSE. Run `node tools/icons.cjs` with sharp installed to regenerate 32/180/192/512-pixel PNGs. Sleeping Z-face and awake baby-face artwork are bundled PNGs with gentle CSS motion, not GIF downloads; they indicate sleep state, not daytime/nighttime. Run `node tests/time-editor.cjs` against the local preview server for additional editor and icon checks. Native mobile picker sheets are provided by the phone OS; automated checks verify browser behavior/layout, not a physical iOS/Android picker.
+Storage belongs to an origin: localhost, a different local port, and GitHub Pages have separate preferences/outboxes. They still read the same backend when configured. This is not an offline-first service-worker app; there is no service-worker cache.
 
-Google setup references: https://developers.google.com/apps-script/guides/web and https://developers.google.com/apps-script/reference/lock/lock-service .
+Earlier real local-only records are backed up before connecting to the backend. Settings exposes explicit import/download of that backup when available. Import checks overlaps and existing IDs and keeps the backup. Samples are never imported.
+
+## Safe testing
+
+Open **Settings → Advanced settings → Open testing sandbox**, or [the sample sandbox](https://talrme.github.io/huck/?demo=1). Its banner clearly says sample data. It uses separate device-local storage and never reads/writes the household backend. It supports the same editing, settings, children, and timer interactions. Reset sample history and Open real tracker are available in Advanced settings.
+
+For actual two-phone syncing tests, a clearly named Test child in the real tracker is useful, but those are real shared records. Archive the child afterward; history is preserved. At least one child must remain active, and a child with active sleep cannot be archived.
+
+A pretend clock, jump-ahead buttons, and preset test scenarios have been discussed but are **not implemented**. Do not change your phone clock to test real records.
+
+## Google Sheets setup, step by step
+
+The current app is already connected. To reproduce it for another project or replace the backend:
+
+1. Create/open your Sheet in its owner account. Keep it private; no public editing or publishing is needed.
+2. Choose **Extensions → Apps Script**. A new editor tab opens.
+3. Rename the Apps Script project **Huck** (or the new project's name).
+4. Open `Code.gs`. Replace all starter code with the complete generated `backend.sample.gs`. Despite its filename, this is the deployable script, not fake data. Do not paste only `tools/backend-tail.gs`.
+5. For a different Sheet, first update the Sheet ID in `tools/backend-tail.gs` and run the build below. Save the pasted script with Command+S/the Save icon.
+6. In the function dropdown next to Run, select **setupHuck**, then click **Run**.
+7. Approve the requested permissions in your account. If Google labels your own script unverified, review the script/account before using Advanced to proceed. Organization policies may prevent deployment.
+8. Wait for **Execution completed**. The Sheet should have a **HuckEvents** tab with `id | receivedAt | command` headers. Setup does not clear other tabs or add fake sleep records. Do not manually rearrange/edit this event log.
+9. Choose **Deploy → New deployment**.
+10. Click the gear beside Select type and choose **Web app**.
+11. Set **Execute as: Me** and **Who has access: Anyone** (not only signed-in users). This exposes the API, not the Sheet itself.
+12. Click **Deploy**, complete authorization, and copy the complete Web app URL ending in `/exec`. Do not use the `/dev` testing URL or just a deployment ID.
+13. Put that endpoint and the Sheet URL into `config.js` in the repository. Neither phone needs configuration. Keep sample mode isolated.
+14. Verify reads first. Test real writes only with explicit permission/disposable records, and verify a fresh read afterward. Publish the frontend separately through GitHub Pages.
+
+The Sheet can remain private because Apps Script runs as its owner. **The endpoint itself has no authentication:** anyone with it can read/change shared records, including profile birthdays. This is a convenience tool for trusted family use, not a private medical record system. Avoid broad distribution or sensitive information.
+
+For Pages, select **Settings → Pages → Deploy from a branch → main → / (root) → Save** in GitHub. Deployment can take time after pushing; verify the live page before assuming a push is visible.
+
+References: [Apps Script web apps](https://developers.google.com/apps-script/guides/web), [LockService](https://developers.google.com/apps-script/reference/lock/lock-service).
+
+## When Apps Script needs updating
+
+Frontend layout, artwork, animations, wake-range lookup, and preferences do not require redeployment. Current birthday/age-range metadata uses an already-supported shared-settings action.
+
+Changing backend actions, validation, event replay, or `shared/core.js` rules does require deployment:
+
+1. Run `node tools/build.mjs`.
+2. Replace all of Apps Script `Code.gs` with generated `backend.sample.gs`, then save.
+3. Choose **Deploy → Manage deployments → pencil → Version: New version → Deploy**.
+4. Keep the same deployment URL. Editor changes alone do not update the deployed API.
+5. Verify the deployed behavior and tell users clearly when their action is required.
+
+## Local development and tests
+
+Canonical checkout: `/Users/talg/Desktop/Websites For Fun/huck`. All new personal websites belong under **Websites For Fun** unless explicitly requested elsewhere.
+
+Use a modern Node.js runtime (Node 24 is used in the current environment):
+
+```sh
+node tools/build.mjs
+node tools/serve.cjs
+```
+
+Open [http://127.0.0.1:5190/](http://127.0.0.1:5190/). The server also supports `/huck/`. If the port is occupied, use `PORT=5191 node tools/serve.cjs`. Cursor Live Server can serve the parent folder at `http://127.0.0.1:5500/huck/`; use that path rather than assuming `/index.html` is at its root.
+
+Edit `tools/page.html` and `shared/` source files. The build generates `index.html`, `manifest.webmanifest`, and `backend.sample.gs`; it must not recreate staging folders. Update asset version tokens when changing JS/CSS so browsers fetch the new version.
+
+Pure tests need only Node:
+
+```sh
+node tests/core.test.cjs
+node tests/backend.test.cjs
+node tests/wake.test.cjs
+```
+
+Browser tests need Playwright and Google Chrome. Optional icon regeneration needs sharp. These libraries are available in the current Codex runtime; otherwise install them locally, for example `npm install --no-save --package-lock=false playwright sharp`. Most browser tests use macOS Chrome at `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`. Adapt that path on another machine.
+
+| Browser test | Checks |
+| --- | --- |
+| `tests/browser.cjs` | Main workflows, styles/themes, simulated two-device sync; starts its own server |
+| `tests/time-editor.cjs` | Native-input workflow, Now, autosave, unchanged timestamps |
+| `tests/end-controls.cjs` | Slider behavior, control layout, arrival/motion effects |
+| `tests/recent-naps.cjs` | Latest-three expansion, resume sleep, overlap protection, sandbox isolation |
+| `tests/sleep-labels.cjs` | Day/night boundaries and edited/backdated start naming |
+| `tests/timer-polish.cjs` | Inline seconds, long-duration fit, imagery and delayed sync indicator |
+| `tests/wake.browser.cjs` | Shared birthdays/ranges, local toggle, reset, missing birthday/logs |
+
+Except the main browser test, start the local server on port 5190 first. Run a test with `node tests/<name>.cjs`. Automated tests do not touch the real Sheet or emulate a physical OS picker. Screenshots are written under `/tmp`, not committed previews. Keep both this file and [AI_README.md](AI_README.md) current.
+
+## Artwork and licenses
+
+App/favicon/home-screen icon: [Lucide Lab baby pacifier](https://github.com/lucide-icons/lucide-lab/blob/main/icons/baby-pacifier.svg), with its license in `shared/LUCIDE-LAB-LICENSE`. `node tools/icons.cjs` regenerates the PNG sizes using sharp.
+
+State images: sleeping face `1f634` and baby face `1f476`, Twitter [Twemoji v14.0.2](https://github.com/twitter/twemoji), CC BY 4.0. They are bundled tiny PNGs animated with CSS, not GIFs or remote runtime downloads. Legacy moon/sun assets are unused. UI icons use bundled Lucide; license in `shared/LUCIDE-LICENSE`.

@@ -1,49 +1,281 @@
-# Huck: AI maintenance notes
+# Huck: AI Project Handoff
 
-Mascot wrapper .timer-mascot now owns dimensions/position in themes; #timer-art stays a100% image within it. Decorative .sleep-zs spans drift with staggered delays only while asleep; awake-sparks uses bundled Lucide sparkles and CSS while awake. All decorative content is aria-hidden and pointer-events:none; reduced/local motion overrides animation names. Delay prompt adds margin/padding plus subtle top rule. Arrival badge now follows1050ms curved/tilted flight, then looks up the current recent row (survives sync rerender) for850ms bounce/highlight. Cleanup always removes ghost; recheck motion preference before landing. end-controls tests verify drifting-Z/awake-spark animation names and landing animation, plus reduced-motion no-ghost behavior.
+Last consolidated: October 30, 2026. This describes the current implementation, not an append-only list of old requests. Update it and README.md when behavior changes.
 
-The active #timer-detail contains one .session-time span: linked start time, muted to, then linked Enter end time. It stays inside .readout for Daybook's accent indent. Same font/color for both links; wrap naturally in Compact. Manual end uses data-open-end=entryId (not data-edit), so #timer-detail [data-edit] still means only start editing. Click handler opens end controls. End-controls tests verify containment/alignment.
+## Start here
 
-sleepName(at,s) uses existing C.isNight and shared settings to choose nap/sleep. Main start action uses now; backdated start uses proposed at; end actions and started/ended details use running.start, never current wall-clock classification. updateDelay refreshes primary-action/session-ending/slider ARIA labels on tick without replacing controls. updateTimePreview refreshes editor title/start button, duration noun and Still napping/Still sleeping based on edited start. Overall Sleeping status remains generic. tests/sleep-labels.cjs covers both7am/8pm crossings, backdated start differing from Now, active labels staying tied to start and editing across boundary. No backend redeploy or sleep-record rewrite.
+- Canonical repo: `/Users/talg/Desktop/Websites For Fun/huck`.
+- Remote: `https://github.com/talrme/huck.git`; branch `main`.
+- Live app: `https://talrme.github.io/huck/`.
+- Local preview: `http://127.0.0.1:5190/`, also `/huck/`.
+- Family use: Tal and Sophie tracking Avi; other children supported. Do not infer Avi's birthday from old chats or synthetic test fixtures.
+- All personal websites should be created in `/Users/talg/Desktop/Websites For Fun` unless the user explicitly chooses elsewhere.
+- Read the code before editing. Preserve unrelated work and real records. Keep changes scoped.
+- The user expects actual implementation, phone-first visual checks, useful regression tests, and usually commit/push for incremental changes. Honor any explicit local-only/approval-first request.
+- The original ten staging apps are gone. Daybook (staging 10) is production. Do not resurrect staging folders/chooser or reset storage.
 
-Current recent-list behavior supersedes old chronology notes below: #today-naps h2 is Recent naps; filter completed sleeps in current home day period, latest first, show3 by default, optional data-more-naps expands all of today. expandedNaps is transient childId:period key, no backend writes. .nap-entry first is now most recent; tests updated. Last-duration uses longDuration and literal long. All existing-entry end sections expose data-toggle-end: when hasEnd=true label Still napping, clearing sets end=null on normal edit/save/dismiss. Reenabling restores editor.original.end when available, otherwise now. Backend range/overlap checks prevent multiple active or overlapping reopened sleeps; do not bypass them. Advanced settings has sandbox/real-tracker link; sandbox stays isolated huck-sample-v1 and never network. No virtual clock/scenario control yet. tests/recent-naps.cjs checks capped reverse order, expansion, reopen persistence, overlap rejection, zero backend requests in demo, three styles and narrow/desktop fit.
+## Architecture and file ownership
 
-Time Now shortcut is in .time-inputs beside each native time input, not duplicated in .time-shortcuts. updateNowButtons compares date+time with home-zone current minute; .is-current uses visibility:hidden (reserved32px column), disabled/aria-hidden to remove the inactive shortcut from interaction. Called on preview updates and local tick while entry editor open, never replaces input DOM. Now resets date as well as time via setEntryTime. Native OS picker itself cannot contain website buttons. tests/time-editor.cjs checks immediate appearance/disappearance, phone fit, autosave and unchanged timestamps.
+Static vanilla HTML/CSS/JavaScript on GitHub Pages. No framework, bundler, service worker, or hosted application server. Apps Script provides the shared API over a private Google Sheet.
 
-Add past sleep appears only as .nap-add at the bottom of #today-naps, not in .topbar. Wake profiles optionally contain ranges keyed by age band's before value (1,3,5,7,10,12), each {min,max} in minutes. Only deviations from built-ins are stored. HuckWake.configuredRanges merges validated overrides without mutating defaults; age lookup and guide use the same effective table. wakeFormProfile captures all age fields/birthday, per-child drafts survive switching children, Save validates every band, reset updates form values and Save persists removal of overrides. Reset intentionally leaves DOB unchanged. Shared metadata remains compatible with deployed backend, no redeploy. Verify edit/reset/save/reload/other-device and 320px settings fit with tests/wake.browser.cjs.
+| File | Responsibility |
+| --- | --- |
+| `tools/page.html` | Authoritative page template |
+| `shared/app.js` | Rendering, event handlers, local preferences/outbox, sync, forms, chart, animation |
+| `shared/core.js` | Deterministic UMD data reducer/validation; shared with Apps Script |
+| `shared/wake.js` | Frontend-only age calculations, range lookup and wake-quality cues |
+| `shared/styles.css` | Common components, animation, responsive behavior |
+| `shared/themes.css` | Daybook/Orbit/Compact layouts and default periwinkle palette |
+| `config.js` | Permanent backend endpoint, Sheet URL and live URL |
+| `tools/backend-tail.gs` | Apps Script adapter, fixed Sheet ID, locking, event log and JSONP |
+| `tools/build.mjs` | Generates HTML, manifest, standalone script |
+| `tools/serve.cjs` | Port 5190 preview, no-store headers, root and /huck/ support |
+| `tools/icons.cjs` | sharp-based pacifier PNG generation |
+| `tests/` | Pure and Playwright regressions |
 
-Wake guidance lives in frontend-only shared/wake.js (HuckWake), loaded before app.js. settings.wakeProfiles[childId] stores birthday and ranges keyed by age band's upper boundary through the existing arbitrary settings metadata action; backend tests verify replay/preservation. No backend redeploy is needed. prefs.wakeInfo defaults true and stays device-local; no Avi birthday is seeded. Settings drafts preserve each child's edits when switching child. Guide source: https://health.clevelandclinic.org/wake-windows-by-age and AAP infant sleep page. Completed-month bands resolve overlapping source boundaries conservatively: <1, <3, <5, <7, <10, <12; >=12 has no supported range. Ranges are approximate, not medical deadlines. Never instruct keeping a baby awake to meet a timer. Nighttime is neutral. Auto-ended means estimated/no colored judgment; stale >=max(180min,2*upper range), fallback upper180, means unknown. That heuristic is not clinical and cannot detect all missing logs. Awake detail emphasizes last nap/sleep duration; stale/missing timer shows dash, recent auto-ended timer has ~. #wake-window sits outside .readout so Orbit fits; Compact names readout/actions/wake grid areas. Avoid per-second cue DOM replacement (cache generated markup before Lucide transforms it). Run tests/wake.test.cjs and tests/wake.browser.cjs with simulated backend alongside regressions; never write test birthdays to the real Sheet. Legacy mode/custom min/max metadata is ignored; birthday always determines the active age row. Guidance is hidden without a valid nonfuture birthday, regardless of legacy custom metadata. The toggle is inside the Wake-window settings disclosure, remains local, and controls a live red validation message. A missing birthday is allowed on Save for nonusers of guidance; an invalid supplied birthday is rejected. Never erase edited ranges when clearing a birthday.
+Generated artifacts: `index.html`, `manifest.webmanifest`, `backend.sample.gs`. Edit their sources and run `node tools/build.mjs`; do not maintain generated copies independently. The backend file's name does not mean it is sample data: it is the complete deployable Apps Script.
 
-Canonical directory: `/Users/talg/Desktop/Websites For Fun/huck`. Keep README.md and this file aligned. Repository: https://github.com/talrme/huck . Live address: https://talrme.github.io/huck/ once Pages is enabled on main, root. Remote's initial README commit is preserved as the parent of the app commit.
+Backend generation concatenates `shared/core.js` + `tools/backend-tail.gs`. Never paste only the adapter into Code.gs. Asset URL version tokens in the page template must change with JS/CSS changes.
 
-Backend is deployed: config.js contains the user-supplied AKfycbyjK5CG deployment /exec URL. Public snapshot reads were verified. No real test records were written. Keep automated write tests on the simulated endpoint; do not claim live cross-device writes have been verified. The root app uses this connection without per-device setup. Sample mode never accesses it.
+## Permanent connections and verified state
 
-Production is the promoted staging-10 Daybook app at root. All staging directories, chooser and preview images are deleted. tools/build.mjs copies tools/page.html to index.html and builds the root manifest and standalone backend; it must never recreate staging directories. shared/styles.css contains common controls; shared/themes.css holds three layouts and default Daybook palette. Independent device prefs.style is daybook/orbit/compact, prefs.theme is original/night/berry/mint. Both change immediately through icon buttons in settings. Original means periwinkle for every style, not the old per-design palettes. Fresh/migrated devices default Daybook without changing stored theme/data/outbox. Samples require ?demo=1, use separate huck-sample-v1 storage and never send network requests. Real cache/outbox remains huck-v1, preserving previous staging data on the same origin. Blank backendUrl MUST clearly say local only, never pretend syncing works.
+Use `config.js` as the single source for the deployed /exec URL and URLs. Sheet ID: `1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ`.
 
-Backend: backend.sample.gs is GENERATED by concatenating shared/core.js and tools/backend-tail.gs. Always regenerate after core/backend changes. Sheet ID is fixed to the user's supplied private Sheet. setupHuck is idempotent and only creates HuckEvents with named headers; never clear tabs. Event log stores request ID, server received timestamp, command JSON. Replay uses received timestamps for deterministic outcomes. Schema is append-only, including edits, deletion, children, shared settings and automatic expiry. Locks serialize commands, duplicate request IDs do not write twice. Do not write fake data into the real Sheet for tests.
+The backend is deployed, reads work, and real writes were performed during the explicit screenshot import. On October 30, 2026, 24 approximate sleeps from screenshots dated October 19–30 were added to Avi's real logs after Pacific timezone confirmation. Existing records were preserved, all imported records were verified in a fresh snapshot, and blank days were not fabricated.
 
-Entry shape: id, childId, start/end epoch milliseconds, rev, deleted, autoEnded, updatedAt. One active sleep per child, no overlaps, no future dates; revision checks reject stale updates. Command shape: id (retry identity), type, payload, createdAt (optimistic local display only). Shared state has children, entries, settings, revision. Settings writes check global revision. Rejected commands are durable blocked items; require explicit user discard rather than silently dropping/overwriting. Network failures remain pending.
+Imported IDs follow `screenshot-YYYY-MM-DD-HHMM-HHMM`, with deterministic request IDs prefixed `import-`. Command metadata records screenshot source and approximation; entries do not have a user-facing approximation field. Do not present these times as exact or reimport them blindly. The one-off script/backups/audit were temporary local /tmp files, not a permanent repo import tool; they may no longer exist. Do not publish raw household records or screenshot files.
 
-Defaults: Avi, 7 AM day start, 8 PM night start, America/Los_Angeles; day cutoff240/replacement90 minutes, night cutoff720/replacement240. Classification uses the sleep start's shared timezone hour. Expiry is persisted on next backend read/write, not a scheduled alarm. Preserve that warning and auto-ended labeling. New settings apply to still-running sleeps. Never describe limits as infant care guidance.
+Automated cross-device tests use isolated browser contexts and a simulated API. Do not claim those are tests on two actual phones. The screenshot import verifies live write/read persistence, not every concurrent-phone scenario.
 
-Charts: dates left-to-right, newest right and initially visible; time top-to-bottom dayStart to next dayStart, sticky separate Y-axis. Crossing sleeps split visually, not in data. DST periods are actual 23/25-hour intervals scaled into a 24-hour display; durations remain accurate. More older days is explicit. Keep dialog form DOM stable across sync; do not rerender active inputs. Background polling15s only visible; tick1s local. Resync on opening, visibility/focus, persisted pageshow, online. Backend URL goes in config.js once, not a device UI.
+The Sheet stays private. Apps Script runs as its owner with web access Anyone. The endpoint is intentionally unauthenticated and can expose/change all profiles and records to anyone who knows it. Do not call this secure/authenticated medical storage or add secrets to frontend files.
 
-Phone-first. Compact title, footer settings/share, centered solid dialogs, outside click/Escape closes, rotating close icon, theme contrast, reduced motion, accessible icon labels. Assets are bundled, not CDN runtime dependencies. Tests write screenshots to temporary paths, not committed previews. GitHub Pages /huck/ prefix and root local hosting both supported by relative paths. Root manifest and relative icons must resolve from the promoted page; installed staging links are retired.
+## Data model and invariants
 
-Before release run core, backend, and browser tests; use simulated Sheets, never real household sleep records. User has supplied the repository for publishing. Any backend deployment change needs user instructions; do not assume editing Code.gs deploys it. The /exec URL is configured and read-verified; live cross-phone writes remain untested.
+State: `children`, `entries`, `settings`, `revision`.
 
-Real pre-backend state has localOnly=true. On connecting, preserve it under huck-local-backup-v1 before replacing base with a shared snapshot. Settings exposes explicit all-or-nothing validated import and JSON backup download. Demo never migrates. Import creates new retry-safe commands for IDs absent from shared state; backup is never erased. Keep network-failure status truthful even when no writes are pending.
+Child: `id, name, archived`.
+Entry: `id, childId, start, end, rev, deleted, autoEnded, updatedAt`.
+Start/end are epoch milliseconds; `end: null` is active. A deleted record is soft-deleted.
 
-App branding is now Lucide Lab baby-pacifier, bundled SVG and license; PNG assets generated by tools/icons.cjs using sharp at 32/180/192/512px. Favicon/apple-touch/manifest references must stay aligned in tools/build.mjs. Bundled sleeping.png (Twemoji1f634) and awake.png (1f476) indicate sleep state with CSS breathing/playful movement, not day/night. Old moon/sun assets are unused. Time editor uses separate native date/time controls, Today/Yesterday/Other selection, an Ended / Set time disclosure (no Still sleeping switch); Clear hides the end controls and keeps the sleep running, quick +/-5m/Now/5m-ago, live validation and duration. Custom starts default5m ago; pastDefaults finds a real available gap of up to45m (at least5m) or before earliest entry. Preserve exact original milliseconds on unchanged save. Home timezone conversion remains shared America/Los_Angeles, not the phone timezone. No Apps Script changes needed for these frontend improvements. Automated tests do not emulate physical OS picker sheets.
+Command: `id, type, payload, createdAt`. Command ID is retry identity, not entry ID. Frontend uses createdAt for optimistic replay; server event replay uses server received time.
 
-tick() shows seconds only for an active sleep, using stable elapsed-main and elapsed-seconds nodes and tabular figures. Hours/minutes remain primary; smaller seconds share the same baseline in a stable flex row. fitElapsed scales only the primary duration when necessary to fit long text in compact containers, keeping it larger than seconds; Daybook reserves space for its absolute-position state artwork. Resize and local ticks refit without replacing timer nodes. Awake/history/summary remain minute-based. role=timer with aria-live=off avoids per-second announcements. Ticks use absolute timestamps and require no network calls. renderSyncActivity toggles the header #sync-activity from existing busy state: immediately on sync entry and via final render on success/failure; no extra requests. Sync icon rotates and state art moves only when motion is enabled, respecting both OS and local preferences. tests/timer-polish.cjs uses gated simulated requests and long active sleep to verify indicator lifecycle, inline seconds movement, width/overlap through11h59m, all layouts/themes, both PNG loads and reduced motion.
+Actions: `start, add, end, edit, delete, child, archive, settings, expire`.
+Edits/end/delete require the entry's `expectedRev`. Settings writes require global `expectedRevision`.
 
-Current layout: timer followed by #today-naps (completed non-deleted sleeps intersecting current period, newest first; cap3 with expansion, full durations). Bold duration, muted time range, auto-ended label when applicable, entire row opens editor. No #summary/#last-entry. Chart has exactly one .is-today column with aria-current=date, accented Today/date header and tinted track; older block fills muted, labels remain opaque. Verify all three styles crossed with all four colors on phone/desktop. No backend redeployment is needed for promotion or layout preferences.
+Preserve:
+- One active sleep per child.
+- No overlapping live sleeps for that child, including reopening a completed one.
+- Positive, finite, nonfuture timestamps; completed end strictly after start.
+- Archived children cannot accept new sleep edits through normal commands.
+- At least one child active; do not archive a child with running sleep.
+- No silent overwrites on revision conflicts.
 
-Today's naps heading matches Sleep history in size, weight and color. On stacked phone layouts the history section gets extra spacing and a subtle divider; desktop side-by-side layout remains unchanged. List chronology is independent of the chart's date-column ordering (newest day still on right).
+The shared settings action accepts additional metadata. Birthday/range profiles therefore required no backend change:
+```js
+settings.wakeProfiles[childId] = {
+  birthday: "YYYY-MM-DD",
+  ranges: { "3": { min: 45, max: 100 } }
+};
+```
+Example values above illustrate structure, not household data. Range keys are the exclusive upper completed-month boundaries `1, 3, 5, 7, 10, 12`. Only deviations from built-ins are stored. Legacy `mode/custom/min/max` fields are ignored by age lookup; do not restore that UI.
 
-Today's naps also has a 36px break above it and a horizontal divider below the active timer. Daybook uses the same 2px accent rule and 15px heading inset as Sleep history; other styles use a subtle 1px rule and 24px inset. Preserve the break in Compact as well.
+## Event log and deployment
 
-Active controls: Start sleep now / End sleep now plus a native range slider1..10 minutes, default3 per mode/session. Prompt Ended/Started a few minutes ago? precedes slider; label #delay-label shows pluralized X minutes ago and #delay-clock beside it. Small outlined data-delay-apply simply says End/Start nap (sleep at night), with no check icon or duplicated time. Dragging only updates preview. Range is always1..10, never clamps selection or disables the slider; updateDelay disables confirmation and shows inline feedback when at<=active.start or at<last.end. Core validation remains the final authority. renderActions keeps DOM stable for childId:runningId/awake context across polling, preserving slider focus/drag. Readout has one linked start-time to Enter end time span; data-open-end opens the editor with end fields already visible/defaultnow. Clock icon beside Start sleep now is manual start. Compact stacks slider/confirmation. Native range supports touch/keyboard; labels/clock use home timezone. No Apps Script change. Ending an active entry via end/edit schedules one local arrival effect after validation; render consumes arrival once, so sync never replays it. animateArrival makes an aria-hidden fixed badge via Web Animations toward the new recent row, then removes it, highlighting the row. prefs.motion=false or OS reduced-motion replaces movement with a notice. Only completed sleeps are in Recent naps; running remains in timer and chart. tests/end-controls.cjs verifies mode defaults, clamping, no writes on drag, stable slider DOM, exact committed times, manual edit, all layouts/colors, reduced motion and animation cleanup.
+HuckEvents columns are exactly `id | receivedAt | command`. Header validation fails closed; never repair by clearing user data. setupHuck is idempotent and leaves unrelated tabs alone.
 
-Entry dismissals (backdrop, X, native dialog cancel/Escape) go through saveEntry(true): save valid changed values, preserve unchanged records without revision changes, and do not create new records from untouched defaults. Invalid or conflicting edits remain open. editor.kind distinguishes entry forms from deletion confirmations/settings to prevent accidental saves with absent controls. Native time change tracks minute at focus/change and blurs only when minute changes, not hour-only changes; real OS picker behavior is not guaranteed by blur. No per-keystroke backend writes.
+For each request the adapter takes a script lock, loads/replays the append-only log, settles expired timers, applies/deduplicates a command if present, and returns the authoritative state. Retries with the same request ID are not appended twice. Retain deterministic server-time replay and lock release in finally.
+
+Transport is JSONP through injected script tags because this is a static site calling Apps Script. Snapshot and command actions use GET, with callback/payload parameters and a cache-buster. A snapshot can persist timer expiry, so it is not guaranteed to be write-free.
+
+Backend deployment is separate from GitHub:
+1. Change shared/core.js or backend adapter only if needed.
+2. Build the full backend.sample.gs.
+3. Have the owner replace Code.gs completely, save, then Deploy → Manage deployments → pencil → New version → Deploy.
+4. Preserve the existing /exec URL.
+5. Verify deployed behavior; explain any required owner action before saying complete.
+
+Layout, preferences, image changes, and current wake metadata do not require redeployment. Changes to reducer rules/actions/validation/replay do. Editing Code.gs alone never updates the deployed app. README retains detailed owner-facing setup instructions.
+
+## Sync and persistence
+
+Production storage key: `huck-v1`. Preserve it across releases and former staging migrations. It contains base snapshot, durable queue, preferences and localOnly metadata.
+
+Sample key: `huck-sample-v1`, enabled only by `?demo=1`. Sample mode must never call the real API, write shared data, or migrate into production. Advanced settings opens the sandbox or returns to the real tracker. Its banner clearly labels fictional records.
+
+Earlier real local-only data is preserved in `huck-local-backup-v1` before connecting. Import/download is explicit, validates all proposed entries first, skips existing IDs, never deletes the backup, and excludes samples.
+
+`enqueue` validates against projected state, saves the outbox before networking, optimistically renders, then syncs. `projected` replays unblocked queued commands over base and derives expiry. Backend success replaces base and removes acknowledged commands. A rejected command remains blocked for explicit review/discard; do not drop it or overwrite the other device. New actions are blocked while review is needed.
+
+A sync cycle reads snapshot, flushes queued commands serially, and updates status. In-flight guard prevents concurrent cycles in one page. Timeout is 35 seconds. Failures remain pending and retry later.
+
+Triggers:
+- Opening/reload.
+- Visible foreground return; focus checks are throttled to five seconds since last check.
+- Persisted pageshow and online event.
+- Every 15 seconds while visible.
+- A local edit when visible and not already busy.
+
+Hidden pages do not start new cycles; already-running requests can finish. There is no websocket/push service or per-second polling. A returning phone may take several seconds to obtain the shared state. The 1-second timer tick is local.
+
+`renderSyncActivity` uses existing busy state to show the header's animated Syncing indicator immediately and hide it on completion/failure. Footer status distinguishes syncing/pending/conflict/unavailable/synced. Animation is feedback, not a promise the command reached the server. Keep failure messages truthful even with no pending writes.
+
+Localhost/ports/Pages are separate origins, so local outboxes/preferences are not shared between them. Configured pages still use the same remote API. No service worker cache exists. Browser persistence can be cleared by the user/OS; do not imply it is a server backup.
+
+## Shared versus local settings
+
+Shared:
+- Children and entries.
+- Home timezone/dayStart/nightStart and forgotten-timer rules.
+- Each child's birthday and edited age-range table.
+
+Device-local:
+- Selected child.
+- Style: daybook/orbit/compact.
+- Theme: original/night/berry/mint.
+- Motion preference and wakeInfo visibility toggle.
+
+Style/color/wake visibility apply immediately. Shared form changes use Save and revision checking. Per-child wake drafts survive switching child within settings. Missing birthdays do not block saving unrelated preferences; invalid provided birthdays and invalid ranges do.
+
+## Current phone UX contract
+
+Keep it compact, approachable and usable one-handed. No marketing titles/subtitles, redundant labels, chooser, dashboards or unnecessary counters. Prefer familiar icons, named tooltips/labels, and adequate touch targets.
+
+Header: small pacifier, Huck, selected child, temporary sync activity.
+Timer: sleeping/awake state artwork, large duration, small inline ticking seconds only during active sleep.
+Active time row: linked start time + muted "to" + linked "Enter end time"; same link font/color. It lives inside .readout and Daybook's accent line, not under the actions.
+Actions: Start/End nap/sleep now; separate earlier-time group with breathing room and subtle divider.
+Recent naps: completed records intersecting current home day, latest three, newest first; Show all of today's naps/Show fewer; subtle Add sleep at bottom. Expansion is transient childId:period key. Do not show the active record here.
+History: newest day initially visible at right, sticky Y-axis, emphasized today, muted older blocks, editable chart blocks.
+Footer: Settings and Save / Share.
+
+The overall status "Sleeping" is generic. Session-specific wording uses `sleepName(start, state)`:
+- Main start uses now.
+- Slider start uses its proposed timestamp.
+- End actions use recorded start, never current clock time.
+- Editor titles, duration noun and Still napping/Still sleeping use the edited start.
+Crossing morning/evening alone must not rename an active session.
+
+The slider is always 1–10, default three per action mode/session. Dragging previews only. Above it, show "3 minutes ago · 2:34 PM" under "Ended/Started a few minutes ago?". Small right-hand confirmation simply says End/Start nap/sleep. Zero is exclusively the main Now action.
+Invalid selections stay selected; disable confirmation and explain if at <= active.start or at < previous.end. Do not dynamically shorten the scale or silently adjust the selected offset.
+
+`renderActions` preserves its DOM for the same child/running entry/awake context, avoiding lost slider focus or a dropped drag during polling. Keep form DOM stable across sync as well.
+
+Daybook is default with periwinkle original palette. Orbit and Compact remain usable alternatives, not staging sites. Check all three with all four themes, particularly Night contrast.
+
+## Time editor behavior
+
+Separate date preset and native time fields, not a hand-rolled picker. Today / Yesterday / Other, +/-5m and 5m ago. Manual start defaults five minutes ago; pastDefaults finds a nonoverlapping gap up to45m (minimum5m) or before earliest record.
+
+`entryTime` preserves original milliseconds when date/time fields are unchanged. Do not rewrite an entry solely because an editor was opened.
+`updateNowButtons` compares the selected home date/time with the current minute. Inline Now resets both, reserves its width with visibility:hidden when current, and is disabled/aria-hidden while absent.
+
+Start link uses data-edit. End link uses data-open-end=entryId; opens the existing record with end fields visible and default now. This is not a second data-edit under #timer-detail.
+Within an editor, Set time reveals an end for an active entry. Still napping/Still sleeping clears it; saving/dismissing resumes the same record subject to overlap rules. Toggling back restores original end if available.
+
+Backdrop, X and Escape route entry dialogs through saveEntry(true): valid changed edits save; invalid/conflicting edits remain open. Untouched new defaults do not create entries. Explicit Save closes directly, avoiding dismissal recursion. Keep editor.kind separate for entry/settings/delete confirmation so missing fields cannot trigger an accidental save.
+
+Minute changes attempt blur to dismiss native picker; hour-only changes retain focus. This is OS-dependent. Desktop viewport emulation does not test physical picker sheets. Do not add per-keystroke network writes.
+
+All dialogs are centered, solid, readable in every theme, close on outside click/X/Escape, and use a rotating X. Entry autosave is the documented exception to a simple discard-on-close assumption.
+
+## Time, chart and auto-end rules
+
+Home timezone defaults America/Los_Angeles, independent of phone timezone.
+Day starts7am, night starts8pm. Chart shows dayStart to next dayStart.
+Save absolute timestamps; never make an active timer depend on a live background interval.
+
+Chart dates oldest left/newest right; preserve horizontal scroll unless already at newest edge. Explicit Older days loads more. Crossing sleeps split visually, not into separate records. Today has aria-current=date and tinted styling. Recent list counts full intersecting record durations once.
+DST: compute actual 23/25h boundaries and scale to fixed chart height; duration math stays actual elapsed. A more literal DST axis is a possible future improvement, not implemented.
+
+Forgotten timer defaults:
+- Day cutoff240 minutes, replacement90.
+- Night cutoff720 minutes, replacement240.
+- Classify by sleep start time.
+- Settle on projected state and next backend request; no scheduled/background alarm.
+- Preserve autoEnded labels, editability and uncertain wake calculations.
+These are bookkeeping corrections, never infant-care recommendations. Changes can affect an active record.
+
+## Wake guidance
+
+`shared/wake.js` is frontend-only UMD HuckWake. Age uses calendar months and date-only birthday, including month-end anniversaries. No seeded birthday.
+
+Guidance requires both local wakeInfo=true and a valid, nonfuture shared birthday. With no birthday, hide the entire main cue; within Wake-window settings show red "Birthday required to use wake-window info." when enabled. Clearing birthday preserves edited ranges. There is no standalone custom/fixed range mode.
+
+Completed-month bands: <1:30–60min; <3:60–120; <5:75–150; <7:120–240; <10:150–270; <12:180–360. At12mo no supported band. These boundaries resolve overlapping source ranges into app bands; do not imply exact developmental deadlines.
+
+`configuredRanges` merges validated per-child overrides without mutating built-ins. Reset changes fields to defaults; Save removes overrides. Highlight current age row. Validate min>=5, max>=min, max<=720 minutes.
+Age/range sources: https://health.clevelandclinic.org/wake-windows-by-age and AAP infant sleep page linked in README.
+Never instruct keeping a baby awake until a timer/range. Follow sleepy/hunger cues; pediatrician for individual/prematurity questions.
+
+Data quality:
+- No/invalid/future end: unknown.
+- Stale elapsed >= max(180min, 2*upper range): unknown; fallback upper180 means6h.
+- Recent auto-ended record: estimated (~), no colored judgment.
+- Reliable nighttime: neutral.
+- Reliable daytime: recently awake / within usual nap range / beyond usual range.
+Staleness is a missing-log heuristic, not clinical advice or detection of all unlogged naps.
+
+`#wake-window` stays outside .readout so Orbit does not overflow; Compact has named readout/actions/wake areas. Cache generated cue markup before Lucide replaces <i> nodes; do not replace the cue every second unnecessarily.
+
+## Animation and artwork
+
+`#elapsed-main` and `#elapsed-seconds` are stable nodes in a baseline flex row. Seconds are tabular, 14px and muted; primary duration stays larger. `fitElapsed` refits long primary text to the actual container and reserves Daybook's mascot area. Refit on tick/resize without restarting the timer or re-rendering active inputs. role=timer with aria-live=off prevents continuous announcements.
+
+`.timer-mascot` owns position/dimensions in themes. #timer-art fills it. sleeping.png/awake.png are bundled Twemoji images, not day/night symbols. Sleeping uses breathing motion plus staggered floating Zs. Awake uses a stronger bounce/tilt and Lucide sparkles. Decorations are aria-hidden, noninteractive, and do not change layout dimensions.
+
+Arrival runs only for a locally validated transition from active to completed via end/edit:
+1. Capture old elapsed bounds before render.
+2. Consume a single transient arrival after render (never on sync replay).
+3. Send a duration badge on a1050ms curved/tilted flight toward its recent row.
+4. Look up the current row again on landing, so a sync rerender does not lose the850ms bounce/highlight.
+5. Always remove the ghost. Respect motion flags again before landing.
+
+For local motion=false or OS reduced motion, skip flights/particles/spinners and keep a concise saved notice/status. Do not make movement necessary to understand a save.
+
+Brand assets: Lucide Lab pacifier and bundled licenses. Twemoji v14.0.2 sleeping1f634/baby1f476, CC BY4.0; credit in README. Old moon/sun files are unused. Keep favicon/apple-touch/manifest references in sync when changing install artwork. Manifest root start_url is ./; child sharing uses ?child=<id>, while selected-child preference is local.
+
+## Testing and release
+
+Never silently add dummy data to production. Standard tests intercept the API or use ?demo=1. Any real household writes/imports need explicit user authorization. For a future screenshot import: confirm timezone, estimate transparently, read/backup current state, use stable IDs, skip duplicates/overlaps, submit through core/API, and verify by rereading. Do not edit Sheet event rows directly.
+
+Pure:
+- tests/core.test.cjs: reducer constraints.
+- tests/backend.test.cjs: in-memory Sheets adapter/locking/idempotency/replay, shared wake metadata.
+- tests/wake.test.cjs: age/range/quality logic.
+
+Playwright:
+- tests/browser.cjs: owns ephemeral server, main workflows/themes/simulated two-device sync.
+- tests/time-editor.cjs: input defaults, validation, autosave, unchanged precision, icons.
+- tests/end-controls.cjs: scale1..10, preview-only drag, valid saves, stable DOM, timing/link layout, motion/fallback.
+- tests/recent-naps.cjs: cap3/reverse order/expand/reopen/overlap/sandbox isolation.
+- tests/sleep-labels.cjs: morning/evening crossings and edited start classification.
+- tests/timer-polish.cjs: seconds/long durations/images/delayed sync lifecycle/reduced motion.
+- tests/wake.browser.cjs: shared profile, birthday requirement, reset, local toggle, stale/missing data and night cues.
+
+Except browser.cjs, browser scripts expect the local preview on5190. Most hardcode macOS Google Chrome; main browser.cjs also supports PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH. Playwright and sharp must be resolvable; no package/build dependency is needed for the deployed site.
+Current Codex runtime (machine-specific convenience, rediscover on another machine):
+- Node: /Users/talg/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin/node
+- NODE_PATH: /Users/talg/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules
+
+Before releasing code: build, run pure tests plus relevant browser regressions, inspect actual screenshots on320/390px and desktop, check all styles/themes, image loading, overlap and reduced motion. Screenshot files belong in /tmp, not the repository. Native OS pickers still need physical phone checks.
+Run git diff --check, review diff/status, commit only task changes, push main when authorized, and report test results and any owner deployment work. Do not claim the Pages build finished solely because push succeeded.
+
+## Lessons for this and future projects
+
+- Use a single shared reducer for optimistic validation and server replay instead of duplicating rules.
+- Save outbox before networking, make commands retry-safe, lock writes, and reject stale revisions.
+- Show pending versus confirmed state honestly. Refresh/foreground sync plus visible-only modest polling is simpler than real-time infrastructure for a small family app.
+- Keep API configuration in the repo, not phone settings. Keep Sheet private but explain the unauthenticated endpoint tradeoff.
+- Separate local appearance preferences from shared profile/data settings explicitly.
+- Use native phone inputs where useful, but never assume desktop phone emulation reproduces native sheets.
+- Make sample mode physically separate from real storage/network and obvious on screen.
+- Data-entry controls need stable DOM during background refresh; rerendering a focused input/slider feels like a keyboard or drag bug.
+- Test long values and every theme, not only the default screenshot.
+- Use small local artwork plus CSS/Web Animations rather than heavy GIFs when it accomplishes the effect.
+- This append/replay Sheets API suits modest trusted-household data. It is not an authenticated public service, high-volume chat transport, or unlimited real-time database. Reassess quotas/log replay costs if growing.
+
+## Discussed but not implemented
+
+Sandbox pretend clock, jump-ahead controls, and presets for forgotten timers/missing logs/overnight/boundaries. A fake shared Test child is available for real two-phone dogfooding, but creates real backend records and is not an isolated sandbox. Do not change system time or leak simulated future timestamps into production to emulate time travel.
+
+Future testing controls should use a sandbox-only clock abstraction and preserve production timestamp validation. No new backend, notifications, automatic sleep prediction, or background scheduler has been requested/implemented.
