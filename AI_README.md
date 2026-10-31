@@ -168,6 +168,8 @@ Daybook is default with periwinkle original palette. Orbit and Compact remain us
 
 ## Time editor behavior
 
+Reopening should show the top/current timer, not the previous vertical scroll position. tools/page.html disables browser scroll restoration early. reopenAtTop uses instant window scroll plus a next-frame reset on initial render, load/pageshow (including bfcache), and visible foreground return. Do not reset on polling, ticks, resize, or ordinary focus: those would interrupt scrolling or editing. Chart horizontal scroll and modal drafts are not reset.
+
 The user explicitly requested replacing native time sheets with custom scrolling wheels. shared/time-picker.js exposes HuckTimePicker.mount/refresh/flush. Each visible time-field has day/hour/minute/AM-PM scroll-snap columns, 36px rows, five-row viewport, curved/faded nearby values, a highlight strip, spinbutton semantics and arrow/Page/Home/End keys. Hidden date/time inputs keep the existing timestamp parser and unchanged-precision behavior. Day choices cover the past730 days plus today and preserve an older record's date if necessary. Only mount visible fields; mount/refresh end after revealing it. Manual start defaults five minutes ago; pastDefaults finds a nonoverlapping gap up to45m (minimum5m) or before earliest record.
 
 `entryTime` preserves original milliseconds when date/time fields are unchanged. Do not rewrite an entry solely because an editor was opened.
@@ -259,6 +261,7 @@ Playwright:
 - tests/sleep-labels.cjs: morning/evening crossings and edited start classification.
 - tests/timer-polish.cjs: seconds/long durations/images/delayed sync lifecycle/reduced motion.
 - tests/history.cjs: block details/edit, selection, active fill in all themes, progressive 75-day scroll and anchoring, no history API calls, split records, empty history and phone/desktop layouts.
+- tests/reopen-scroll.cjs: reload, history/back restoration, simulated hidden/foreground events, page-show fallback, normal scrolling/focus/sync stability and open draft preservation. Headless Chrome does not hide other tabs on this machine; physical phone app switching still needs a manual check.
 - tests/wake.browser.cjs: shared profile, birthday requirement, reset, local toggle, stale/missing data and night cues.
 
 Except browser.cjs, browser scripts expect the local preview on5190. Most hardcode macOS Google Chrome; main browser.cjs also supports PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH. Playwright and sharp must be resolvable; no package/build dependency is needed for the deployed site.

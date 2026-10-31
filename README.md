@@ -16,6 +16,8 @@ The app is already configured. The setup instructions below are for recreating o
 
 ## Everyday use
 
+Opening, reloading, navigating back to, or returning to the app starts at the top instead of restoring the previous page scroll position. Normal scrolling while using the app is unchanged.
+
 - **Start nap now / Start sleep now** begins a timer immediately. The start time determines whether it is called a nap or sleep, using the shared day/night schedule.
 - **End nap now / End sleep now** ends that same session. Its name does not change just because it crosses morning or evening.
 - For a delayed entry, use **Started/Ended a few minutes ago?** The slider stays at **1–10 minutes**, defaulting to three. The preview shows the offset and clock time; the small Start/End button records it. Dragging alone never saves. Warnings stay hidden until you move the slider or try its Start/End button. An invalid attempt explains the conflict and disables confirmation without changing the scale. Now actions reset this interaction state.

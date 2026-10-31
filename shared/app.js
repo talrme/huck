@@ -388,14 +388,19 @@
   });
   document.addEventListener('input',event=>{if(event.target.id==='sleep-delay'){$('#actions').dataset.delayTouched='true';const s=projected(),mode=C.active(s,child(s).id)?'end':'start';delays[mode]=Number(event.target.value);updateDelay(s);}});
   $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
+  function reopenAtTop(){
+    const reset=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
+    reset();requestAnimationFrame(reset);
+  }
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();reopenAtTop();}});
   $('#chart-scroll').addEventListener('scroll',()=>{if($('#chart-scroll').scrollLeft<60)loadOlderHistory();},{passive:true});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',sync);
   window.addEventListener('resize',()=>requestAnimationFrame(fitElapsed));
-  window.addEventListener('pageshow',e=>{if(e.persisted)sync();});
+  window.addEventListener('pageshow',e=>{reopenAtTop();if(e.persisted)sync();});
+  window.addEventListener('load',reopenAtTop,{once:true});
   const requested=new URL(location.href).searchParams.get('child');if(requested)prefs.child=requested;
-  render();sync();
+  render();reopenAtTop();sync();
   setInterval(()=>{if(!document.hidden)tick();},1000);
   setInterval(()=>{if(!document.hidden){if(!$('#modal').open)render();sync();}},15000);
   window.HuckTest={getState:projected,enqueue,sync,periodDate,wallTime,parseInput};
