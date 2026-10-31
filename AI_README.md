@@ -158,7 +158,7 @@ The overall status "Sleeping" is generic. Session-specific wording uses `sleepNa
 Crossing morning/evening alone must not rename an active session.
 
 The slider is always 1–10, default three per action mode/session. Dragging previews only. Above it, show "3 minutes ago · 2:34 PM" under "Ended/Started a few minutes ago?". Small right-hand confirmation simply says End/Start nap/sleep. Zero is exclusively the main Now action.
-Invalid selections stay selected; disable confirmation and explain if at <= active.start or at < previous.end. Do not dynamically shorten the scale or silently adjust the selected offset.
+Invalid selections stay selected. #actions.dataset.delayTouched starts false per child/running-entry/awake context; tick/poll must not mark it touched. Slider input or a backdated confirmation attempt sets it true. Show inline error and disable confirmation only when touched and at <= active.start or at < previous.end. An untouched invalid default remains enabled so its first click can reveal the reason; that click must return before enqueue. New context after Now resets warnings. Do not dynamically shorten the scale or silently adjust the selected offset.
 
 `renderActions` preserves its DOM for the same child/running entry/awake context, avoiding lost slider focus or a dropped drag during polling. Keep form DOM stable across sync as well.
 

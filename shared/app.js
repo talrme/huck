@@ -79,6 +79,7 @@
     const box=$('#actions'),mode=running?'end':'start',context=child(s).id+':'+(running?.id||'awake');
     if(box.dataset.context!==context){
       box.dataset.context=context;
+      box.dataset.delayTouched='false';
       box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
     }
     updateDelay(s,running);
@@ -95,8 +96,9 @@
     $('#primary-action').textContent=(running?'End ':'Start ')+mainNoun+' now';
     input.setAttribute('aria-label',(running?'End ':'Start ')+noun+', minutes ago');
     $('#delay-action').textContent=(running?'End ':'Start ')+noun;
-    $('#delay-error').hidden=!invalid;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
-    $('[data-delay-apply]').disabled=invalid;$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');
+    const showError=invalid&&$('#actions').dataset.delayTouched==='true';
+    $('#delay-error').hidden=!showError;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
+    $('[data-delay-apply]').disabled=showError;if(showError)$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');else $('[data-delay-apply]').removeAttribute('aria-describedby');
     $('#delay-clock').textContent=clock(now-selected*60000);
   }
   function animateArrival(){
@@ -314,7 +316,7 @@
     if(t.matches('[data-adjust]')){const [prefix,minutes]=t.dataset.adjust.split(':'),current=entryTime(prefix);setEntryTime(prefix,Math.min(Date.now(),(Number.isFinite(current)?current:Date.now())+Number(minutes)*60000));}
     if(t.matches('[data-now]'))setEntryTime(t.dataset.now,Date.now());
     if(t.matches('[data-ago]')){const [prefix,minutes]=t.dataset.ago.split(':');setEntryTime(prefix,Date.now()-Number(minutes)*60000);}
-    if(t.matches('[data-delay-apply]')){const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
+    if(t.matches('[data-delay-apply]')){$('#actions').dataset.delayTouched='true';const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);if(t.disabled)return;const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
     if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-end')&&!editor.hasEnd){editor.hasEnd=true;$('#end-fields').hidden=false;const toggle=$('[data-toggle-end]');toggle.textContent='Still napping';toggle.setAttribute('aria-expanded','true');setEntryTime('end',Date.now());}}
@@ -376,7 +378,7 @@
     }
     updateTimePreview();
   });
-  document.addEventListener('input',event=>{if(event.target.id==='sleep-delay'){const s=projected(),mode=C.active(s,child(s).id)?'end':'start';delays[mode]=Number(event.target.value);updateDelay(s);}});
+  document.addEventListener('input',event=>{if(event.target.id==='sleep-delay'){$('#actions').dataset.delayTouched='true';const s=projected(),mode=C.active(s,child(s).id)?'end':'start';delays[mode]=Number(event.target.value);updateDelay(s);}});
   $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
