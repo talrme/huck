@@ -17,7 +17,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    assert.equal(await p.evaluate(id=>HuckTest.getState().entries.find(e=>e.id===id).end,id),null);assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
    await p.reload();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
    // An older entry cannot be reopened over the already active nap.
-   await p.locator('.nap-entry').nth(1).click();await p.locator('[data-toggle-end]').click();await p.locator('[data-save-entry]').click();assert(await p.locator('#modal').isVisible());assert((await p.locator('#toast').innerText()).includes('overlaps'));
+   await p.locator('.nap-entry').first().click();await p.locator('[data-toggle-end]').click();await p.locator('[data-save-entry]').click();assert(await p.locator('#modal').isVisible());assert((await p.locator('#toast').innerText()).includes('overlaps'));
    await p.locator('[data-toggle-end]').click();await p.locator('[data-save-entry]').click();await p.locator('[data-end="0"]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');
    await p.evaluate(()=>{document.querySelector('#toast').hidden=true;scrollTo(0,0);});await p.screenshot({path:`/tmp/huck-recent-${style}.png`});
    for(const width of [320,1280]){await p.setViewportSize({width,height:900});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}

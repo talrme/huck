@@ -11,6 +11,7 @@
   let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
   let busy = false, message = '', lastChecked = 0, editor = null, days = 7, rendered = false, expandedNaps = '';
+  const delays={start:3,end:3};let arrival=null;
   const uuid = () => crypto.randomUUID();
   function parts(at) { return Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone:base.settings.timezone, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(at)).map(p=>[p.type,p.value])); }
   function wallTime(date, hour = base.settings.dayStart, minute = 0) {
@@ -48,7 +49,7 @@
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
     $('#review').hidden=!queue.some(c=>c.blocked);
     const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(Date.now()), start=wallTime(today), end=wallTime(shiftDate(today,1));
-    const todaysNaps=list.filter(e=>e.start<end&&(e.end||Date.now())>start),napKey=c.id+':'+today,showAll=expandedNaps===napKey;
+    const todaysNaps=list.filter(e=>e.end&&e.start<end&&e.end>start),napKey=c.id+':'+today,showAll=expandedNaps===napKey;
     $('#today-naps').innerHTML=`<h2>Recent naps</h2>${todaysNaps.length?(showAll?todaysNaps:todaysNaps.slice(0,3)).map(e=>`<button class="nap-entry" data-edit="${esc(e.id)}"><span class="nap-duration"><strong>${duration((e.end||Date.now())-e.start)}</strong>${!e.end?'<small>Sleeping</small>':e.autoEnded?'<small>Auto-ended</small>':''}</span><span class="nap-times">${clock(e.start)}–${e.end?clock(e.end):'now'}</span>${icon('pencil')}</button>`).join(''):'<p class="fine">No naps yet today.</p>'}${todaysNaps.length>3?`<button class="text-link nap-more" data-more-naps aria-expanded="${showAll}">${showAll?'Show fewer':'Show all of today’s naps'} ${icon(showAll?'chevron-up':'chevron-down')}</button>`:''}<button class="text-link nap-add" data-add>${icon('plus')} Add sleep</button>`;
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
@@ -56,9 +57,39 @@
     $('#timer-detail').innerHTML=running?`Started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
     $('#timer-art').src=new URL(running?'shared/moon.png':'shared/sun.png',root);
     $('#timer-art').alt='';
-    const endLabel=C.isNight(Date.now(),s.settings)?'End sleep':'End nap';
-    $('#actions').innerHTML=running?`<button class="primary" data-end="0">${endLabel}</button><div class="quick-row end-shortcuts"><button data-end="5" aria-label="Ended five minutes ago"><span>Ended</span><span>5m ago</span></button><button data-end="10" aria-label="Ended ten minutes ago"><span>Ended</span><span>10m ago</span></button><button data-edit="${esc(running.id)}" aria-label="Manually edit sleep times">${icon('pencil')}<span>Edit time</span></button></div>`:`<button class="primary" data-start="0">${icon('play')} Start sleep</button><div class="quick-row"><button data-start="5">5m ago</button><button data-start="10">10m ago</button><button data-custom-start>${icon('clock-3')} Other</button></div>`;
-    renderChart(s);tick();icons();persist();
+    renderActions(s,running);
+    renderChart(s);tick();icons();persist();animateArrival();
+  }
+  function renderActions(s,running){
+    const box=$('#actions'),mode=running?'end':'start',context=child(s).id+':'+(running?.id||'awake');
+    if(box.dataset.context!==context){
+      box.dataset.context=context;
+      box.innerHTML=`<button class="primary" data-${mode}="0">${running?'End sleep now':icon('play')+' Start sleep now'}</button><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label">3 min ago</span></label><input id="sleep-delay" type="range" min="0" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>Now</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply>${icon('check')}<span><strong id="delay-action"></strong><small id="delay-clock"></small></span></button></div><button class="text-link manual-time" ${running?`data-edit="${esc(running.id)}"`:'data-custom-start'}>${icon('clock-3')}${running?'Enter end time':'Enter start time'}</button>`;
+    }
+    updateDelay(s,running);
+  }
+  function updateDelay(s=projected(),running=C.active(s,child(s).id)){
+    const input=$('#sleep-delay');if(!input)return;
+    const mode=running?'end':'start',now=Date.now(),last=entries(s).find(e=>e.end),boundary=running?running.start:last?.end;
+    const max=boundary?Math.min(10,Math.max(0,Math.floor((now-boundary-(running?1:0))/60000))):10;
+    const selected=Math.min(max,delays[mode]);input.max=max;input.disabled=max===0;
+    if(input.value!==String(selected))input.value=selected;
+    input.setAttribute('aria-valuetext',selected+' minutes ago');
+    $('#delay-label').textContent=selected===0?'Just now':selected+' min ago';$('#delay-max').textContent=max+'m';
+    $('#delay-action').textContent=(running?'Ended':'Started')+(selected?' '+selected+'m ago':' just now');
+    $('#delay-clock').textContent=clock(now-selected*60000);
+  }
+  function animateArrival(){
+    if(!arrival)return;const effect=arrival;arrival=null;
+    const target=[...document.querySelectorAll('.nap-entry')].find(row=>row.dataset.edit===effect.id);
+    if(!target)return;
+    if(!prefs.motion||matchMedia('(prefers-reduced-motion: reduce)').matches){notice(duration(effect.duration)+' saved to Recent naps.');return;}
+    const end=target.getBoundingClientRect(),from=effect.from;
+    const ghost=document.createElement('div');ghost.className='sleep-transfer';ghost.setAttribute('aria-hidden','true');ghost.textContent=duration(effect.duration);ghost.style.left=from.left+'px';ghost.style.top=from.top+'px';document.body.append(ghost);
+    const x=end.left-from.left,y=end.top-from.top;
+    const motion=ghost.animate([{transform:'translate(0,0) scale(1)',opacity:.9},{transform:`translate(${x*.45}px,${y*.3}px) scale(.9)`,opacity:.85,offset:.45},{transform:`translate(${x}px,${y}px) scale(.7)`,opacity:0}],{duration:620,easing:'cubic-bezier(.22,.7,.3,1)'});
+    motion.finished.catch(()=>{}).finally(()=>ghost.remove());
+    target.animate([{background:'var(--soft)',transform:'translateY(-5px)'},{background:'transparent',transform:'translateY(0)'}],{delay:380,duration:650,easing:'ease-out'});
   }
   function tick(){
     if(editor?.kind==='entry')updateNowButtons();
@@ -77,6 +108,7 @@
       elapsed.removeAttribute('aria-label');
     }
     renderWakeCue(s,r,last);
+    updateDelay(s,r);
   }
   function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],Date.now(),dateKey(Date.now()),C.isNight(Date.now(),s.settings));}
   function renderWakeCue(s,running,last){
@@ -109,6 +141,8 @@
     if(queue.some(c=>c.blocked)){notice('Resolve the pending sync issue first.');return false;}
     const command={id:uuid(),type,payload,createdAt:Date.now()};
     try{C.apply(projected(),command,Date.now());}catch(e){notice(e.message);return false;}
+    const old=projected().entries.find(e=>e.id===payload.id&&!e.end&&!e.deleted);
+    if(old&&payload.end&&(type==='end'||type==='edit'))arrival={id:old.id,duration:payload.end-old.start,from:$('#elapsed').getBoundingClientRect()};
     if(demo||!HUCK_CONFIG.backendUrl){base=C.apply(projected(),command,Date.now());persist();render();}
     else{queue.push(command);persist();render();sync();}return true;
   }
@@ -242,6 +276,7 @@
     if(t.matches('[data-adjust]')){const [prefix,minutes]=t.dataset.adjust.split(':'),current=entryTime(prefix);setEntryTime(prefix,Math.min(Date.now(),(Number.isFinite(current)?current:Date.now())+Number(minutes)*60000));}
     if(t.matches('[data-now]'))setEntryTime(t.dataset.now,Date.now());
     if(t.matches('[data-ago]')){const [prefix,minutes]=t.dataset.ago.split(':');setEntryTime(prefix,Date.now()-Number(minutes)*60000);}
+    if(t.matches('[data-delay-apply]')){const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
     if(t.matches('[data-edit]'))openEntry(t.dataset.edit);
@@ -303,6 +338,7 @@
     }
     updateTimePreview();
   });
+  document.addEventListener('input',event=>{if(event.target.id==='sleep-delay'){const s=projected(),mode=C.active(s,child(s).id)?'end':'start';delays[mode]=Number(event.target.value);updateDelay(s);}});
   $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
