@@ -81,7 +81,7 @@
     if(box.dataset.context!==context){
       box.dataset.context=context;
       box.dataset.delayTouched='false';
-      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
+      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span><small id="delay-offset"></small></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
     }
     updateDelay(s,running);
   }
@@ -97,6 +97,7 @@
     $('#primary-action').textContent=(running?'End ':'Start ')+mainNoun+' now';
     input.setAttribute('aria-label',(running?'End ':'Start ')+noun+', minutes ago');
     $('#delay-action').textContent=(running?'End ':'Start ')+noun;
+    $('#delay-offset').textContent=selected+' '+(selected===1?'minute':'minutes')+' ago';
     const showError=invalid&&$('#actions').dataset.delayTouched==='true';
     $('#delay-error').hidden=!showError;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
     $('[data-delay-apply]').disabled=showError;if(showError)$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');else $('[data-delay-apply]').removeAttribute('aria-describedby');

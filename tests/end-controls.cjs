@@ -1,6 +1,6 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 const now=Date.parse('2026-10-30T18:00:00Z');
-async function select(p,n){await p.locator('#sleep-delay').evaluate((input,n)=>{input.value=n;input.dispatchEvent(new Event('input',{bubbles:true}));},n);}
+async function select(p,n){await p.locator('#sleep-delay').evaluate((input,n)=>{input.value=n;input.dispatchEvent(new Event('input',{bubbles:true}));},n);const value=Math.max(1,Math.min(10,n));assert.equal(await p.locator('#delay-offset').innerText(),value+' '+(value===1?'minute':'minutes')+' ago');}
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{for(const style of ['daybook','orbit','compact']){
@@ -16,6 +16,7 @@ async function select(p,n){await p.locator('#sleep-delay').evaluate((input,n)=>{
   await select(p,10);assert.equal(await p.locator('#sleep-delay').inputValue(),'10');assert(await p.locator('[data-delay-apply]').isDisabled());assert.equal(await p.locator('[data-delay-apply] svg').count(),0);await select(p,3);
   for(const width of [320,390,1280]){
    await p.setViewportSize({width,height:844});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+   for(const n of [1,3,10]){await select(p,n);assert(await p.locator('#delay-offset').evaluate(e=>{const a=e.getBoundingClientRect(),b=e.parentElement.getBoundingClientRect();return a.left>=b.left&&a.right<=b.right&&a.bottom<=b.bottom&&Math.abs((a.left+a.right-b.left-b.right)/2)<2;}));}await select(p,3);
    assert(await p.locator('.delay-row').evaluate(el=>[...el.querySelectorAll('strong,small,input')].every(item=>{const a=item.getBoundingClientRect(),b=el.getBoundingClientRect();return a.left>=b.left-1&&a.right<=b.right+1;})));
   }
   await p.setViewportSize({width:390,height:844});await p.evaluate(()=>scrollTo(0,0));await p.waitForTimeout(180);await p.screenshot({path:'/tmp/huck-delay-'+style+'.png'});

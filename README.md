@@ -28,6 +28,8 @@ The app is already configured. The setup instructions below are for recreating o
 
 ## Time entry and history
 
+The slider's Start/End confirmation button includes a centered, muted second line (for example, **3 minutes ago**) that follows the selected offset. The main Now action is unchanged.
+
 The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.
 
 A subtle **Now** link stays visible for both Started and Ended whenever that field is shown. It resets that field's date and time, but does not save the record. Use Save at the bottom to apply the draft.
