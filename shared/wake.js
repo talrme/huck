@@ -20,10 +20,6 @@
   function validRange(r){return Number.isFinite(r?.min)&&Number.isFinite(r?.max)&&r.min>=5&&r.max>=r.min&&r.max<=720;}
   function configuredRanges(profile){return ranges.map(r=>{const edit=profile?.ranges?.[r.before];return validRange(edit)?{...r,min:edit.min,max:edit.max}:r;});}
   function range(profile,today){
-    if(profile?.mode==='custom'){
-      const min=Number(profile.min),max=Number(profile.max);
-      return Number.isFinite(min)&&Number.isFinite(max)&&min>=5&&max>=min&&max<=720?{min,max,label:'Custom range',custom:true}:null;
-    }
     const a=age(profile?.birthday,today);return a?configuredRanges(profile).find(r=>a.months<r.before)||null:null;
   }
   function assess(last,profile,now,today,night=false){
@@ -33,7 +29,7 @@
     if(elapsed>=staleAfter)return {quality:'stale',phase:'unknown',label:'Logs may be missing',elapsed,window,age:childAge};
     if(last.autoEnded)return {quality:'estimated',phase:'unknown',label:'Estimated wake time',elapsed,window,age:childAge};
     if(night)return {quality:'recorded',phase:'night',label:'Nighttime',elapsed,window,age:childAge};
-    if(!window)return {quality:'recorded',phase:'unconfigured',label:childAge?'Set a custom wake range':'Add birthday for wake cues',elapsed,window,age:childAge};
+    if(!window)return {quality:'recorded',phase:'unconfigured',label:childAge?'No age range available':'Birthday required for wake cues',elapsed,window,age:childAge};
     const minutes=elapsed/60000,phase=minutes<window.min?'early':minutes<=window.max?'range':'past';
     return {quality:'recorded',phase,label:{early:'Recently awake',range:'Within usual nap range',past:'Beyond usual range'}[phase],elapsed,window,age:childAge,percent:Math.min(100,Math.round(minutes/window.max*100))};
   }

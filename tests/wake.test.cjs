@@ -18,6 +18,7 @@ assert.equal(W.assess(last(-1),profile,now,today).quality,'unknown');
 assert.equal(W.assess(last(90),profile,now,today,true).phase,'night');
 assert.equal(W.assess(last(30),{},now,today).phase,'unconfigured');
 assert.equal(W.range({birthday:'2024-01-01'},today),null);
-assert.equal(W.range({mode:'custom',min:40,max:70},today).max,70);
+assert.equal(W.range({mode:'custom',min:40,max:70},today),null);
+assert.equal(W.range({...profile,mode:'custom',min:40,max:70},today).max,120);
 assert.equal(W.range({mode:'custom',min:80,max:70},today),null);
 console.log('PASS wake logic: six-week age, calendar boundaries, invalid/future birthdays, ranges, early/within/past, stale and auto-ended data, night suppression, custom ranges');

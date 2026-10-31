@@ -26,6 +26,9 @@ body[data-theme=night]{--bg:#151a22;--paper:#202630;--ink:#edf3f2;--muted:#a5b5b
 .wake-ranges th,.wake-ranges td{padding:8px 4px;text-align:left;border-bottom:1px solid var(--line)}
 .wake-ranges th{font-weight:650;color:var(--muted)}
 .wake-settings{display:grid;gap:10px}
+.wake-settings>details>.toggle{margin-top:12px}
+.wake-error{font-size:12px;color:#a52c43;line-height:1.4}
+body[data-theme=night] .wake-error{color:#ffb3c2}
 .nap-add{display:flex;margin:8px 0 0 auto;min-height:44px;padding:6px 0 6px 12px;font-size:12px;color:var(--muted);gap:5px}
 .nap-add svg{width:13px;height:13px}
 .nap-more{display:flex;margin:6px auto 0;font-size:12px;min-height:44px;color:var(--muted);gap:4px}

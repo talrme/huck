@@ -80,7 +80,7 @@
   }
   function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],Date.now(),dateKey(Date.now()),C.isNight(Date.now(),s.settings));}
   function renderWakeCue(s,running,last){
-    const box=$('#wake-window');box.hidden=Boolean(running)||!prefs.wakeInfo;if(box.hidden)return;
+    const box=$('#wake-window');box.hidden=Boolean(running)||!prefs.wakeInfo||!HuckWake.age(s.settings.wakeProfiles?.[child(s).id]?.birthday,dateKey(Date.now()));if(box.hidden)return;
     const info=wakeState(s,last),range=info.window;
     const detail=info.quality==='stale'?'Last wake-up may be missing':info.quality==='unknown'?'Log sleep to start a wake timer':info.quality==='estimated'?'Last sleep was auto-ended':info.phase==='night'?'Follow baby’s cues':range?`${duration(range.min*60000)}–${duration(range.max*60000)} · approximate`:'Optional age-based guide';
     box.dataset.phase=info.phase;
@@ -89,7 +89,7 @@
   }
   function wakeDetails(){
     const s=projected(),info=wakeState(s,entries(s).find(e=>e.end));
-    modal('Wake-window guide',`<p class="callout">Broad ranges, not deadlines. Follow sleepy and hunger cues; don’t keep baby awake to reach a number.</p>${info.age?`<p>${esc(child(s).name)} · ${esc(info.age.label)}${info.window?` · ${duration(info.window.min*60000)}–${duration(info.window.max*60000)}`:''}</p>`:'<p>Add a birthday in Settings for an age-based starting point, or choose a custom range.</p>'}<p class="fine">Based on the last recorded sleep, not a prediction. Missing entries and auto-ended timers make wake time uncertain. For premature babies or individual sleep concerns, ask your pediatrician which timing to use.</p><table class="wake-ranges"><thead><tr><th>Age</th><th>Approximate range</th></tr></thead><tbody>${HuckWake.configuredRanges(s.settings.wakeProfiles?.[child(s).id]).map(r=>`<tr><td>${r.label}</td><td>${duration(r.min*60000)}–${duration(r.max*60000)}</td></tr>`).join('')}</tbody></table><a href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Source: Cleveland Clinic</a><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx" target="_blank" rel="noreferrer">AAP: infant sleep guidance</a>`, '<button class="primary" data-settings>Settings</button>');editor=null;
+    modal('Wake-window guide',`<p class="callout">Broad ranges, not deadlines. Follow sleepy and hunger cues; don’t keep baby awake to reach a number.</p>${info.age?`<p>${esc(child(s).name)} · ${esc(info.age.label)}${info.window?` · ${duration(info.window.min*60000)}–${duration(info.window.max*60000)}`:''}</p>`:'<p>Add a birthday in Settings to use the age-based guide.</p>'}<p class="fine">Based on the last recorded sleep, not a prediction. Missing entries and auto-ended timers make wake time uncertain. For premature babies or individual sleep concerns, ask your pediatrician which timing to use.</p><table class="wake-ranges"><thead><tr><th>Age</th><th>Approximate range</th></tr></thead><tbody>${HuckWake.configuredRanges(s.settings.wakeProfiles?.[child(s).id]).map(r=>`<tr><td>${r.label}</td><td>${duration(r.min*60000)}–${duration(r.max*60000)}</td></tr>`).join('')}</tbody></table><a href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Source: Cleveland Clinic</a><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx" target="_blank" rel="noreferrer">AAP: infant sleep guidance</a>`, '<button class="primary" data-settings>Settings</button>');editor=null;
   }
   function renderChart(s){
     const scroller=$('#chart-scroll'), previous=scroller.scrollLeft, atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
@@ -139,7 +139,7 @@
     }
     if(title==='Settings'){
       editor.wakeChild=$('#child-select').value;editor.wakeDrafts={};
-      $('#child-select').closest('label').insertAdjacentHTML('afterend',`<section class="wake-settings"><label class="toggle">Show wake-window info<input id="show-wake-info" type="checkbox" ${prefs.wakeInfo?'checked':''}></label><details><summary>Wake-window settings</summary><div id="wake-fields"></div></details></section>`);
+      $('#child-select').closest('label').insertAdjacentHTML('afterend',`<section class="wake-settings"><details><summary>Wake-window settings</summary><label class="toggle">Show wake-window info<input id="show-wake-info" type="checkbox" ${prefs.wakeInfo?'checked':''}></label><div id="wake-fields"></div></details></section>`);
       renderWakeFields();
     }
     $('#modal').showModal();icons();
@@ -202,30 +202,32 @@
     modal('Settings',`<fieldset><legend>Style</legend><div class="style-options">${[['daybook','Daybook','notebook-pen'],['orbit','Orbit','circle'],['compact','Compact','columns-2']].map(([id,label,glyph])=>`<button class="style-option" data-style="${id}" aria-pressed="${prefs.style===id}">${icon(glyph)}<span>${label}</span></button>`).join('')}</div></fieldset><fieldset><legend>Color theme</legend><div class="swatches">${['original','night','berry','mint'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" data-sandbox-link href="${new URL(demo?'./':'?demo=1',root)}" target="_blank" rel="noopener">${demo?'Open real tracker':'Open testing sandbox'}</a><p class="fine">Sandbox uses sample data on this device only. It never changes shared logs.</p><a class="text-link" href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!HUCK_CONFIG.backendUrl?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
   }
   function hours(selected){return Array.from({length:24},(_,h)=>`<option value="${h}" ${Number(selected)===h?'selected':''}>${h%12||12}:00 ${h<12?'AM':'PM'}</option>`).join('');}
-  function wakeProfile(s,id){const p=s.settings.wakeProfiles?.[id]||{};return {birthday:typeof p.birthday==='string'?p.birthday:'',...(p.ranges?{ranges:p.ranges}:{}),mode:p.mode==='custom'?'custom':'auto',...(p.mode==='custom'?{min:Number(p.min),max:Number(p.max)}:{})};}
+  function wakeProfile(s,id){const p=s.settings.wakeProfiles?.[id]||{};return {birthday:typeof p.birthday==='string'?p.birthday:'',...(p.ranges?{ranges:p.ranges}:{})};}
   function wakeFormProfile(){
     const ranges={};document.querySelectorAll('[data-wake-age]').forEach(row=>{const key=row.dataset.wakeAge,min=Number(row.querySelector('[data-range-min]').value),max=Number(row.querySelector('[data-range-max]').value),original=HuckWake.ranges.find(r=>String(r.before)===key);if(min!==original.min||max!==original.max)ranges[key]={min,max};});
-    return {birthday:$('#wake-birthday').value,mode:$('#wake-mode').value,...(Object.keys(ranges).length?{ranges}:{}),...($('#wake-mode').value==='custom'?{min:Number($('#wake-min').value),max:Number($('#wake-max').value)}:{})};
+    return {birthday:$('#wake-birthday').value,...(Object.keys(ranges).length?{ranges}:{})};
   }
   function captureWakeDraft(){if($('#wake-birthday'))editor.wakeDrafts[editor.wakeChild]=wakeFormProfile();}
   function ageRangeFields(p){return `<div class="wake-age-heading"><h4>Age ranges</h4><button type="button" class="text-link wake-reset" data-reset-wake-ranges>Reset to defaults</button></div><table class="wake-age-table"><thead><tr><th>Age</th><th>Min · minutes</th><th>Max · minutes</th></tr></thead><tbody>${HuckWake.configuredRanges(p).map(r=>`<tr data-wake-age="${r.before}"><td>${r.label}</td><td><input type="number" inputmode="numeric" min="5" max="720" data-range-min aria-label="${r.label} minimum minutes" value="${r.min}"></td><td><input type="number" inputmode="numeric" min="5" max="720" data-range-max aria-label="${r.label} maximum minutes" value="${r.max}"></td></tr>`).join('')}</tbody></table>`;}
   function renderWakeFields(){
-    const s=projected(),p=editor.wakeDrafts[editor.wakeChild]||wakeProfile(s,editor.wakeChild),range=HuckWake.range(p,dateKey(Date.now()));
-    $('#wake-fields').innerHTML=`<label>Birthday<input id="wake-birthday" type="date" data-native-picker max="${dateKey(Date.now())}" value="${esc(p.birthday)}"></label><label>Wake range<select id="wake-mode"><option value="auto" ${p.mode==='auto'?'selected':''}>Age defaults</option><option value="custom" ${p.mode==='custom'?'selected':''}>Custom range</option></select></label><div id="wake-custom" class="field-grid" ${p.mode==='custom'?'':'hidden'}><label>Minimum (minutes)<input id="wake-min" type="number" min="5" max="720" value="${p.min||range?.min||60}"></label><label>Maximum (minutes)<input id="wake-max" type="number" min="5" max="720" value="${p.max||range?.max||120}"></label></div>${ageRangeFields(p)}<p id="wake-profile-preview" class="fine"></p><p class="fine">Approximate cues, not deadlines. Follow baby’s sleepy and hunger cues.</p><a class="text-link" href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Age ranges & source</a>`;
+    const s=projected(),p=editor.wakeDrafts[editor.wakeChild]||wakeProfile(s,editor.wakeChild);
+    $('#wake-fields').innerHTML=`<label>Birthday<input id="wake-birthday" type="date" data-native-picker max="${dateKey(Date.now())}" value="${esc(p.birthday)}" aria-describedby="wake-birthday-error"></label><p id="wake-birthday-error" class="wake-error" role="status" hidden></p>${ageRangeFields(p)}<p id="wake-profile-preview" class="fine"></p><p class="fine">Birthday and age ranges are shared across phones.</p><p class="fine">Approximate cues, not deadlines. Follow baby’s sleepy and hunger cues.</p><a class="text-link" href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Age ranges & source</a>`;
     updateWakeProfilePreview();
   }
   function updateWakeProfilePreview(){
     if(!$('#wake-birthday'))return;
     const p=wakeFormProfile(),a=HuckWake.age(p.birthday,dateKey(Date.now())),r=HuckWake.range(p,dateKey(Date.now()));
-    document.querySelectorAll('[data-wake-age]').forEach(row=>row.classList.toggle('is-current',p.mode==='auto'&&Number(row.dataset.wakeAge)===r?.before));
-    $('#wake-profile-preview').textContent=(a?a.label+' · ':'')+(r?`${duration(r.min*60000)}–${duration(r.max*60000)}`:p.birthday?'No age default; choose a custom range if useful.':'Add birthday for age defaults.');
+    document.querySelectorAll('[data-wake-age]').forEach(row=>row.classList.toggle('is-current',Number(row.dataset.wakeAge)===r?.before));
+    const needsBirthday=$('#show-wake-info').checked&&!a,error=$('#wake-birthday-error');
+    error.hidden=!needsBirthday;error.textContent=p.birthday?'Choose a valid birthday in the past or today.':'Birthday required to use wake-window info.';
+    $('#wake-birthday').setAttribute('aria-invalid',String(needsBirthday));$('#wake-birthday').setAttribute('aria-required',String($('#show-wake-info').checked));
+    $('#wake-profile-preview').textContent=a?a.label+' · '+(r?`${duration(r.min*60000)}–${duration(r.max*60000)}`:'No wake-window range available for this age.') : '';
   }
   function saveSettings(){
     const s=projected(),settings={...s.settings};captureWakeDraft();
     for(const k of ['dayStart','nightStart','dayLimit','dayReplace','nightLimit','nightReplace'])settings[k]=Number($('#'+k).value);
     for(const [id,p] of Object.entries(editor.wakeDrafts)){
       if(p.birthday&&(!HuckWake.validDate(p.birthday)||p.birthday>dateKey(Date.now())))return notice('Choose a birthday in the past or today.');
-      if(p.mode==='custom'&&!HuckWake.range(p,dateKey(Date.now())))return notice('Choose a wake range from 5 to 720 minutes, with maximum at least minimum.');
       if(Object.values(p.ranges||{}).some(r=>!HuckWake.validRange(r)))return notice('Each age range needs 5–720 minutes, with maximum at least minimum.');
       if(JSON.stringify(p)!==JSON.stringify(wakeProfile(s,id)))settings.wakeProfiles={...(settings.wakeProfiles||{}),[id]:p};
     }
@@ -287,8 +289,7 @@
   $('#modal').addEventListener('change',event=>{
     const t=event.target;
     if(t.id==='child-select'&&editor?.wakeDrafts){captureWakeDraft();editor.wakeChild=t.value;renderWakeFields();}
-    if(t.id==='show-wake-info'){prefs.wakeInfo=t.checked;persist();render();}
-    if(t.id==='wake-mode'){$('#wake-custom').hidden=t.value!=='custom';updateWakeProfilePreview();}
+    if(t.id==='show-wake-info'){prefs.wakeInfo=t.checked;persist();render();updateWakeProfilePreview();}
     if(t.type==='time'){
       const minute=t.value.split(':')[1]||'',previous=t.dataset.lastMinute;
       t.dataset.lastMinute=minute;

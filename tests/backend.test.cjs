@@ -17,7 +17,7 @@ assert(call('command',{id:'forgotten',type:'start',payload:{id:'old-sleep',child
 const expired=call('snapshot').state.entries.find(e=>e.id==='old-sleep');assert.equal(expired.autoEnded,true);assert(expired.end);
 const afterExpiry=rows.length;call('snapshot');assert.equal(rows.length,afterExpiry,'Auto-end is persisted once');
 const current=call('snapshot').state;
-assert(call('command',{id:'birthday-settings',type:'settings',payload:{expectedRevision:current.revision,settings:{...current.settings,wakeProfiles:{avi:{birthday:'2026-01-01',mode:'auto'},'test-child':{birthday:'2026-02-01',mode:'custom',min:60,max:120}}}}}).ok);
-const restored=call('snapshot').state;assert.equal(restored.settings.wakeProfiles.avi.birthday,'2026-01-01');assert.equal(restored.settings.wakeProfiles['test-child'].max,120);
+assert(call('command',{id:'birthday-settings',type:'settings',payload:{expectedRevision:current.revision,settings:{...current.settings,wakeProfiles:{avi:{birthday:'2026-01-01',ranges:{3:{min:45,max:100}}},'test-child':{birthday:'2026-02-01',ranges:{3:{min:60,max:120}}}}}}}).ok);
+const restored=call('snapshot').state;assert.equal(restored.settings.wakeProfiles.avi.birthday,'2026-01-01');assert.equal(restored.settings.wakeProfiles.avi.ranges[3].max,100);assert.equal(restored.settings.wakeProfiles['test-child'].ranges[3].max,120);
 const finalRows=rows.length;rows[0][0]='unexpected';assert(!call('snapshot').ok);assert.equal(rows.length,finalRows,'Unknown headers must never clear data');
 console.log('PASS backend: idempotent setup and retries, duplicate active timer rejected, revision protection, deterministic replay, unexpected headers preserved');
