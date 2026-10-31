@@ -10,7 +10,8 @@
   }
   let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
-  let busy = false, message = '', lastChecked = 0, editor = null, days = 7, rendered = false, expandedNaps = '';
+  let busy = false, message = '', lastChecked = 0, editor = null, days = 30, rendered = false, expandedNaps = '';
+  let historyChild=null,selectedSleep=null;
   const delays={start:3,end:3};let arrival=null;
   const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
   function formatter(kind,timezone=base.settings.timezone){
@@ -134,6 +135,7 @@
       elapsed.removeAttribute('aria-label');
     }
     renderWakeCue(s,r,last);
+    renderHistoryDetails(s);
     updateDelay(s,r);
     requestAnimationFrame(fitElapsed);
   }
@@ -156,20 +158,43 @@
     modal('Wake-window guide',`<p class="callout">Broad ranges, not deadlines. Follow sleepy and hunger cues; don’t keep baby awake to reach a number.</p>${info.age?`<p>${esc(child(s).name)} · ${esc(info.age.label)}${info.window?` · ${duration(info.window.min*60000)}–${duration(info.window.max*60000)}`:''}</p>`:'<p>Add a birthday in Settings to use the age-based guide.</p>'}<p class="fine">Based on the last recorded sleep, not a prediction. Missing entries and auto-ended timers make wake time uncertain. For premature babies or individual sleep concerns, ask your pediatrician which timing to use.</p><table class="wake-ranges"><thead><tr><th>Age</th><th>Approximate range</th></tr></thead><tbody>${HuckWake.configuredRanges(s.settings.wakeProfiles?.[child(s).id]).map(r=>`<tr><td>${r.label}</td><td>${duration(r.min*60000)}–${duration(r.max*60000)}</td></tr>`).join('')}</tbody></table><a href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Source: Cleveland Clinic</a><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx" target="_blank" rel="noreferrer">AAP: infant sleep guidance</a>`, '<button class="primary" data-settings>Settings</button>');editor=null;
   }
   function renderChart(s){
-    const id=child(s).id,period=periodDate(Date.now()),key=id+'|'+days+'|'+period+'|'+prefs.style+'|'+(C.active(s,id)?Math.floor(Date.now()/60000):'');
+    const id=child(s).id;
+    if(historyChild!==id){historyChild=id;days=30;selectedSleep=null;rendered=false;}
+    const period=periodDate(Date.now()),key=id+'|'+days+'|'+period+'|'+prefs.style+'|'+(C.active(s,id)?Math.floor(Date.now()/60000):'');
     if(chartCache?.state===s&&chartCache.key===key)return;chartCache={state:s,key};
-    const scroller=$('#chart-scroll'), previous=scroller.scrollLeft, atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
-    const today=periodDate(Date.now()), dates=Array.from({length:days},(_,i)=>shiftDate(today,i-days+1));
+    const scroller=$('#chart-scroll'),previous=scroller.scrollLeft,atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
+    const oldFirst=$('.day-column')?.dataset.date,oldMarker=Boolean($('[data-older]')),history=entries(s),today=period;
+    const first=history.length?periodDate(history[history.length-1].start):shiftDate(today,-6);
+    const total=Math.max(1,Math.round((Date.parse(today+'T12:00:00Z')-Date.parse(first+'T12:00:00Z'))/86400000)+1),count=Math.min(days,total),hasOlder=count<total;
+    const dates=Array.from({length:count},(_,i)=>shiftDate(today,i-count+1));
     const nightOffset=(Number(s.settings.nightStart)-Number(s.settings.dayStart)+24)%24;
     $('#time-axis').innerHTML='<div class="axis-top"></div>'+Array.from({length:25},(_,i)=>`<span style="top:${40+i*24}px">${(Number(s.settings.dayStart)+i)%12||12}${(Number(s.settings.dayStart)+i)%24<12?'a':'p'}</span>`).join('');
-    $('#chart-days').style.width=`${dates.length*94}px`;
-    $('#chart-days').innerHTML=dates.map(date=>{
-      const lo=wallTime(date), hi=wallTime(shiftDate(date,1)), list=entries(s).filter(e=>e.start<hi&&(e.end||Date.now())>lo);
+    $('#chart-days').style.width=`${(dates.length+(hasOlder?1:0))*94}px`;
+    $('#chart-days').innerHTML=(hasOlder?`<section class="older-column"><header>Earlier</header><button data-older>${icon('arrow-left')}<span>Show older days</span></button></section>`:'')+dates.map(date=>{
+      const lo=wallTime(date),hi=wallTime(shiftDate(date,1)),list=history.filter(e=>e.start<hi&&(e.end||Date.now())>lo);
       const p=new Date(date+'T12:00:00Z');
-      return `<section class="day-column ${date===today?'is-today':''}" ${date===today?'aria-current="date"':''}><header> ${date===today?'Today':new Intl.DateTimeFormat('en-US',{weekday:'short',timeZone:'UTC'}).format(p)}<strong>${Number(date.slice(5,7))}/${Number(date.slice(8))}</strong></header><div class="day-track"><div class="night-zone" style="top:${nightOffset*24}px;height:${576-nightOffset*24}px"></div>${list.map(e=>{const a=Math.max(lo,e.start),b=Math.min(hi,e.end||Date.now());const top=(a-lo)/(hi-lo)*576,h=Math.max(14,(b-a)/(hi-lo)*576);return `<button class="sleep-block ${!e.end?'running':''} ${e.autoEnded?'auto-ended':''}" style="top:${top}px;height:${h}px" data-edit="${esc(e.id)}" title="${clock(e.start)} to ${e.end?clock(e.end):'now'} · ${duration((e.end||Date.now())-e.start)}${e.autoEnded?' · Auto-ended':''}" aria-label="Edit sleep ${date}, ${clock(e.start)}, ${duration((e.end||Date.now())-e.start)}"><span>${duration((e.end||Date.now())-e.start)}</span>${e.autoEnded?'<small>Auto</small>':''}</button>`;}).join('')}</div></section>`;
+      return `<section class="day-column ${date===today?'is-today':''}" data-date="${date}" ${date===today?'aria-current="date"':''}><header>${date===today?'Today':new Intl.DateTimeFormat('en-US',{weekday:'short',timeZone:'UTC'}).format(p)}<strong>${Number(date.slice(5,7))}/${Number(date.slice(8))}</strong></header><div class="day-track"><div class="night-zone" style="top:${nightOffset*24}px;height:${576-nightOffset*24}px"></div>${list.map(e=>{const a=Math.max(lo,e.start),b=Math.min(hi,e.end||Date.now()),top=(a-lo)/(hi-lo)*576,h=Math.max(e.end?14:18,(b-a)/(hi-lo)*576);return `<button class="sleep-block ${!e.end?'running':''} ${e.autoEnded?'auto-ended':''}" style="top:${top}px;height:${h}px" data-history-entry="${esc(e.id)}" aria-pressed="${selectedSleep===e.id}" title="${clock(e.start)} to ${e.end?clock(e.end):'now'} · ${duration((e.end||Date.now())-e.start)}${e.autoEnded?' · Auto-ended':''}" aria-label="View ${sleepName(e.start,s)}, ${date}, ${clock(e.start)}, ${duration((e.end||Date.now())-e.start)}${!e.end?', in progress':''}"><span>${duration((e.end||Date.now())-e.start)}</span>${!e.end?'<small>Now</small>':e.autoEnded?'<small>Auto</small>':''}</button>`;}).join('')}</div></section>`;
     }).join('');
-    scroller.scrollLeft=atEnd?scroller.scrollWidth:previous;rendered=true;
+    const dateShift=oldFirst?Math.round((Date.parse(oldFirst+'T12:00:00Z')-Date.parse(dates[0]+'T12:00:00Z'))/86400000):0;
+    scroller.scrollLeft=atEnd?scroller.scrollWidth:Math.max(0,previous+(dateShift+Number(hasOlder)-Number(oldMarker))*94);rendered=true;
     $('#chart-date').textContent=`${Number(today.slice(5,7))}/${Number(today.slice(8))} · ${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}–${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}`;
+  }
+  function renderHistoryDetails(s=projected()){
+    const box=$('#history-details'),entry=entries(s).find(e=>e.id===selectedSleep);box.hidden=!entry;
+    if(!entry){selectedSleep=null;return;}
+    const startDate=dateKey(entry.start),endDate=dateKey(entry.end||Date.now());
+    const short=date=>`${Number(date.slice(5,7))}/${Number(date.slice(8))}/${date.slice(0,4)}`;
+    const timeRange=(startDate!==endDate?short(startDate)+' ':'')+clock(entry.start)+' – '+(entry.end?(startDate!==endDate?short(endDate)+' ':'')+clock(entry.end):'now');
+    const noun=sleepName(entry.start,s),markup=`<div class="history-detail-head"><span>${short(startDate)} · ${noun==='nap'?'Nap':'Sleep'}</span><button class="detail-close" data-clear-history aria-label="Close sleep details" title="Close details">${icon('x')}</button></div><div class="history-detail-body"><div><strong>${longDuration((entry.end||Date.now())-entry.start)}</strong><p>${timeRange}</p>${!entry.end?'<small class="active-label">In progress</small>':entry.autoEnded?'<small>Auto-ended · approximate</small>':''}</div><button class="text-link" data-edit="${esc(entry.id)}">${icon('pencil')}Edit</button></div>`;
+    if(box._markup!==markup){box._markup=markup;box.innerHTML=markup;icons();}
+  }
+  function selectHistory(id){
+    selectedSleep=id||null;renderHistoryDetails();
+    document.querySelectorAll('[data-history-entry]').forEach(block=>block.setAttribute('aria-pressed',String(block.dataset.historyEntry===selectedSleep)));
+    if(id)$('#history-details').scrollIntoView({block:'nearest',behavior:prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches?'smooth':'instant'});
+  }
+  function loadOlderHistory(){
+    if(!rendered||!$('[data-older]'))return;days+=30;renderChart(projected());icons();
   }
   function enqueue(type,payload){
     if(queue.some(c=>c.blocked)){notice('Resolve the pending sync issue first.');return false;}
@@ -339,7 +364,9 @@
     if(t.matches('[data-share]'))share();
     if(t.matches('[data-copy]')){const input=$('#share-url');navigator.clipboard?.writeText(input.value).then(()=>notice('Link copied.')).catch(()=>{input.select();notice('Select and copy the link.');});}
     if(t.matches('[data-sync]')){sync();notice(HUCK_CONFIG.backendUrl?'Checking connection…':'Backend not connected yet.');}
-    if(t.matches('[data-older]')){days+=7;render();$('#chart-scroll').scrollLeft=0;}
+    if(t.matches('[data-older]'))loadOlderHistory();
+    if(t.matches('[data-history-entry]'))selectHistory(t.dataset.historyEntry);
+    if(t.matches('[data-clear-history]'))selectHistory(null);
     if(t.matches('[data-today]')){$('#chart-scroll').scrollLeft=$('#chart-scroll').scrollWidth;}
     if(t.matches('[data-review]'))modal('Sync needs review',`<p>${esc(queue.find(c=>c.blocked)?.blocked||message)}</p><p>The other phone’s saved version is preserved. Discard this pending change, then try again with the updated entry.</p>`,'<button class="primary" data-discard>Discard pending change</button>');
     if(t.matches('[data-discard]')){queue=queue.filter(c=>!c.blocked);persist();close();sync();render();}
@@ -381,6 +408,7 @@
   document.addEventListener('input',event=>{if(event.target.id==='sleep-delay'){$('#actions').dataset.delayTouched='true';const s=projected(),mode=C.active(s,child(s).id)?'end':'start';delays[mode]=Number(event.target.value);updateDelay(s);}});
   $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();}});
+  $('#chart-scroll').addEventListener('scroll',()=>{if($('#chart-scroll').scrollLeft<60)loadOlderHistory();},{passive:true});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',sync);
   window.addEventListener('resize',()=>requestAnimationFrame(fitElapsed));

@@ -9,7 +9,7 @@
   <link rel="icon" href="shared/favicon.png?v=20261030-pacifier" type="image/png">
   <link rel="apple-touch-icon" href="shared/apple-touch-icon.png?v=20261030-pacifier">
   <link rel="manifest" href="manifest.webmanifest?v=20261030-main">
-  <link rel="stylesheet" href="shared/styles.css?v=20261030-more-motion">
+  <link rel="stylesheet" href="shared/styles.css?v=20261030-history-details">
   <link rel="stylesheet" href="shared/themes.css?v=20261030-more-motion">
 </head>
 <body data-style="daybook">
@@ -35,7 +35,7 @@
     <section class="history" aria-label="Sleep history">
       <header class="history-heading"><div><h2>Sleep history</h2><small id="chart-date"></small></div><button class="text-link" data-today>Today <i data-lucide="arrow-right"></i></button></header>
       <div class="chart-shell"><div class="time-axis" id="time-axis" aria-hidden="true"></div><div class="chart-scroll" id="chart-scroll" tabindex="0" aria-label="Sleep timeline; scroll for older days"><div class="chart-days" id="chart-days"></div></div></div>
-      <div class="history-tools"><button class="text-link" data-older><i data-lucide="arrow-left"></i> Older days</button><span class="night-key">Nighttime</span></div>
+      <section id="history-details" class="history-details" aria-label="Selected sleep details" hidden></section>
     </section>
     <footer class="footer"><button data-settings><i data-lucide="settings"></i>Settings</button><button data-share><i data-lucide="share-2"></i>Save / Share</button></footer>
     <p class="connection" id="connection" role="status"></p>
@@ -50,6 +50,6 @@
   <script src="shared/lucide.min.js"></script>
   <script src="shared/core.js"></script>
   <script src="shared/wake.js?v=20261030-birthday-required"></script>
-  <script src="shared/app.js?v=20261030-touched-validation"></script>
+  <script src="shared/app.js?v=20261030-history-details"></script>
 </body>
 </html>

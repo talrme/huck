@@ -120,6 +120,22 @@ body[data-theme=night] .wake-window[data-phase=past]{--wake-color:#e8a9b7}
 .day-column.is-today .sleep-block{border:2px solid var(--accent);font-weight:800}
 .day-column:not(.is-today) .sleep-block{background:color-mix(in srgb,var(--sleep) 65%,var(--paper));border-color:var(--line);font-weight:550}
 .day-column:not(.is-today) .sleep-block:hover{background:var(--soft)}
+.day-column .sleep-block.running{background:#bce9d3;color:#184d3c;border:2px solid #358267;outline:0;flex-direction:row;gap:3px}
+body[data-theme=night] .day-column .sleep-block.running{background:#d5c486;color:#322c17;border-color:#e9dca8}
+body[data-theme=mint] .day-column .sleep-block.running{background:#f4dfa1;color:#57451b;border-color:#ab863b}
+.day-column .sleep-block[aria-pressed=true]{outline:2px solid var(--ink);outline-offset:2px;box-shadow:0 0 0 4px var(--paper)}
+.older-column{width:94px;flex:0 0 94px;border-right:1px solid var(--line);background:var(--paper)}
+.older-column>header{height:40px;display:grid;place-items:center;border-bottom:1px solid var(--line);font-size:10px;color:var(--muted)}
+.older-column>button{width:100%;height:592px;flex-direction:column;border:0;border-radius:0;background:transparent;color:var(--accent);padding:10px;font-size:12px;white-space:normal}
+.history-details{margin-top:12px;padding:10px 2px 14px;border-bottom:1px solid var(--line);animation:enter .2s ease-out}
+.history-detail-head,.history-detail-body{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.history-detail-head{font-size:11px;color:var(--muted);margin-bottom:3px}
+.detail-close{width:36px;min-height:36px;padding:7px;border:0;background:transparent;color:var(--muted)}
+.detail-close svg{transition:transform .2s}.detail-close:hover svg{transform:rotate(90deg)}
+.history-detail-body>div{min-width:0}.history-detail-body strong{font-size:19px;font-variant-numeric:tabular-nums}
+.history-detail-body p{font-size:12px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.history-detail-body .text-link{flex-shrink:0;min-height:44px;font-size:12px}
+.history-detail-body small{display:block;margin-top:3px;font-size:11px}.history-detail-body .active-label{color:var(--accent)}
 @media(max-width:849px){body .current + .history{margin-top:36px;padding-top:24px;border-top:1px solid var(--line)}}
 .time-field{padding:0 0 17px;border-bottom:1px solid var(--line)}
 .time-field legend{font-size:13px;color:var(--muted);margin-bottom:10px}

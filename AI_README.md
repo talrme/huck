@@ -186,7 +186,9 @@ Home timezone defaults America/Los_Angeles, independent of phone timezone.
 Day starts7am, night starts8pm. Chart shows dayStart to next dayStart.
 Save absolute timestamps; never make an active timer depend on a live background interval.
 
-Chart dates oldest left/newest right; preserve horizontal scroll unless already at newest edge. Explicit Older days loads more. Crossing sleeps split visually, not into separate records. Today has aria-current=date and tinted styling. Recent list counts full intersecting record durations once.
+Chart dates oldest left/newest right; preserve horizontal scroll unless already at newest edge. Start with up to30 days, ending today, and prepend30 more when scrolling within60px of the left edge. The first .older-column contains a fallback Show older days button; remove it at the earliest recorded period. Empty history shows7 blank days. Prepending preserves the visible date via first-date delta and pagination-column width; loading older is DOM-only, with no backend requests. Reset the window/selection on child changes. Crossing sleeps split visually, not into separate records. Today has aria-current=date and tinted styling. Recent list counts full intersecting record durations once.
+
+History blocks use data-history-entry, not data-edit: selectHistory outlines all split segments of the record (aria-pressed) and reveals #history-details below the chart. Show start/end, full duration, In progress or Auto-ended as appropriate, Edit and close X. Only Edit opens the editor; recent entries retain direct editing. Details update from projected state on tick and hide if the selected record disappears. Cache markup to preserve button focus. .sleep-block.running has a distinct fill across all themes, not merely an outline. No nighttime legend or external Older days toolbar.
 DST: compute actual 23/25h boundaries and scale to fixed chart height; duration math stays actual elapsed. A more literal DST axis is a possible future improvement, not implemented.
 
 Forgotten timer defaults:
@@ -254,6 +256,7 @@ Playwright:
 - tests/recent-naps.cjs: cap3/reverse order/expand/reopen/overlap/sandbox isolation.
 - tests/sleep-labels.cjs: morning/evening crossings and edited start classification.
 - tests/timer-polish.cjs: seconds/long durations/images/delayed sync lifecycle/reduced motion.
+- tests/history.cjs: block details/edit, selection, active fill in all themes, progressive 75-day scroll and anchoring, no history API calls, split records, empty history and phone/desktop layouts.
 - tests/wake.browser.cjs: shared profile, birthday requirement, reset, local toggle, stale/missing data and night cues.
 
 Except browser.cjs, browser scripts expect the local preview on5190. Most hardcode macOS Google Chrome; main browser.cjs also supports PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH. Playwright and sharp must be resolvable; no package/build dependency is needed for the deployed site.

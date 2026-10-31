@@ -23,7 +23,7 @@ The app is already configured. The setup instructions below are for recreating o
 - A clock button beside Start now opens manual start entry. **Add sleep**, below Recent naps, adds an older completed sleep.
 - While awake, the detail emphasizes the last duration: **Last nap 26 minutes long**.
 - **Recent naps** shows today's latest three completed entries, newest first. Expand to see all of today's entries. Active sleep stays in the timer and chart, not this list.
-- Tap a recent entry or chart block to edit. **Still napping / Still sleeping** clears an accidental end time and resumes the same record, provided it does not overlap another sleep.
+- Tap a recent entry to edit. Tapping a history chart block selects it and shows its time range and duration below the chart, with a separate **Edit** link. Active sleep has a contrasting fill and an In progress label. **Still napping / Still sleeping** in the editor clears an accidental end time and resumes the same record, provided it does not overlap another sleep.
 - Save, tapping outside, X, or Escape saves valid changed entry times. Invalid edits stay open for correction. Unchanged existing entries are not rewritten, and closing an untouched new-entry editor does not create a record.
 
 ## Time entry and history
@@ -37,6 +37,8 @@ Manual starts default to five minutes ago. Adding past sleep defaults to an avai
 The timer uses saved timestamps, not a background stopwatch. Closing the app does not stop it. Active hours/minutes stay large, with smaller ticking seconds on the same baseline. Seconds update locally without network requests or per-second screen-reader announcements.
 
 History columns are chronological, newest on the right and initially in view. The time axis stays fixed while dates scroll horizontally. By default each column covers **7 AM to the next 7 AM**, with nighttime shading from **8 PM**. Today is emphasized; older columns are quieter. Sleeps crossing a boundary are split visually but remain one editable record. Recent naps uses the full duration for each record intersecting the current period.
+
+History starts with up to 30 days and automatically adds earlier columns as you scroll to the left edge, stopping at the first recorded day. A Show older days control also lives in the first column when more history is available. This only draws more of the already-loaded data; it does not request more Sheet data. Empty history shows a blank seven-day view. The selected block is outlined, and details below the chart can be dismissed with X.
 
 Durations are actual elapsed time. On daylight-saving transition days, the actual 23/25-hour period is scaled into the fixed-height chart; spacing is approximate but timestamps and durations remain accurate. Blank chart areas mean no recorded sleep, not necessarily no sleep.
 

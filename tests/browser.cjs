@@ -36,7 +36,7 @@ async function chooseAgo(p,n){await p.locator('#sleep-delay').evaluate((input,n)
    for(const theme of ['night','berry','mint','original']){await p.locator(`[data-theme="${theme}"]`).click();assert.equal(await p.locator('body').getAttribute('data-theme'),theme);assert.equal(await p.locator('body').getAttribute('data-style'),style);assert(await p.locator('[data-close]').isVisible());}
    await p.locator('[data-save-settings]').click();
    if(i===1){
-    await p.locator('[data-older]').click();assert.equal(await p.locator('.day-column').count(),14);
+    assert.equal(await p.locator('[data-older]').count(),0,'All sample history already fits in the initial window');
     await p.locator('[data-settings]').click();await p.getByText('Sleep schedule & timer cleanup',{exact:true}).click();await p.locator('#dayStart').selectOption('6');await p.locator('[data-save-settings]').click();
     assert.equal(await p.evaluate(()=>HuckTest.getState().settings.dayStart),6);
     await p.locator('[data-settings]').click();await p.getByText('Advanced settings',{exact:true}).click();await p.locator('#new-child').fill('Test child');await p.locator('[data-add-child]').click();await p.locator('#child-select').selectOption({label:'Test child'});await p.locator('[data-save-settings]').click();assert.equal(await p.locator('#child-name').innerText(),'Test child');
