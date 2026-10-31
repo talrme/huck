@@ -1,8 +1,8 @@
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
-const rows=[];let copies=0;
-const sheet={appendRow:r=>rows.push(r),getLastRow:()=>rows.length,setFrozenRows:()=>{},getRange:(r,c,h,w)=>({getValues:()=>rows.slice(r-1,r-1+h).map(row=>row.slice(c-1,c-1+w))})};
+const rows=[];let copies=0,opens=0,headerReads=0,lastRowReads=0;
+const sheet={appendRow:r=>rows.push(r),getLastRow:()=>{lastRowReads++;return rows.length;},setFrozenRows:()=>{},getRange:(r,c,h,w)=>({getValues:()=>{if(r===1)headerReads++;return rows.slice(r-1,r-1+h).map(row=>row.slice(c-1,c-1+w));}})};
 const ss={getSheetByName:()=>copies?sheet:null,insertSheet:()=>{copies++;return sheet;},getUrl:()=> 'https://example.invalid/sheet'};
-const context=vm.createContext({console,Intl,Date,SpreadsheetApp:{openById:()=>ss},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},ContentService:{MimeType:{JAVASCRIPT:'js'},createTextOutput:text=>({setMimeType:()=>text})}});
+const context=vm.createContext({console,Intl,Date,SpreadsheetApp:{openById:()=>{opens++;return ss;}},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},ContentService:{MimeType:{JAVASCRIPT:'js'},createTextOutput:text=>({setMimeType:()=>text})}});
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../backend.sample.gs'),'utf8'),context);
 function call(action,payload){const output=context.doGet({parameter:{action,payload:JSON.stringify(payload||{}),callback:'test'}});let data;vm.runInNewContext(output,{test:r=>data=r});return data;}
 context.setupHuck();context.setupHuck();assert.equal(copies,1);assert.equal(rows.length,1);
@@ -20,4 +20,5 @@ const current=call('snapshot').state;
 assert(call('command',{id:'birthday-settings',type:'settings',payload:{expectedRevision:current.revision,settings:{...current.settings,wakeProfiles:{avi:{birthday:'2026-01-01',ranges:{3:{min:45,max:100}}},'test-child':{birthday:'2026-02-01',ranges:{3:{min:60,max:120}}}}}}}).ok);
 const restored=call('snapshot').state;assert.equal(restored.settings.wakeProfiles.avi.birthday,'2026-01-01');assert.equal(restored.settings.wakeProfiles.avi.ranges[3].max,100);assert.equal(restored.settings.wakeProfiles['test-child'].ranges[3].max,120);
 const finalRows=rows.length;rows[0][0]='unexpected';assert(!call('snapshot').ok);assert.equal(rows.length,finalRows,'Unknown headers must never clear data');
+rows[0][0]='id';opens=0;headerReads=0;lastRowReads=0;assert(call('snapshot').ok);assert.equal(opens,2);assert.equal(headerReads,1);assert.equal(lastRowReads,1,'Read Sheet metadata once per request');
 console.log('PASS backend: idempotent setup and retries, duplicate active timer rejected, revision protection, deterministic replay, unexpected headers preserved');

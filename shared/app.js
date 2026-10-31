@@ -12,8 +12,12 @@
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
   let busy = false, message = '', lastChecked = 0, editor = null, days = 7, rendered = false, expandedNaps = '';
   const delays={start:3,end:3};let arrival=null;
+  const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
+  function formatter(kind,timezone=base.settings.timezone){
+    const id=kind+':'+timezone;if(!formatters.has(id))formatters.set(id,new Intl.DateTimeFormat(kind==='parts'?'en-CA':'en-US',kind==='parts'?{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{timeZone:timezone,hour:'numeric',minute:'2-digit'}));return formatters.get(id);
+  }
   const uuid = () => crypto.randomUUID();
-  function parts(at) { return Object.fromEntries(new Intl.DateTimeFormat('en-CA', {timeZone:base.settings.timezone, year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(at)).map(p=>[p.type,p.value])); }
+  function parts(at) { return Object.fromEntries(formatter('parts').formatToParts(new Date(at)).map(p=>[p.type,p.value])); }
   function wallTime(date, hour = base.settings.dayStart, minute = 0) {
     let target = Date.parse(date + 'T' + String(hour).padStart(2,'0') + ':' + String(minute).padStart(2,'0') + ':00Z'), t = target;
     for (let i=0;i<3;i++) { const p=parts(t); const asUTC=Date.parse(`${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:00Z`); t += target-asUTC; }
@@ -25,7 +29,7 @@
   function duration(ms) { const m=Math.max(0,Math.floor(ms/60000));return m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:`${m}m`; }
   function sleepName(at,s=projected()){return C.isNight(at,s.settings)?'sleep':'nap';}
   function longDuration(ms){const m=Math.max(0,Math.floor(ms/60000)),h=Math.floor(m/60);return h?`${h} ${h===1?'hour':'hours'}${m%60?` ${m%60} ${m%60===1?'minute':'minutes'}`:''}`:`${m} ${m===1?'minute':'minutes'}`;}
-  function clock(t) { return new Intl.DateTimeFormat('en-US',{timeZone:base.settings.timezone,hour:'numeric',minute:'2-digit'}).format(new Date(t)); }
+  function clock(t) { return formatter('clock').format(new Date(t)); }
   function inputTime(t) { const p=parts(t);return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; }
   function parseInput(s) { const [date,time] = s.split('T');if(!time)return NaN;const [h,m]=time.split(':').map(Number);return wallTime(date,h,m); }
   function sample() {
@@ -37,10 +41,18 @@
     return s;
   }
   if(demo && !saved.base)base=sample();
-  function persist(){localStorage.setItem(key,JSON.stringify({base,queue,prefs,localOnly:!HUCK_CONFIG.backendUrl}));}
-  function projected(){let s=JSON.parse(JSON.stringify(base));for(const cmd of queue.filter(c=>!c.blocked)){try{s=C.apply(s,cmd,cmd.createdAt);}catch{}}return C.settle(s,Date.now());}
+  let baseSignature=JSON.stringify(base);
+  function acceptSnapshot(state){const signature=JSON.stringify(state);if(signature===baseSignature)return false;base=state;baseSignature=signature;return true;}
+  function persist(){const encoded=JSON.stringify({base,queue,prefs,localOnly:!HUCK_CONFIG.backendUrl});if(encoded!==lastPersisted){localStorage.setItem(key,encoded);lastPersisted=encoded;}}
+  function projected(){
+    const now=Date.now(),pending=queue.map(c=>c.id+':'+(c.blocked||'')).join('|');
+    if(projectionCache&&projectionCache.base===base&&projectionCache.pending===pending&&now>=projectionCache.at&&now<projectionCache.expires)return projectionCache.state;
+    let s=JSON.parse(JSON.stringify(base));for(const cmd of queue.filter(c=>!c.blocked)){try{s=C.apply(s,cmd,cmd.createdAt);}catch{}}C.settle(s,now);
+    let expires=Infinity;for(const e of s.entries){if(!e.end&&!e.deleted)expires=Math.min(expires,e.start+Number(C.isNight(e.start,s.settings)?s.settings.nightLimit:s.settings.dayLimit)*60000);}
+    projectionCache={base,pending,at:now,expires,state:s};return s;
+  }
   function child(s=projected()){return s.children.find(c=>c.id===prefs.child&&!c.archived)||s.children.find(c=>!c.archived);}
-  function entries(s=projected()){return s.entries.filter(e=>e.childId===child(s)?.id&&!e.deleted).sort((a,b)=>b.start-a.start);}
+  function entries(s=projected()){const id=child(s)?.id;if(!entryLists.has(s))entryLists.set(s,new Map());const lists=entryLists.get(s);if(!lists.has(id))lists.set(id,s.entries.filter(e=>e.childId===id&&!e.deleted).sort((a,b)=>b.start-a.start));return lists.get(id);}
   const icon=(name)=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
   function icons(){window.lucide?.createIcons();}
   function stateLabel(){return demo?'Sample data · this browser only':!HUCK_CONFIG.backendUrl?'This device only · Sheet not connected':queue.some(c=>c.blocked)?'Sync needs review':queue.length?'Saved here · sync pending':busy?'Syncing…':message?'Connection unavailable · showing saved data':lastChecked?'Synced '+clock(lastChecked):'Connecting…';}
@@ -142,6 +154,8 @@
     modal('Wake-window guide',`<p class="callout">Broad ranges, not deadlines. Follow sleepy and hunger cues; don’t keep baby awake to reach a number.</p>${info.age?`<p>${esc(child(s).name)} · ${esc(info.age.label)}${info.window?` · ${duration(info.window.min*60000)}–${duration(info.window.max*60000)}`:''}</p>`:'<p>Add a birthday in Settings to use the age-based guide.</p>'}<p class="fine">Based on the last recorded sleep, not a prediction. Missing entries and auto-ended timers make wake time uncertain. For premature babies or individual sleep concerns, ask your pediatrician which timing to use.</p><table class="wake-ranges"><thead><tr><th>Age</th><th>Approximate range</th></tr></thead><tbody>${HuckWake.configuredRanges(s.settings.wakeProfiles?.[child(s).id]).map(r=>`<tr><td>${r.label}</td><td>${duration(r.min*60000)}–${duration(r.max*60000)}</td></tr>`).join('')}</tbody></table><a href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Source: Cleveland Clinic</a><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx" target="_blank" rel="noreferrer">AAP: infant sleep guidance</a>`, '<button class="primary" data-settings>Settings</button>');editor=null;
   }
   function renderChart(s){
+    const id=child(s).id,period=periodDate(Date.now()),key=id+'|'+days+'|'+period+'|'+prefs.style+'|'+(C.active(s,id)?Math.floor(Date.now()/60000):'');
+    if(chartCache?.state===s&&chartCache.key===key)return;chartCache={state:s,key};
     const scroller=$('#chart-scroll'), previous=scroller.scrollLeft, atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
     const today=periodDate(Date.now()), dates=Array.from({length:days},(_,i)=>shiftDate(today,i-days+1));
     const nightOffset=(Number(s.settings.nightStart)-Number(s.settings.dayStart)+24)%24;
@@ -172,16 +186,18 @@
   });}
   async function sync(){
     if(busy||demo||!HUCK_CONFIG.backendUrl||document.hidden)return;
+    let changed=false;
     busy=true;renderSyncActivity();$('#connection').textContent=stateLabel();
     try{
-      const result=await request('snapshot');if(!result.ok)throw Error(result.error);base=result.state;
+      // Commands already return authoritative state; do not delay saves with a preliminary read.
+      if(!queue.length||queue[0].blocked){const result=await request('snapshot');if(!result.ok)throw Error(result.error);changed=acceptSnapshot(result.state)||changed;}
       while(queue.length&&!queue[0].blocked){
         const cmd=queue[0],response=await request('command',cmd);
-        if(!response.ok){cmd.blocked=response.error;notice(response.error);persist();break;}
-        base=response.state;queue.shift();persist();
+        if(!response.ok){cmd.blocked=response.error;changed=true;notice(response.error);persist();const fresh=await request('snapshot');if(fresh.ok)acceptSnapshot(fresh.state);break;}
+        acceptSnapshot(response.state);changed=true;queue.shift();persist();
       }
       lastChecked=Date.now();message='';
-    }catch(e){message=e.message;notice(message);}finally{busy=false;persist();render();}
+    }catch(e){message=e.message;notice(message);}finally{busy=false;persist();if(changed)render();else{renderSyncActivity();$('#connection').textContent=stateLabel();tick();}}
   }
   function notice(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(notice.timeout);notice.timeout=setTimeout(()=>$('#toast').hidden=true,6500);}
   function modal(title,body,footer=''){
@@ -234,7 +250,7 @@
     $('[data-save-entry]').disabled=Boolean(error);
   }
   function pastDefaults(s){
-    const list=entries(s).sort((a,b)=>a.start-b.start),now=Date.now();let finish=now;
+    const list=[...entries(s)].sort((a,b)=>a.start-b.start),now=Date.now();let finish=now;
     for(let i=list.length-1;i>=0;i--){const e=list[i];if(e.end&&finish-e.end>=5*60000)return {start:Math.max(e.end,finish-45*60000),end:finish};finish=e.start;}
     return {start:finish-45*60000,end:finish};
   }

@@ -98,6 +98,8 @@ Layout, preferences, image changes, and current wake metadata do not require red
 
 ## Sync and persistence
 
+Performance review: read PERFORMANCE_REVIEW.md. Projected state is memoized by base object, queue ID/block signature and next active expiry; backward clock changes invalidate it. Treat returned projections and cached entries(s) lists as read-only. Copy before sorting (pastDefaults does). entryLists uses a WeakMap per state and child. Reusable Intl formatters key by kind/timezone. Chart memo keys state identity, child, day period, style, days window, and active minute. acceptSnapshot compares full JSON signatures (not revision alone); identical polls skip view reconstruction. persist suppresses identical storage writes, not serialization. These caches must never suppress expiry, incoming remote edits or queue conflicts.
+
 Production storage key: `huck-v1`. Preserve it across releases and former staging migrations. It contains base snapshot, durable queue, preferences and localOnly metadata.
 
 Sample key: `huck-sample-v1`, enabled only by `?demo=1`. Sample mode must never call the real API, write shared data, or migrate into production. Advanced settings opens the sandbox or returns to the real tracker. Its banner clearly labels fictional records.
@@ -106,7 +108,7 @@ Earlier real local-only data is preserved in `huck-local-backup-v1` before conne
 
 `enqueue` validates against projected state, saves the outbox before networking, optimistically renders, then syncs. `projected` replays unblocked queued commands over base and derives expiry. Backend success replaces base and removes acknowledged commands. A rejected command remains blocked for explicit review/discard; do not drop it or overwrite the other device. New actions are blocked while review is needed.
 
-A sync cycle reads snapshot, flushes queued commands serially, and updates status. In-flight guard prevents concurrent cycles in one page. Timeout is 35 seconds. Failures remain pending and retry later.
+A sync cycle sends queued commands directly, without a preliminary snapshot, because each command validates on the server and returns authoritative state. With no pending command (or a blocked first item) it reads a snapshot. It flushes commands serially. Rejection blocks the command and fetches shared truth for review; network failure preserves retry identity/outbox. The in-flight guard prevents concurrent cycles. Timeout is 35 seconds. The existing deployed protocol is compatible.
 
 Triggers:
 - Opening/reload.
@@ -235,6 +237,8 @@ For local motion=false or OS reduced motion, skip flights/particles/spinners and
 Brand assets: Lucide Lab pacifier and bundled licenses. Twemoji v14.0.2 sleeping1f634/baby1f476, CC BY4.0; credit in README. Old moon/sun files are unused. Keep favicon/apple-touch/manifest references in sync when changing install artwork. Manifest root start_url is ./; child sharing uses ?child=<id>, while selected-child preference is local.
 
 ## Testing and release
+
+tests/performance.cjs adds synthetic 2,000-record projection/expiry coverage, direct-save request counts, unchanged chart identity, durable network retry and stale-write refresh. Optional HUCK_BASELINE_JS intercepts app.js for a test-only before/after benchmark. No real API use. Backend adapter cleanup in tools/backend-tail.gs reuses the validated Sheet and lastRow; generated script needs a new Apps Script deployment to activate this extra reduction. It is not deployed automatically by git push. Full log replay under the script lock is still the long-term bottleneck. Persistent checkpoint/conditional snapshots are proposed only; do not describe them as implemented. Keep polling at15s unless separately changed, and do not promise instant phone-to-phone updates from local CPU gains.
 
 Never silently add dummy data to production. Standard tests intercept the API or use ?demo=1. Any real household writes/imports need explicit user authorization. For a future screenshot import: confirm timezone, estimate transparently, read/backup current state, use stable IDs, skip duplicates/overlaps, submit through core/API, and verify by rereading. Do not edit Sheet event rows directly.
 

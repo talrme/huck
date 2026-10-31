@@ -89,7 +89,7 @@ With Sheets connected, corrections are persisted during the next backend request
 The website talks to a small Apps Script API backed by the private [household Sheet](https://docs.google.com/spreadsheets/d/1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ/edit). The permanent endpoint is in `config.js`; neither phone pastes it.
 
 1. A valid edit updates the screen and is saved in a durable local outbox before networking.
-2. The app requests a shared snapshot, submits queued edits, and receives the authoritative state.
+2. Pending edits are sent directly and each successful command returns the authoritative state. With no pending edit, sync fetches a snapshot. A rejected edit triggers a fresh read for conflict review.
 3. Request IDs prevent retry duplicates. Backend locks serialize requests; revisions and overlap checks reject conflicting edits.
 4. Network failures remain pending and retry on a later sync. Conflicts remain visible for explicit review rather than silently replacing the other phone's work.
 
@@ -136,6 +136,8 @@ References: [Apps Script web apps](https://developers.google.com/apps-script/gui
 
 ## When Apps Script needs updating
 
+The current performance update includes an optional adapter cleanup that avoids duplicate Sheet lookups/header reads. Its frontend improvements work with the existing deployment. To enable the additional server-side cleanup, replace Code.gs with the generated script and deploy a new version using the steps below. See [PERFORMANCE_REVIEW.md](PERFORMANCE_REVIEW.md) for measured synthetic results, growth concerns and the proposed checkpoint upgrade.
+
 Frontend layout, artwork, animations, wake-range lookup, and preferences do not require redeployment. Current birthday/age-range metadata uses an already-supported shared-settings action.
 
 Changing backend actions, validation, event replay, or `shared/core.js` rules does require deployment:
@@ -173,6 +175,7 @@ Browser tests need Playwright and Google Chrome. Optional icon regeneration need
 
 | Browser test | Checks |
 | --- | --- |
+| `tests/performance.cjs` | Synthetic large history, one-request saves, cache expiry, retries/conflicts |
 | `tests/browser.cjs` | Main workflows, styles/themes, simulated two-device sync; starts its own server |
 | `tests/time-editor.cjs` | Native-input workflow, Now, autosave, unchanged timestamps |
 | `tests/end-controls.cjs` | Slider behavior, control layout, arrival/motion effects |
