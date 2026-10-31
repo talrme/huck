@@ -57,7 +57,7 @@
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
     const lastLabel=last&&C.isNight(last.start,s.settings)?'Last sleep':'Last nap';
-    $('#timer-detail').innerHTML=running?`${sleepName(running.start,s)==='nap'?'Nap':'Sleep'} started <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
+    $('#timer-detail').innerHTML=running?`<div class="session-time"><span>${sleepName(running.start,s)==='nap'?'Nap':'Sleep'} started</span> <button class="text-link" data-edit="${esc(running.id)}">${clock(running.start)}</button></div><div class="session-time manual-time-row"><span id="session-ending"></span><button class="text-link manual-time" data-open-end="${esc(running.id)}">Enter end time</button></div>`:last?`${lastLabel} <button class="last-duration text-link" data-edit="${esc(last.id)}">${last.autoEnded?'~':''}${longDuration(last.end-last.start)}</button> long${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
     $('#timer-art').src=new URL(running?'shared/sleeping.png':'shared/awake.png',root);
     $('#timer-art').alt='';
     renderActions(s,running);
@@ -67,7 +67,7 @@
     const box=$('#actions'),mode=running?'end':'start',context=child(s).id+':'+(running?.id||'awake');
     if(box.dataset.context!==context){
       box.dataset.context=context;
-      box.innerHTML=`${running?`<div class="manual-time-row"><span id="session-ending"></span><button class="text-link manual-time" data-edit="${esc(running.id)}" data-open-end>Enter end time</button></div>`:''}<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span><strong id="delay-action"></strong><small id="delay-clock"></small></span></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
+      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span><strong id="delay-action"></strong><small id="delay-clock"></small></span></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
     }
     updateDelay(s,running);
   }
@@ -298,7 +298,7 @@
     if(t.matches('[data-delay-apply]')){const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
-    if(t.matches('[data-edit]')){openEntry(t.dataset.edit);if(t.hasAttribute('data-open-end')&&!editor.hasEnd){editor.hasEnd=true;$('#end-fields').hidden=false;const toggle=$('[data-toggle-end]');toggle.textContent='Still napping';toggle.setAttribute('aria-expanded','true');setEntryTime('end',Date.now());}}
+    if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-end')&&!editor.hasEnd){editor.hasEnd=true;$('#end-fields').hidden=false;const toggle=$('[data-toggle-end]');toggle.textContent='Still napping';toggle.setAttribute('aria-expanded','true');setEntryTime('end',Date.now());}}
     if(t.matches('[data-custom-start]'))openEntry(null,'start');
     if(t.matches('[data-add]'))openEntry();
     if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(Date.now());expandedNaps=expandedNaps===napKey?'':napKey;render();}

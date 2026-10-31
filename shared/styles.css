@@ -24,6 +24,9 @@ body[data-style=daybook] .elapsed.has-seconds,body[data-style=compact] .elapsed.
 .manual-start svg{width:17px;height:17px}
 .manual-time-row{display:flex;align-items:center;justify-content:flex-start;gap:7px;color:var(--muted);font-size:12px;margin-top:-10px}
 .manual-time-row .manual-time{min-height:36px}
+.session-time{display:flex;align-items:center;flex-wrap:wrap;gap:0 4px}
+.timer-detail .manual-time-row{margin:0;font-size:inherit;gap:0 4px}
+body[data-style=orbit] .session-time{justify-content:center}
 .delay-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;margin-top:2px}
 .delay-control{min-width:0;text-align:left}
 .delay-control label{font-size:12px;color:var(--muted);font-weight:550}
