@@ -118,7 +118,6 @@
     }).catch(()=>{}).finally(()=>ghost.remove());
   }
   function tick(){
-    if(editor?.kind==='entry')updateNowButtons();
     const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end),elapsed=$('#elapsed');
     elapsed.classList.toggle('has-seconds',Boolean(r));
     elapsed.setAttribute('role','timer');elapsed.setAttribute('aria-live','off');
@@ -228,6 +227,7 @@
   }
   function notice(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(notice.timeout);notice.timeout=setTimeout(()=>$('#toast').hidden=true,6500);}
   function modal(title,body,footer=''){
+    $('#modal-footer').classList.remove('entry-footer');
     $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML=footer;
     if(title==='Settings'&&!demo&&HUCK_CONFIG.backendUrl&&localStorage.getItem('huck-local-backup-v1')){
       $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
@@ -239,10 +239,9 @@
     }
     $('#modal').showModal();icons();
   }
-  const close=()=>editor?.kind==='entry'?saveEntry(true):$('#modal').close();
-  function timeField(prefix,title,at){
-    const date=dateKey(at),today=dateKey(Date.now()),yesterday=shiftDate(today,-1),preset=date===today?'today':date===yesterday?'yesterday':'other';
-    return `<fieldset class="time-field" data-time-field="${prefix}"><legend>${title}</legend><div class="time-inputs"><label><span class="sr-only">${title} day</span><select data-date-preset="${prefix}"><option value="today" ${preset==='today'?'selected':''}>Today</option><option value="yesterday" ${preset==='yesterday'?'selected':''}>Yesterday</option><option value="other" ${preset==='other'?'selected':''}>Choose date…</option></select></label><label><span class="sr-only">${title} time</span><input id="${prefix}-time" type="time" step="60" required value="${inputTime(at).split('T')[1]}" data-native-picker></label><button type="button" class="text-link time-now" data-now="${prefix}" aria-label="${title}: set to now">Now</button></div><label class="custom-date" ${preset==='other'?'':'hidden'}><span class="sr-only">${title} date</span><input id="${prefix}-date" type="date" max="${today}" value="${date}" data-native-picker></label><div class="time-shortcuts"><button type="button" data-adjust="${prefix}:-5" aria-label="${title} five minutes earlier">${icon('minus')}5m</button><button type="button" data-adjust="${prefix}:5" aria-label="${title} five minutes later">${icon('plus')}5m</button><button type="button" data-ago="${prefix}:5">5m ago</button></div></fieldset>`;
+  const close=()=>$('#modal').close();
+  function timeField(prefix,title,at,showNow=true){
+    return `<fieldset class="time-field" data-time-field="${prefix}" data-title="${title}" data-picker-today="${dateKey(Date.now())}"><legend>${title}</legend>${showNow?`<button type="button" class="text-link time-now" data-now="${prefix}" aria-label="${title}: set to now">Now</button>`:''}<input id="${prefix}-date" type="hidden" value="${dateKey(at)}"><input id="${prefix}-time" type="hidden" value="${inputTime(at).split('T')[1]}"><div class="wheel-picker"></div></fieldset>`;
   }
   function entryTime(prefix){
     const date=$('#'+prefix+'-date')?.value,time=$('#'+prefix+'-time')?.value;
@@ -251,27 +250,20 @@
     return original&&inputTime(original)===`${date}T${time}`?original:parseInput(`${date}T${time}`);
   }
   function setEntryTime(prefix,at){
-    const date=dateKey(at),today=dateKey(Date.now());$('#'+prefix+'-date').value=date;$('#'+prefix+'-time').value=inputTime(at).split('T')[1];
-    const select=$(`[data-date-preset="${prefix}"]`);select.value=date===today?'today':date===shiftDate(today,-1)?'yesterday':'other';
-    $(`[data-time-field="${prefix}"] .custom-date`).hidden=select.value!=='other';updateTimePreview();
-  }
-  function updateNowButtons(){
-    document.querySelectorAll('[data-now]').forEach(button=>{
-      const prefix=button.dataset.now,current=$('#'+prefix+'-date')?.value+'T'+$('#'+prefix+'-time')?.value===inputTime(Date.now());
-      button.classList.toggle('is-current',current);button.disabled=current;button.setAttribute('aria-hidden',String(current));
-    });
+    $('#'+prefix+'-date').value=dateKey(at);$('#'+prefix+'-time').value=inputTime(at).split('T')[1];
+    HuckTimePicker.refresh($(`[data-time-field="${prefix}"]`));updateTimePreview();
   }
   function updateTimePreview(){
-    if(!$('#time-preview'))return;
-    updateNowButtons();
+    if(editor?.kind!=='entry'||!$('#modal').open||!$('#time-preview'))return;
     const start=entryTime('start'),end=editor.hasEnd?entryTime('end'):null;
     let error='';if(!Number.isFinite(start)||(!end&&end!==null))error='Choose a date and time.';
     else if(start>Date.now()||end>Date.now())error='Choose a time in the past or now.';
     else if(end!==null&&end<=start)error='End must be after start.';
     $('#time-preview').textContent=error|| (end?`${duration(end-start)} ${sleepName(start)}`:`Started ${duration(Date.now()-start)} ago`);
     const noun=Number.isFinite(start)?sleepName(start):'sleep',toggle=$('[data-toggle-end]');
+    const endNow=$('.end-heading [data-now]');if(endNow)endNow.hidden=!editor.hasEnd;
     if(toggle)toggle.textContent=editor.hasEnd?(noun==='nap'?'Still napping':'Still sleeping'):'Set time';
-    if(editor.mode==='start'){$('#modal-title').textContent='Start '+noun;$('[data-save-entry]').textContent='Start '+noun;}
+    if(editor.mode==='start')$('#modal-title').textContent='Start '+noun;
     else if(editor.id)$('#modal-title').textContent='Edit '+noun;
     $('#time-preview').classList.toggle('time-invalid',Boolean(error));
     $('[data-save-entry]').disabled=Boolean(error);
@@ -284,15 +276,18 @@
   function openEntry(id,mode){
     const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
     editor={kind:'entry',id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:mode!=='start'&&Boolean(e?e.end:defaults.end)};
-    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Started',e?.start||defaults.start)}${mode==='start'?'':`<section ${e?'id="end-section"':''}>${e?`<div class="end-heading"><span>Ended</span><button class="text-link" data-toggle-end aria-expanded="${editor.hasEnd}" aria-controls="end-fields">${editor.hasEnd?'Still napping':'Set time'}</button></div>`:''}<div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','Ended',e?.end||defaults.end||Date.now())}</div></section>`}<p id="time-preview" class="time-preview" role="status"></p>`,
-      `<button class="primary" data-save-entry>${mode==='start'?'Start sleep':'Save'}</button>${e?'<button class="danger text-link" data-delete-entry>Delete</button>':''}`);
+    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Started',e?.start||defaults.start)}${mode==='start'?'':`<section ${e?'id="end-section"':''}>${e?`<div class="end-heading"><span>Ended</span><span class="end-heading-actions"><button class="text-link" data-now="end" aria-label="Ended: set to now">Now</button><button class="text-link" data-toggle-end aria-expanded="${editor.hasEnd}" aria-controls="end-fields">${editor.hasEnd?'Still napping':'Set time'}</button></span></div>`:''}<div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','Ended',e?.end||defaults.end||Date.now(),!e)}</div></section>`}<p id="time-preview" class="time-preview" role="status"></p>`,
+      `${e?`<button class="danger entry-delete" data-delete-entry>${icon('trash-2')}Delete</button>`:''}<button class="entry-cancel" data-close>Cancel</button><button class="primary" data-save-entry>Save</button>`);
+    $('#modal-footer').classList.add('entry-footer');HuckTimePicker.mount($('#modal-body'));
     editor.initial={start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null};
     updateTimePreview();
   }
-  function saveEntry(implicit=false){
+  function saveEntry(){
+    HuckTimePicker.flush($('#modal-body'));
+    if($('[data-save-entry]').disabled)return;
     const p={id:editor.id||uuid(),childId:editor.childId,start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null,expectedRev:editor.rev};
     const unchanged=p.start===editor.initial.start&&p.end===editor.initial.end;
-    if(unchanged&&(implicit||editor.id)){$('#modal').close();return;}
+    if(unchanged&&editor.id){$('#modal').close();return;}
     if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');
     if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))$('#modal').close();
   }
@@ -335,12 +330,9 @@
   }
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
-    const native=event.target.closest('[data-native-picker]');if(native){try{native.showPicker?.();}catch{}}
     const t=event.target.closest('button,a');if(!t)return;
     if(t.matches('[data-toggle-end]')){editor.hasEnd=!editor.hasEnd;$('#end-fields').hidden=!editor.hasEnd;t.textContent=editor.hasEnd?'Still napping':'Set time';t.setAttribute('aria-expanded',String(editor.hasEnd));if(editor.hasEnd)setEntryTime('end',editor.original?.end||Date.now());updateTimePreview();}
-    if(t.matches('[data-adjust]')){const [prefix,minutes]=t.dataset.adjust.split(':'),current=entryTime(prefix);setEntryTime(prefix,Math.min(Date.now(),(Number.isFinite(current)?current:Date.now())+Number(minutes)*60000));}
     if(t.matches('[data-now]'))setEntryTime(t.dataset.now,Date.now());
-    if(t.matches('[data-ago]')){const [prefix,minutes]=t.dataset.ago.split(':');setEntryTime(prefix,Date.now()-Number(minutes)*60000);}
     if(t.matches('[data-delay-apply]')){$('#actions').dataset.delayTouched='true';const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);if(t.disabled)return;const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
@@ -387,22 +379,10 @@
   $('#modal').addEventListener('click',e=>{if(e.target===$('#modal')){const b=e.target.getBoundingClientRect();if(e.clientX<b.left||e.clientX>b.right||e.clientY<b.top||e.clientY>b.bottom)close();}});
   $('#modal').addEventListener('close',()=>editor=null);
   $('#modal').addEventListener('cancel',event=>{event.preventDefault();close();});
-  $('#modal').addEventListener('focusin',event=>{if(event.target.type==='time')event.target.dataset.lastMinute=event.target.value.split(':')[1]||'';});
   $('#modal').addEventListener('change',event=>{
     const t=event.target;
     if(t.id==='child-select'&&editor?.wakeDrafts){captureWakeDraft();editor.wakeChild=t.value;renderWakeFields();}
     if(t.id==='show-wake-info'){prefs.wakeInfo=t.checked;persist();render();updateWakeProfilePreview();}
-    if(t.type==='time'){
-      const minute=t.value.split(':')[1]||'',previous=t.dataset.lastMinute;
-      t.dataset.lastMinute=minute;
-      if(previous!==undefined&&minute&&minute!==previous)t.blur();
-    }
-    if(t.matches('[data-date-preset]')){
-      const prefix=t.dataset.datePreset,date=$('#'+prefix+'-date'),custom=$(`[data-time-field="${prefix}"] .custom-date`);
-      custom.hidden=t.value!=='other';
-      if(t.value!=='other')date.value=shiftDate(dateKey(Date.now()),t.value==='yesterday'?-1:0);
-      else{date.focus({preventScroll:true});try{date.showPicker?.();}catch{}}
-    }
     updateTimePreview();
   });
   document.addEventListener('input',event=>{if(event.target.id==='sleep-delay'){$('#actions').dataset.delayTouched='true';const s=projected(),mode=C.active(s,child(s).id)?'end':'start';delays[mode]=Number(event.target.value);updateDelay(s);}});

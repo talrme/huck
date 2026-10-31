@@ -166,19 +166,19 @@ Daybook is default with periwinkle original palette. Orbit and Compact remain us
 
 ## Time editor behavior
 
-Separate date preset and native time fields, not a hand-rolled picker. Today / Yesterday / Other, +/-5m and 5m ago. Manual start defaults five minutes ago; pastDefaults finds a nonoverlapping gap up to45m (minimum5m) or before earliest record.
+The user explicitly requested replacing native time sheets with custom scrolling wheels. shared/time-picker.js exposes HuckTimePicker.mount/refresh/flush. Each visible time-field has day/hour/minute/AM-PM scroll-snap columns, 36px rows, five-row viewport, curved/faded nearby values, a highlight strip, spinbutton semantics and arrow/Page/Home/End keys. Hidden date/time inputs keep the existing timestamp parser and unchanged-precision behavior. Day choices cover the past730 days plus today and preserve an older record's date if necessary. Only mount visible fields; mount/refresh end after revealing it. Manual start defaults five minutes ago; pastDefaults finds a nonoverlapping gap up to45m (minimum5m) or before earliest record.
 
 `entryTime` preserves original milliseconds when date/time fields are unchanged. Do not rewrite an entry solely because an editor was opened.
-`updateNowButtons` compares the selected home date/time with the current minute. Inline Now resets both, reserves its width with visibility:hidden when current, and is disabled/aria-hidden while absent.
+Now is always visible and enabled for each shown field, resetting its date/time and refreshing the wheels. It changes only the draft. No +/-5m/5m ago controls remain. Flush wheels before explicit Save so an in-flight scroll uses the nearest row. Background sync must not rebuild the picker or discard its draft. Reduced motion removes the 3D transforms, retaining readable scrolling/selection.
 
 Start link uses data-edit. End link uses data-open-end=entryId; opens the existing record with end fields visible and default now. This is not a second data-edit under #timer-detail.
-Within an editor, Set time reveals an end for an active entry. Still napping/Still sleeping clears it; saving/dismissing resumes the same record subject to overlap rules. Toggling back restores original end if available.
+Within an editor, Set time reveals an end for an active entry. Still napping/Still sleeping clears it; explicit Save resumes the same record subject to overlap rules. Toggling back restores original end if available. The Ended header groups Now and Still napping/sleeping without overlapping.
 
-Backdrop, X and Escape route entry dialogs through saveEntry(true): valid changed edits save; invalid/conflicting edits remain open. Untouched new defaults do not create entries. Explicit Save closes directly, avoiding dismissal recursion. Keep editor.kind separate for entry/settings/delete confirmation so missing fields cannot trigger an accidental save.
+IMPORTANT: The prior autosave-on-dismiss was explicitly reversed by the user. Cancel, X, backdrop and Escape close WITHOUT writing anything, even if the draft is valid or invalid. Only Save calls saveEntry/enqueue. Opening Enter end time suggests now but must NEVER finish the sleep just by dismissing. Footer: Delete (existing records only, with confirmation), Cancel, Save. Unchanged existing records preserve timestamps/revision. Keep editor.kind separate for entry/settings/delete confirmation. Guard updateTimePreview against closed/non-entry dialogs so delayed scroll events cannot touch another modal.
 
-Minute changes attempt blur to dismiss native picker; hour-only changes retain focus. This is OS-dependent. Desktop viewport emulation does not test physical picker sheets. Do not add per-keystroke network writes.
+Wheel scrolls update only local draft fields and preview, never per-scroll network writes. Native time/date inputs, picker-opening/blur handlers and automatic Now hiding were removed.
 
-All dialogs are centered, solid, readable in every theme, close on outside click/X/Escape, and use a rotating X. Entry autosave is the documented exception to a simple discard-on-close assumption.
+All dialogs are centered, solid, readable in every theme, close on outside click/X/Escape, and use a rotating X. Entry dialogs discard unsaved drafts on every dismissal route.
 
 ## Time, chart and auto-end rules
 
@@ -251,7 +251,7 @@ Pure:
 
 Playwright:
 - tests/browser.cjs: owns ephemeral server, main workflows/themes/simulated two-device sync.
-- tests/time-editor.cjs: input defaults, validation, autosave, unchanged precision, icons.
+- tests/time-editor.cjs delegates to time-wheels.cjs: scrolling/keyboard/simulated finger swipe, defaults, Now, validation, explicit Save/Cancel, active-end dismissal safety, unchanged edits, reopen/delete and all styles/themes/320/390/1280.
 - tests/end-controls.cjs: scale1..10, preview-only drag, valid saves, stable DOM, timing/link layout, motion/fallback.
 - tests/recent-naps.cjs: cap3/reverse order/expand/reopen/overlap/sandbox isolation.
 - tests/sleep-labels.cjs: morning/evening crossings and edited start classification.

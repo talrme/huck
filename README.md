@@ -24,13 +24,13 @@ The app is already configured. The setup instructions below are for recreating o
 - While awake, the detail emphasizes the last duration: **Last nap 26 minutes long**.
 - **Recent naps** shows today's latest three completed entries, newest first. Expand to see all of today's entries. Active sleep stays in the timer and chart, not this list.
 - Tap a recent entry to edit. Tapping a history chart block selects it and shows its time range and duration below the chart, with a separate **Edit** link. Active sleep has a contrasting fill and an In progress label. **Still napping / Still sleeping** in the editor clears an accidental end time and resumes the same record, provided it does not overlap another sleep.
-- Save, tapping outside, X, or Escape saves valid changed entry times. Invalid edits stay open for correction. Unchanged existing entries are not rewritten, and closing an untouched new-entry editor does not create a record.
+- Time edits require **Save**. **Cancel**, tapping outside, X, and Escape discard the draft, including a suggested end time. Opening Enter end time and closing it never ends the sleep. Existing entries also have **Delete**, with confirmation. Unchanged existing entries are not rewritten.
 
 ## Time entry and history
 
-Native time pickers depend on the real phone OS/browser. Desktop Chrome's phone emulation does not reproduce Android or iOS picker sheets. The editor separates Today / Yesterday / Choose date from the time input and offers +/-5 minutes and 5m ago.
+The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.
 
-A subtle **Now** link appears beside each time field only when its selected date/time differs from the current minute. It resets both date and time. It is outside the native picker, so dismiss that picker first. Selecting a different minute attempts to dismiss the picker; actual OS behavior varies.
+A subtle **Now** link stays visible for both Started and Ended whenever that field is shown. It resets that field's date and time, but does not save the record. Use Save at the bottom to apply the draft.
 
 Manual starts default to five minutes ago. Adding past sleep defaults to an available gap of up to 45 minutes. Saving an unchanged record preserves its original timestamp precision.
 
@@ -179,7 +179,7 @@ Browser tests need Playwright and Google Chrome. Optional icon regeneration need
 | --- | --- |
 | `tests/performance.cjs` | Synthetic large history, one-request saves, cache expiry, retries/conflicts |
 | `tests/browser.cjs` | Main workflows, styles/themes, simulated two-device sync; starts its own server |
-| `tests/time-editor.cjs` | Native-input workflow, Now, autosave, unchanged timestamps |
+| `tests/time-editor.cjs` / `tests/time-wheels.cjs` | Custom wheels, simulated touch/keyboard, Now, explicit Save/Cancel, active-end dismissal regression, validation, themes and phone/desktop fit |
 | `tests/end-controls.cjs` | Slider behavior, control layout, arrival/motion effects |
 | `tests/recent-naps.cjs` | Latest-three expansion, resume sleep, overlap protection, sandbox isolation |
 | `tests/sleep-labels.cjs` | Day/night boundaries and edited/backdated start naming |
