@@ -106,9 +106,15 @@ Sample key: `huck-sample-v1`, enabled only by `?demo=1`. Sample mode must never 
 
 Earlier real local-only data is preserved in `huck-local-backup-v1` before connecting. Import/download is explicit, validates all proposed entries first, skips existing IDs, never deletes the backup, and excludes samples.
 
-`enqueue` validates against projected state, saves the outbox before networking, optimistically renders, then syncs. `projected` replays unblocked queued commands over base and derives expiry. Backend success replaces base and removes acknowledged commands. A rejected command remains blocked for explicit review/discard; do not drop it or overwrite the other device. New actions are blocked while review is needed.
+`enqueue` validates against projected state, saves the outbox before networking, optimistically renders, then syncs. `projected` replays unblocked queued commands over base and derives expiry. Backend success replaces base and removes acknowledged commands. A real validation/revision rejection remains blocked for explicit review/discard; do not drop it or overwrite the other device. Temporary lock/busy/service/transport errors must NEVER become blocked edits. New actions are blocked only while real review is needed.
 
-A sync cycle sends queued commands directly, without a preliminary snapshot, because each command validates on the server and returns authoritative state. With no pending command (or a blocked first item) it reads a snapshot. It flushes commands serially. Rejection blocks the command and fetches shared truth for review; network failure preserves retry identity/outbox. The in-flight guard prevents concurrent cycles. Timeout is 35 seconds. The existing deployed protocol is compatible.
+A sync cycle sends queued commands directly, without a preliminary snapshot, because each command validates on the server and returns authoritative state. With no pending command (or a blocked first item) it reads a snapshot. It flushes commands serially. Real rejection blocks the command and fetches shared truth for review; temporaryError recognizes explicit retryable flags plus legacy Google lock/service messages. Automatic retries preserve the outbox and request ID, with5/10/20/40/45s capped base delays plus up to1.5s jitter. Poll/focus cannot bypass retryAt; sync(true), Check connection and online can. Hide cancels retry timers, not data. Startup removes only recognized transient blocked reasons left by older versions. Do not silently unblock real conflicts.
+
+Request timeout35s; pendingRequest.startedAt permits stale-request cancellation when foreground resumes after40s with suspended timers. Check the current request age, not the age of a whole multi-command sync cycle. Cancel rejects the awaiting request, clears busy in finally and schedules retry. Retain a no-op JSONP callback for60s after a timeout/cancel so a late response cannot throw or mutate state. Do not infer that cancelling the client cancelled the server write; same-ID retry dedup is essential. Existing deployed protocol remains compatible.
+
+Backend October31 changes in tools/backend-tail.gs/generated backend.sample.gs require a NEW owner deployment: tryLock(2000) returns {ok:false,retryable:true,code:BUSY} without opening/writing the Sheet when busy; only release a lock actually acquired. Use a constant Sheet URL to avoid a second SpreadsheetApp.openById call under lock. Flush new events before releasing the lock as Google recommends. Full event replay is still under lock, unchanged. Do not claim the latest backend is deployed until the owner confirms and a live check succeeds.
+
+Every latest adapter response includes backendVersion=2026-10-31-lock-retry so a read-only snapshot can confirm the owner deployed this version. An older deployment may omit it; frontend compatibility is preserved.
 
 Triggers:
 - Opening/reload.
@@ -262,6 +268,7 @@ Playwright:
 - tests/timer-polish.cjs: seconds/long durations/images/delayed sync lifecycle/reduced motion.
 - tests/history.cjs: block details/edit, selection, active fill in all themes, progressive 75-day scroll and anchoring, no history API calls, split records, empty history and phone/desktop layouts.
 - tests/reopen-scroll.cjs: reload, history/back restoration, simulated hidden/foreground events, page-show fallback, normal scrolling/focus/sync stability and open draft preservation. Headless Chrome does not hide other tabs on this machine; physical phone app switching still needs a manual check.
+- tests/sync-recovery.cjs: legacy lock and new BUSY responses, snapshot backoff, transport failure, committed-but-lost response, stable retry IDs/no duplicates, automatic recovery of persisted lock-blocked commands and stalled foreground requests. All use mocked backend data.
 - tests/wake.browser.cjs: shared profile, birthday requirement, reset, local toggle, stale/missing data and night cues.
 
 Except browser.cjs, browser scripts expect the local preview on5190. Most hardcode macOS Google Chrome; main browser.cjs also supports PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH. Playwright and sharp must be resolvable; no package/build dependency is needed for the deployed site.

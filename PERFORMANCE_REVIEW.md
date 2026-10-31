@@ -4,7 +4,7 @@ Reviewed October 30, 2026. Scope: browser rendering/state/sync, reducer, Apps Sc
 
 ## Recommendation
 
-Keep Google Sheets for this two-phone family app. Apply the frontend optimizations in this change, optionally deploy the small adapter cleanup, and prioritize a materialized server checkpoint before accumulated event replay becomes slow. Firebase is an alternative for push-style updates, not required for the current workflows.
+Keep Google Sheets for this two-phone family app. The October31 lock-recovery fix automatically retries temporary errors and recovers stalled client requests. Deploy the latest adapter below to reduce lock waiting; prioritize a materialized server checkpoint before accumulated event replay becomes slow. Firebase is an alternative for push-style updates, not required for the current workflows.
 
 ## Findings, in priority order
 
@@ -32,7 +32,7 @@ The interval is unchanged. Reducing it globally would increase requests and pote
 
 ### 3. Saving did an unnecessary network round trip — fixed
 
-Previously an ordinary edit did snapshot, then command. Commands already validate against authoritative state under a lock and return the full new state. The frontend now sends a pending command immediately, cutting the ordinary save from two requests to one. On rejection it marks the item blocked and fetches fresh state for review. Locks, expected revisions, durable queue, request identity and retry deduplication are unchanged.
+Previously an ordinary edit did snapshot, then command. Commands already validate against authoritative state under a lock and return the full new state. The frontend now sends a pending command immediately, cutting the ordinary save from two requests to one. On a real validation/revision rejection it marks the item blocked and fetches fresh state for review. Temporary lock/busy/transport errors now retry with backoff instead; older persisted lock-blocked commands are recovered on startup. Expected revisions, durable queue, request identity and retry deduplication are preserved.
 
 An idle refresh still fetches a snapshot. Pending edits queued during an already-running snapshot are flushed by that cycle. This is compatible with the currently deployed backend.
 
@@ -56,7 +56,9 @@ This measures local browser work, not faster internet or server response. Main w
 
 ### 5. Repeated Sheet service lookups — prepared, needs deployment
 
-The adapter now passes its already-validated Sheet into the event reader and reads lastRow once. For a nonempty snapshot, the mocked service call counts drop from three to two spreadsheet opens, two to one header reads, and two to one last-row reads. The event schema, replay, locks and validation are unchanged.
+The adapter passes its already-validated Sheet into the event reader and reads lastRow once. The October31 revision avoids a second open solely for getUrl: mocked snapshots use one spreadsheet open, one header read and one last-row read (originally three/two/two).
+
+It uses tryLock(2000), not waitLock(25000), so contention produces an explicit retryable BUSY response instead of a25-second lock queue. Browser retries back off from about5s to at most47s with jitter, pause when hidden, and retain original request IDs. New event rows are flushed before unlocking, following [Google’s lock guidance](https://developers.google.com/apps-script/reference/lock/lock#releaselock). Locks/revision validation and the append-only event schema remain intact. Read requests still need the lock because they can persist timer expiry; no unsafe unlocked snapshots were introduced.
 
 The repository's generated `backend.sample.gs` includes this cleanup. **Pushing the website does not deploy it.** Existing frontend improvements work before deployment; only this extra adapter saving waits for the owner.
 
@@ -89,6 +91,7 @@ Choose it if near-immediate cross-device updates become more important than keep
 
 - All standard tests continue to use sample data or mocked services; no real records were changed by this performance work.
 - `tests/performance.cjs` covers 2,000-record cache/expiry, one-request saves, unchanged chart identity, durable retry, and stale-write recovery.
+- `tests/sync-recovery.cjs` simulates temporary lock/busy errors, automatic backoff/retries, old blocked-outbox recovery, lost committed responses and suspended-phone request recovery. Backend mocks verify busy requests never open/write the Sheet or release a lock they do not own.
 - With the preview server on port 5190, run it using the same Playwright/Chrome dependencies as the other browser tests.
 - Optional `HUCK_BASELINE_JS=/path/to/baseline-app.js` compares an older source file through test-only interception. The reviewed pre-change app can be extracted from commit `87536aa`. No baseline file in /tmp is required for normal regression tests.
 - Before/after local microbenchmarks are not end-to-end phone or deployed Apps Script measurements. No claim of a fixed percentage improvement to sync latency is made.

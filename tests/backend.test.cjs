@@ -1,13 +1,14 @@
 const vm=require('node:vm'),fs=require('node:fs'),assert=require('node:assert/strict');
-const rows=[];let copies=0,opens=0,headerReads=0,lastRowReads=0;
+const rows=[];let copies=0,opens=0,headerReads=0,lastRowReads=0,lockedOut=false,releases=0,lockWait=0,flushes=0;
 const sheet={appendRow:r=>rows.push(r),getLastRow:()=>{lastRowReads++;return rows.length;},setFrozenRows:()=>{},getRange:(r,c,h,w)=>({getValues:()=>{if(r===1)headerReads++;return rows.slice(r-1,r-1+h).map(row=>row.slice(c-1,c-1+w));}})};
 const ss={getSheetByName:()=>copies?sheet:null,insertSheet:()=>{copies++;return sheet;},getUrl:()=> 'https://example.invalid/sheet'};
-const context=vm.createContext({console,Intl,Date,SpreadsheetApp:{openById:()=>{opens++;return ss;}},LockService:{getScriptLock:()=>({waitLock:()=>{},releaseLock:()=>{}})},ContentService:{MimeType:{JAVASCRIPT:'js'},createTextOutput:text=>({setMimeType:()=>text})}});
+const context=vm.createContext({console,Intl,Date,SpreadsheetApp:{openById:()=>{opens++;return ss;},flush:()=>{flushes++;}},LockService:{getScriptLock:()=>({waitLock:()=>{},tryLock:ms=>{lockWait=ms;return !lockedOut;},releaseLock:()=>{releases++;}})},ContentService:{MimeType:{JAVASCRIPT:'js'},createTextOutput:text=>({setMimeType:()=>text})}});
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../backend.sample.gs'),'utf8'),context);
 function call(action,payload){const output=context.doGet({parameter:{action,payload:JSON.stringify(payload||{}),callback:'test'}});let data;vm.runInNewContext(output,{test:r=>data=r});return data;}
 context.setupHuck();context.setupHuck();assert.equal(copies,1);assert.equal(rows.length,1);
 const at=Date.now()-600000,cmd={id:'request-1',type:'start',payload:{id:'sleep-1',childId:'avi',start:at}};
 assert(call('command',cmd).ok);assert(call('command',cmd).ok);assert.equal(rows.length,2,'Retry must be idempotent');
+assert.equal(flushes,1,'Commit a newly appended event before unlocking; retries must not write again');
 assert(!call('command',{id:'request-2',type:'start',payload:{id:'sleep-2',childId:'avi',start:Date.now()}}).ok);assert.equal(rows.length,2);
 assert(call('command',{id:'end-1',type:'end',payload:{id:'sleep-1',childId:'avi',expectedRev:1,end:Date.now()}}).ok);
 assert(!call('command',{id:'stale-1',type:'delete',payload:{id:'sleep-1',childId:'avi',expectedRev:1}}).ok);
@@ -20,5 +21,7 @@ const current=call('snapshot').state;
 assert(call('command',{id:'birthday-settings',type:'settings',payload:{expectedRevision:current.revision,settings:{...current.settings,wakeProfiles:{avi:{birthday:'2026-01-01',ranges:{3:{min:45,max:100}}},'test-child':{birthday:'2026-02-01',ranges:{3:{min:60,max:120}}}}}}}).ok);
 const restored=call('snapshot').state;assert.equal(restored.settings.wakeProfiles.avi.birthday,'2026-01-01');assert.equal(restored.settings.wakeProfiles.avi.ranges[3].max,100);assert.equal(restored.settings.wakeProfiles['test-child'].ranges[3].max,120);
 const finalRows=rows.length;rows[0][0]='unexpected';assert(!call('snapshot').ok);assert.equal(rows.length,finalRows,'Unknown headers must never clear data');
-rows[0][0]='id';opens=0;headerReads=0;lastRowReads=0;assert(call('snapshot').ok);assert.equal(opens,2);assert.equal(headerReads,1);assert.equal(lastRowReads,1,'Read Sheet metadata once per request');
+rows[0][0]='id';opens=0;headerReads=0;lastRowReads=0;assert(call('snapshot').ok);assert.equal(opens,1);assert.equal(headerReads,1);assert.equal(lastRowReads,1,'Read Sheet metadata once per request');
+const beforeLock=rows.length,released=releases;lockedOut=true;const unavailable=call('snapshot');assert.equal(unavailable.ok,false);assert.equal(unavailable.code,'BUSY');assert.equal(unavailable.retryable,true);assert.equal(lockWait,2000);assert.equal(releases,released,'Never release another request’s lock');assert.equal(rows.length,beforeLock);assert.equal(call('command',{id:'busy-start',type:'start',payload:{id:'busy-sleep',childId:'avi',start:Date.now()}}).retryable,true);assert.equal(rows.length,beforeLock);lockedOut=false;assert(call('snapshot').ok);
+assert.equal(call('snapshot').backendVersion,'2026-10-31-lock-retry');
 console.log('PASS backend: idempotent setup and retries, duplicate active timer rejected, revision protection, deterministic replay, unexpected headers preserved');

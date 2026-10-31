@@ -97,9 +97,11 @@ The website talks to a small Apps Script API backed by the private [household Sh
 1. A valid edit updates the screen and is saved in a durable local outbox before networking.
 2. Pending edits are sent directly and each successful command returns the authoritative state. With no pending edit, sync fetches a snapshot. A rejected edit triggers a fresh read for conflict review.
 3. Request IDs prevent retry duplicates. Backend locks serialize requests; revisions and overlap checks reject conflicting edits.
-4. Network failures remain pending and retry on a later sync. Conflicts remain visible for explicit review rather than silently replacing the other phone's work.
+4. Network failures and temporary lock/server-busy errors remain pending and retry automatically, using the same request ID. Retries back off from about 5 seconds to at most 47 seconds. Real edit conflicts remain visible for explicit review rather than silently replacing the other phone's work. Old lock errors incorrectly marked for review are recovered automatically on opening the updated app.
 
 Checks run on opening/reload, foreground return, reconnection, and every 15 seconds while the page is visible. Hidden tabs do not start new sync cycles. Display seconds are independent of polling. A small animated **Syncing** indicator beside the title is visible during requests; the footer reports pending, synced, unavailable, or conflict status. Apps Script requests can take several seconds; this is not instant push synchronization.
+
+Requests time out after 35 seconds. If a phone suspended its timers and returns with a request older than 40 seconds, the app cancels that stale client request and retries safely; the server may already have saved it, so the original request ID is retained. Retry timers pause while hidden. Advanced settings → Check connection and returning online can retry immediately. Do not clear browser storage to fix syncing: it can contain unsent records.
 
 Settings writes also check the shared revision. If another phone changed things meanwhile, reopen settings before retrying. A blocked outbox item must be resolved/discarded before new edits can be queued.
 
@@ -142,7 +144,15 @@ References: [Apps Script web apps](https://developers.google.com/apps-script/gui
 
 ## When Apps Script needs updating
 
-The current performance update includes an optional adapter cleanup that avoids duplicate Sheet lookups/header reads. Its frontend improvements work with the existing deployment. To enable the additional server-side cleanup, replace Code.gs with the generated script and deploy a new version using the steps below. See [PERFORMANCE_REVIEW.md](PERFORMANCE_REVIEW.md) for measured synthetic results, growth concerns and the proposed checkpoint upgrade.
+**October 31 lock recovery update:** The frontend recovery works with the existing backend. The latest generated backend also waits only two seconds for a lock (instead of 25), returns an explicitly retryable busy response, opens the Sheet only once per request, and flushes new events before unlocking. **These backend changes still require the owner to deploy the latest script; a GitHub push does not deploy Apps Script.**
+
+1. Open the household Sheet → Extensions → Apps Script.
+2. Replace all of Code.gs with the complete current `backend.sample.gs`, then Save.
+3. Deploy → Manage deployments → pencil → Version: New version → Deploy.
+4. Keep Execute as Me, access Anyone, and the same /exec URL. Do not clear the Sheet or rerun imports.
+5. Reload Huck on each phone to load the frontend recovery. Existing unsent entries stay on the device and retry automatically.
+
+See [PERFORMANCE_REVIEW.md](PERFORMANCE_REVIEW.md) for growth concerns and the proposed checkpoint upgrade.
 
 Frontend layout, artwork, animations, wake-range lookup, and preferences do not require redeployment. Current birthday/age-range metadata uses an already-supported shared-settings action.
 

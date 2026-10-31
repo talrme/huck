@@ -11,6 +11,10 @@
   let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
   let busy = false, message = '', lastChecked = 0, editor = null, days = 30, rendered = false, expandedNaps = '';
+  let retryAt=0,retryFailures=0,retryTimer=null,pendingRequest=null;
+  function temporaryError(error){return Boolean(error?.retryable)||/lock timeout|could not acquire.*lock|unable to acquire.*lock|timed out.*lock|lock.*timed out|another process was holding the lock|service invoked too many times|too many (?:simultaneous|requests)|temporarily unavailable|server error occurred|service timed out|try again later/i.test(String(error?.error||error?.message||error||''));}
+  // Older versions mistakenly persisted temporary lock failures as edit conflicts.
+  for(const command of queue)if(command.blocked&&temporaryError(command.blocked))delete command.blocked;
   let historyChild=null,selectedSleep=null;
   const delays={start:3,end:3};let arrival=null;
   const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
@@ -208,24 +212,36 @@
   }
   function request(action,payload){return new Promise((resolve,reject)=>{
     const callback='huck_'+uuid().replaceAll('-',''),url=new URL(HUCK_CONFIG.backendUrl);url.searchParams.set('action',action);url.searchParams.set('callback',callback);url.searchParams.set('_',Date.now());if(payload)url.searchParams.set('payload',JSON.stringify(payload));
-    const script=document.createElement('script');const done=()=>{clearTimeout(timer);delete window[callback];script.remove();};
-    const timer=setTimeout(()=>{done();reject(Error('Connection timed out. Saved changes will retry.'));},35000);
-    window[callback]=data=>{done();resolve(data);};script.onerror=()=>{done();reject(Error('Offline. Saved changes will retry.'));};script.src=url;document.body.append(script);
+    const script=document.createElement('script');let finished=false;
+    const done=(late=false)=>{if(finished)return false;finished=true;clearTimeout(timer);pendingRequest=null;script.remove();if(late){window[callback]=()=>{};setTimeout(()=>delete window[callback],60000);}else delete window[callback];return true;};
+    const fail=text=>{if(done(true))reject(Object.assign(Error(text),{retryable:true}));};
+    const timer=setTimeout(()=>fail('Connection timed out. Saved changes will retry.'),35000);
+    pendingRequest={startedAt:Date.now(),cancel:()=>fail('Connection paused. Saved changes will retry.')};
+    window[callback]=data=>{if(done())resolve(data);};script.onerror=()=>fail('Offline. Saved changes will retry.');script.src=url;document.body.append(script);
   });}
-  async function sync(){
-    if(busy||demo||!HUCK_CONFIG.backendUrl||document.hidden)return;
+  function scheduleRetry(){
+    clearTimeout(retryTimer);retryTimer=null;
+    if(document.hidden||!retryAt)return;
+    retryTimer=setTimeout(()=>{retryTimer=null;sync();},Math.max(0,retryAt-Date.now()));
+  }
+  async function sync(force=false){
+    if(demo||!HUCK_CONFIG.backendUrl||document.hidden)return;
+    if(busy){if(pendingRequest&&Date.now()-pendingRequest.startedAt>40000){pendingRequest.cancel();setTimeout(sync,0);}return;}
+    if(force===true)retryAt=0;
+    if(Date.now()<retryAt){scheduleRetry();return;}
+    clearTimeout(retryTimer);retryTimer=null;
     let changed=false;
     busy=true;renderSyncActivity();$('#connection').textContent=stateLabel();
     try{
       // Commands already return authoritative state; do not delay saves with a preliminary read.
-      if(!queue.length||queue[0].blocked){const result=await request('snapshot');if(!result.ok)throw Error(result.error);changed=acceptSnapshot(result.state)||changed;}
+      if(!queue.length||queue[0].blocked){const result=await request('snapshot');if(!result.ok)throw Object.assign(Error(result.error),{retryable:temporaryError(result)});changed=acceptSnapshot(result.state)||changed;}
       while(queue.length&&!queue[0].blocked){
         const cmd=queue[0],response=await request('command',cmd);
-        if(!response.ok){cmd.blocked=response.error;changed=true;notice(response.error);persist();const fresh=await request('snapshot');if(fresh.ok)acceptSnapshot(fresh.state);break;}
+        if(!response.ok){if(temporaryError(response))throw Object.assign(Error(response.error),{retryable:true});cmd.blocked=response.error;changed=true;notice(response.error);persist();const fresh=await request('snapshot');if(fresh.ok)acceptSnapshot(fresh.state);break;}
         acceptSnapshot(response.state);changed=true;queue.shift();persist();
       }
-      lastChecked=Date.now();message='';
-    }catch(e){message=e.message;notice(message);}finally{busy=false;persist();if(changed)render();else{renderSyncActivity();$('#connection').textContent=stateLabel();tick();}}
+      lastChecked=Date.now();message='';retryAt=0;retryFailures=0;
+    }catch(e){message=e.message;if(temporaryError(e)){retryFailures++;retryAt=Date.now()+Math.min(45000,5000*2**Math.min(retryFailures-1,4))+Math.floor(Math.random()*1500);scheduleRetry();if(retryFailures===1)notice(/lock/i.test(e.message)?'Connection is busy. Saved changes will retry automatically.':message);}else notice(message);}finally{busy=false;persist();if(changed)render();else{renderSyncActivity();$('#connection').textContent=stateLabel();tick();}}
   }
   function notice(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(notice.timeout);notice.timeout=setTimeout(()=>$('#toast').hidden=true,6500);}
   function modal(title,body,footer=''){
@@ -357,7 +373,7 @@
     if(t.matches('[data-confirm-archive]')){if(enqueue('archive',{childId:t.dataset.confirmArchive,archived:t.dataset.archived==='true'}))settings();}
     if(t.matches('[data-share]'))share();
     if(t.matches('[data-copy]')){const input=$('#share-url');navigator.clipboard?.writeText(input.value).then(()=>notice('Link copied.')).catch(()=>{input.select();notice('Select and copy the link.');});}
-    if(t.matches('[data-sync]')){sync();notice(HUCK_CONFIG.backendUrl?'Checking connection…':'Backend not connected yet.');}
+    if(t.matches('[data-sync]')){sync(true);notice(HUCK_CONFIG.backendUrl?'Checking connection…':'Backend not connected yet.');}
     if(t.matches('[data-older]'))loadOlderHistory();
     if(t.matches('[data-history-entry]'))selectHistory(t.dataset.historyEntry);
     if(t.matches('[data-clear-history]'))selectHistory(null);
@@ -393,10 +409,10 @@
     const reset=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
     reset();requestAnimationFrame(reset);
   }
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();reopenAtTop();}});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();reopenAtTop();}else{clearTimeout(retryTimer);retryTimer=null;}});
   $('#chart-scroll').addEventListener('scroll',()=>{if($('#chart-scroll').scrollLeft<60)loadOlderHistory();},{passive:true});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
-  window.addEventListener('online',sync);
+  window.addEventListener('online',()=>sync(true));
   window.addEventListener('resize',()=>requestAnimationFrame(fitElapsed));
   window.addEventListener('pageshow',e=>{reopenAtTop();if(e.persisted)sync();});
   window.addEventListener('load',reopenAtTop,{once:true});
