@@ -147,10 +147,11 @@ body[data-theme=mint] .day-column .sleep-block.running{background:#f4dfa1;color:
 .time-now{background:var(--soft);border:1px solid color-mix(in srgb,var(--accent) 18%,var(--line));color:var(--accent);min-height:34px;border-radius:18px;padding:5px 10px;font-size:11px;gap:5px}
 .time-now svg{width:13px;height:13px;transition:transform .3s}.time-now:hover svg{transform:rotate(-40deg)}
 .time-field legend.sr-only{margin:-1px}
-.end-state{position:relative;isolation:isolate;display:grid;grid-template-columns:1fr 1fr;padding:3px;border:1px solid var(--line);border-radius:24px;background:var(--bg);margin-bottom:12px}
-.end-state-thumb{position:absolute;left:3px;top:3px;bottom:3px;width:calc(50% - 3px);border-radius:20px;background:var(--soft);box-shadow:0 1px 3px #0001;transition:transform .22s ease;z-index:-1}
+#end-section>.time-field-head{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:7px}
+.end-state{position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);width:174px;max-width:100%;padding:2px;border:1px solid var(--line);border-radius:18px;background:var(--bg)}
+.end-state-thumb{position:absolute;left:2px;top:2px;bottom:2px;width:calc(50% - 2px);border-radius:15px;background:var(--soft);box-shadow:0 1px 3px #0001;transition:transform .22s ease;z-index:-1}
 .end-state[data-ended=true] .end-state-thumb{transform:translateX(100%)}
-.end-state button{background:transparent;border:0;border-radius:20px;min-height:38px;font-size:12px;padding:6px 8px;color:var(--muted);font-weight:500}
+.end-state button{background:transparent;border:0;border-radius:15px;min-height:28px;min-width:0;font-size:10px;padding:4px 3px;color:var(--muted);font-weight:500;white-space:nowrap}
 .end-state button[aria-pressed=true]{color:var(--ink);font-weight:650}
 .wheel-picker{display:grid;grid-template-columns:minmax(0,2.2fr) repeat(3,minmax(0,1fr));gap:3px;position:relative;isolation:isolate}
 .wheel-picker:before{content:'';position:absolute;left:0;right:0;top:91px;height:36px;background:var(--soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line);z-index:-1;pointer-events:none;border-radius:4px}
