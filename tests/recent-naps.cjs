@@ -13,12 +13,12 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    await p.locator('[data-more-naps]').click();assert.equal(await p.locator('.nap-entry').count(),4);assert.equal(await p.locator('[data-more-naps]').getAttribute('aria-expanded'),'true');
    await p.locator('[data-more-naps]').click();assert.equal(await p.locator('.nap-entry').count(),3);
    await p.locator('.nap-entry').first().click();const id=await p.locator('.nap-entry').first().getAttribute('data-edit');
-   assert.equal(await p.locator('[data-toggle-end]').innerText(),'Still napping');await p.locator('[data-toggle-end]').click();assert(!(await p.locator('#end-fields').isVisible()));await p.locator('[data-save-entry]').click();
+   assert.equal(await p.locator('[data-end-state="running"]').innerText(),'Still napping');await p.locator('[data-end-state="running"]').click();assert(!(await p.locator('#end-fields').isVisible()));await p.locator('[data-save-entry]').click();
    assert.equal(await p.evaluate(id=>HuckTest.getState().entries.find(e=>e.id===id).end,id),null);assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
    await p.reload();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
    // An older entry cannot be reopened over the already active nap.
-   await p.locator('.nap-entry').first().click();await p.locator('[data-toggle-end]').click();await p.locator('[data-save-entry]').click();assert(await p.locator('#modal').isVisible());assert((await p.locator('#toast').innerText()).includes('overlaps'));
-   await p.locator('[data-toggle-end]').click();await p.locator('[data-save-entry]').click();await p.locator('[data-end="0"]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');
+   await p.locator('.nap-entry').first().click();await p.locator('[data-end-state="running"]').click();await p.locator('[data-save-entry]').click();assert(await p.locator('#modal').isVisible());assert((await p.locator('#toast').innerText()).includes('overlaps'));
+   await p.locator('[data-end-state="ended"]').click();await p.locator('[data-save-entry]').click();await p.locator('[data-end="0"]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');
    await p.evaluate(()=>{document.querySelector('#toast').hidden=true;scrollTo(0,0);});await p.screenshot({path:`/tmp/huck-recent-${style}.png`});
    for(const width of [320,1280]){await p.setViewportSize({width,height:900});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
    assert.equal(backendRequests,0);assert.deepEqual(errors,[]);console.log('PASS '+style+': recent three, newest first, expand/collapse, still napping/reload, overlap protection, sandbox isolation and phone fit');await context.close();

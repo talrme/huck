@@ -22,7 +22,7 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 - **End nap now / End sleep now** ends that same session. Its name does not change just because it crosses morning or evening.
 - For a delayed entry, use **Started/Ended a few minutes ago?** The slider stays at **1–10 minutes**, defaulting to three. The preview shows the offset and clock time; the small Start/End button records it. Dragging alone never saves. Warnings stay hidden until you move the slider or try its Start/End button. An invalid attempt explains the conflict and disables confirmation without changing the scale. Now actions reset this interaction state.
 - During sleep, the linked time row reads **9:06 PM to Enter end time**. Tap the start time to edit it or Enter end time to open the end fields. Both links sit inside the timer's accent area.
-- A clock button beside Start now opens manual start entry. **Add sleep**, below Recent naps, adds an older completed sleep.
+- **Enter manually**, beside Start now, opens the same Add/Edit nap modal with **Still napping** selected and a start time five minutes ago. Choose **Nap ended** to enter both times instead. **Add sleep**, below Recent naps, opens that modal with a completed entry selected by default.
 - While awake, the detail emphasizes the last duration: **Last nap 26 minutes long**.
 - **Recent naps** shows today's latest three completed entries, newest first. Expand to see all of today's entries. Active sleep stays in the timer and chart, not this list.
 - Tap a recent entry to edit. Tapping a history chart block selects it and shows its time range and duration below the chart, with a separate **Edit** link. Active sleep has a contrasting fill and an In progress label. **Still napping / Still sleeping** in the editor clears an accidental end time and resumes the same record, provided it does not overlap another sleep.
@@ -34,7 +34,9 @@ The slider's Start/End confirmation button includes a tiny, muted second line (f
 
 The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.
 
-A subtle **Now** link stays visible for both Started and Ended whenever that field is shown. It resets that field's date and time, but does not save the record. Use Save at the bottom to apply the draft.
+A matching **Now** button stays visible in both the Start and End headers. It resets that field's date and time, but does not save the record. Use Save at the bottom to apply the draft.
+
+The modal labels its sections **Start** and **End**, each with a matching rounded Now button in the same place. End has a sliding **Still napping / Nap ended** selector (Still sleeping / Sleep ended at night). Choosing Now for End also selects the ended state. Switching back and forth preserves the drafted end time. The duration stays visible above the footer buttons, including time so far for a running nap. Large **Save** is on the left, with smaller Cancel and an existing-record Delete icon on the right. Nothing is saved until Save is pressed.
 
 Manual starts default to five minutes ago. Adding past sleep defaults to an available gap of up to 45 minutes. Saving an unchanged record preserves its original timestamp precision.
 

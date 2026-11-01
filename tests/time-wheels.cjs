@@ -42,7 +42,7 @@ async function time(p,prefix,h,m){await wheel(p,prefix,'hour',String(h%12||12));
     await p.setViewportSize({width:390,height:844});await p.screenshot({path:`/tmp/huck-picker-${design}-${theme}.png`,animations:'disabled'});
    }
    await p.locator('[data-save-entry]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');
-   await p.locator('.nap-entry').first().click();await p.locator('[data-toggle-end]').click();await p.locator('[data-save-entry]').click();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
+   await p.locator('.nap-entry').first().click();await p.locator('[data-end-state="running"]').click();await p.locator('[data-save-entry]').click();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');
    await p.locator('[data-open-end]').click();await p.locator('[data-delete-entry]').click();await p.locator('[data-confirm-delete]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');
    await p.locator('[data-add]').click();await wheel(p,'start','day','Yesterday');await time(p,'start',23,30);await time(p,'end',0,15);assert.equal(await p.locator('#time-preview').innerText(),'45m sleep');await p.locator('[data-save-entry]').click();assert(!(await p.locator('#modal').isVisible()));
    assert(await p.evaluate(()=>HuckTest.getState().entries.some(e=>e.start===Date.parse('2026-10-30T06:30:00Z')&&e.end===Date.parse('2026-10-30T07:15:00Z'))));

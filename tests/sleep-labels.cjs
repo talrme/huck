@@ -11,7 +11,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    assert.equal(await p.locator('[data-end="0"]').innerText(),'End '+scenario.main+' now');assert.equal(await p.locator('#delay-action').innerText(),'End '+scenario.main);assert.equal(await p.locator('#timer-detail .session-time').count(),1);assert((await p.locator('#timer-detail').innerText()).includes('Enter end time'));
    await p.locator('#timer-detail [data-edit]').click();await p.locator('[data-time-field=start]').evaluate((field,value)=>{const [h,m]=value.split(':');for(const [kind,text]of [['hour',String(Number(h)%12||12)],['minute',m],['period',Number(h)<12?'AM':'PM']]){const wheel=field.querySelector('[data-wheel='+kind+']'),item=[...wheel.children].find(n=>n.textContent===text);wheel.scrollTop=Number(item.dataset.index)*36;wheel.dispatchEvent(new Event('scroll'));}},scenario.startEdit);assert.equal(await p.locator('#modal-title').innerText(),'Edit '+scenario.changed);await p.locator('[data-save-entry]').click();
    assert.equal(await p.locator('[data-end="0"]').innerText(),'End '+scenario.changed+' now');
-   await p.locator('[data-open-end]').click();assert.equal(await p.locator('[data-toggle-end]').innerText(),scenario.changed==='nap'?'Still napping':'Still sleeping');await context.close();
+   await p.locator('[data-open-end]').click();assert.equal(await p.locator('[data-end-state="running"]').innerText(),scenario.changed==='nap'?'Still napping':'Still sleeping');await context.close();
   }
   console.log('PASS start-time labels: daylight/night boundaries, backdated start vs Now, consistent end labels, edited starts and still-sleeping wording');
  }finally{await browser.close();}

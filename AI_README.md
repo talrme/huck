@@ -182,7 +182,11 @@ The user explicitly requested replacing native time sheets with custom scrolling
 Now is always visible and enabled for each shown field, resetting its date/time and refreshing the wheels. It changes only the draft. No +/-5m/5m ago controls remain. Flush wheels before explicit Save so an in-flight scroll uses the nearest row. Background sync must not rebuild the picker or discard its draft. Reduced motion removes the 3D transforms, retaining readable scrolling/selection.
 
 Start link uses data-edit. End link uses data-open-end=entryId; opens the existing record with end fields visible and default now. This is not a second data-edit under #timer-detail.
-Within an editor, Set time reveals an end for an active entry. Still napping/Still sleeping clears it; explicit Save resumes the same record subject to overlap rules. Toggling back restores original end if available. The Ended header groups Now and Still napping/sleeping without overlapping.
+November1 editor redesign: Start and End use identical time-field-head rows and nowButton controls (rounded, rotate-ccw icon, same alignment). End always exists, even for a new manual start. The two-button .end-state group uses data-end-state=running/ended, aria-pressed and a sliding thumb; label by start-time noun: Still napping / Nap ended, or Still sleeping / Sleep ended. setEndState reveals/hides end fields, preserves endDraft when returning to running, and mounts the end wheels only when visible. End Now selects ended and resets its time. These affect only the draft until explicit Save.
+
+The awake action row has Start now (~62%) and text-labeled Enter manually (~38%); Compact stacks these when its action area is narrow. Enter manually still opens mode=start with a five-minutes-ago start, but now uses the unified full modal, default running. Recent Add sleep defaults completed via pastDefaults. Save chooses edit for an existing record; for a new one choose add if hasEnd, otherwise start. Do NOT base new-record action on the entry point/mode, since the user can change the status pill.
+
+Entry footer contains #time-preview above .entry-footer-actions, so duration/errors stay visible while scrolling pickers. A running draft shows duration so far; completed shows duration and nap/sleep. Large Save with check icon is first/left; small Cancel and Delete icon (existing record only) are right. Keep duration/validation available even before opening the end picker.
 
 IMPORTANT: The prior autosave-on-dismiss was explicitly reversed by the user. Cancel, X, backdrop and Escape close WITHOUT writing anything, even if the draft is valid or invalid. Only Save calls saveEntry/enqueue. Opening Enter end time suggests now but must NEVER finish the sleep just by dismissing. Footer: Delete (existing records only, with confirmation), Cancel, Save. Unchanged existing records preserve timestamps/revision. Keep editor.kind separate for entry/settings/delete confirmation. Guard updateTimePreview against closed/non-entry dialogs so delayed scroll events cannot touch another modal.
 
@@ -262,6 +266,7 @@ Pure:
 Playwright:
 - tests/browser.cjs: owns ephemeral server, main workflows/themes/simulated two-device sync.
 - tests/time-editor.cjs delegates to time-wheels.cjs: scrolling/keyboard/simulated finger swipe, defaults, Now, validation, explicit Save/Cancel, active-end dismissal safety, unchanged edits, reopen/delete and all styles/themes/320/390/1280.
+- tests/editor-layout.cjs: unified manual running/completed saves, aligned Start/End Now controls, status pill and drafted end preservation, sticky duration, Save-left/Cancel/Delete-right proportions, cancel safety and320/390/1280 widths across styles.
 - tests/end-controls.cjs: scale1..10, preview-only drag, valid saves, stable DOM, timing/link layout, motion/fallback.
 - tests/recent-naps.cjs: cap3/reverse order/expand/reopen/overlap/sandbox isolation.
 - tests/sleep-labels.cjs: morning/evening crossings and edited start classification.

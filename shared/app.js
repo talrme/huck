@@ -85,7 +85,7 @@
     if(box.dataset.context!==context){
       box.dataset.context=context;
       box.dataset.delayTouched='false';
-      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start aria-label="Enter start time" title="Enter start time">${icon('clock-3')}</button>`}</div><p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span><small id="delay-offset"></small></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
+      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start>${icon('clock-3')}<span>Enter manually</span></button>`}</div><p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span><small id="delay-offset"></small></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
     }
     updateDelay(s,running);
   }
@@ -258,8 +258,9 @@
     $('#modal').showModal();icons();
   }
   const close=()=>$('#modal').close();
-  function timeField(prefix,title,at,showNow=true){
-    return `<fieldset class="time-field" data-time-field="${prefix}" data-title="${title}" data-picker-today="${dateKey(Date.now())}"><legend>${title}</legend>${showNow?`<button type="button" class="text-link time-now" data-now="${prefix}" aria-label="${title}: set to now">Now</button>`:''}<input id="${prefix}-date" type="hidden" value="${dateKey(at)}"><input id="${prefix}-time" type="hidden" value="${inputTime(at).split('T')[1]}"><div class="wheel-picker"></div></fieldset>`;
+  function nowButton(prefix,title){return `<button type="button" class="time-now" data-now="${prefix}" aria-label="${title}: set to now">${icon('rotate-ccw')}Now</button>`;}
+  function timeField(prefix,title,at,showHeader=true){
+    return `<fieldset class="time-field" data-time-field="${prefix}" data-title="${title}" data-picker-today="${dateKey(Date.now())}"><legend class="sr-only">${title}</legend>${showHeader?`<div class="time-field-head"><span>${title}</span>${nowButton(prefix,title)}</div>`:''}<input id="${prefix}-date" type="hidden" value="${dateKey(at)}"><input id="${prefix}-time" type="hidden" value="${inputTime(at).split('T')[1]}"><div class="wheel-picker"></div></fieldset>`;
   }
   function entryTime(prefix){
     const date=$('#'+prefix+'-date')?.value,time=$('#'+prefix+'-time')?.value;
@@ -277,12 +278,14 @@
     let error='';if(!Number.isFinite(start)||(!end&&end!==null))error='Choose a date and time.';
     else if(start>Date.now()||end>Date.now())error='Choose a time in the past or now.';
     else if(end!==null&&end<=start)error='End must be after start.';
-    $('#time-preview').textContent=error|| (end?`${duration(end-start)} ${sleepName(start)}`:`Started ${duration(Date.now()-start)} ago`);
-    const noun=Number.isFinite(start)?sleepName(start):'sleep',toggle=$('[data-toggle-end]');
-    const endNow=$('.end-heading [data-now]');if(endNow)endNow.hidden=!editor.hasEnd;
-    if(toggle)toggle.textContent=editor.hasEnd?(noun==='nap'?'Still napping':'Still sleeping'):'Set time';
-    if(editor.mode==='start')$('#modal-title').textContent='Start '+noun;
-    else if(editor.id)$('#modal-title').textContent='Edit '+noun;
+    const noun=Number.isFinite(start)?sleepName(start):'sleep';
+    $('#time-preview').textContent=error||(end?`${duration(end-start)} ${noun}`:`${duration(Date.now()-start)} so far`);
+    const state=$('.end-state');state.dataset.ended=String(editor.hasEnd);
+    state.querySelectorAll('[data-end-state]').forEach(button=>{
+      button.setAttribute('aria-pressed',String((button.dataset.endState==='ended')===editor.hasEnd));
+      button.textContent=button.dataset.endState==='ended'?(noun==='nap'?'Nap ended':'Sleep ended'):(noun==='nap'?'Still napping':'Still sleeping');
+    });
+    $('#modal-title').textContent=(editor.id?'Edit ':'Add ')+noun;
     $('#time-preview').classList.toggle('time-invalid',Boolean(error));
     $('[data-save-entry]').disabled=Boolean(error);
   }
@@ -291,11 +294,17 @@
     for(let i=list.length-1;i>=0;i--){const e=list[i];if(e.end&&finish-e.end>=5*60000)return {start:Math.max(e.end,finish-45*60000),end:finish};finish=e.start;}
     return {start:finish-45*60000,end:finish};
   }
+  function setEndState(hasEnd,at){
+    if(editor.hasEnd&&!hasEnd)editor.endDraft=entryTime('end');
+    editor.hasEnd=hasEnd;$('#end-fields').hidden=!hasEnd;
+    if(hasEnd)setEntryTime('end',at||editor.endDraft||editor.original?.end||Date.now());
+    updateTimePreview();
+  }
   function openEntry(id,mode){
     const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
-    editor={kind:'entry',id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:mode!=='start'&&Boolean(e?e.end:defaults.end)};
-    modal(mode==='start'?'Start sleep':e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Started',e?.start||defaults.start)}${mode==='start'?'':`<section ${e?'id="end-section"':''}>${e?`<div class="end-heading"><span>Ended</span><span class="end-heading-actions"><button class="text-link" data-now="end" aria-label="Ended: set to now">Now</button><button class="text-link" data-toggle-end aria-expanded="${editor.hasEnd}" aria-controls="end-fields">${editor.hasEnd?'Still napping':'Set time'}</button></span></div>`:''}<div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','Ended',e?.end||defaults.end||Date.now(),!e)}</div></section>`}<p id="time-preview" class="time-preview" role="status"></p>`,
-      `${e?`<button class="danger entry-delete" data-delete-entry>${icon('trash-2')}Delete</button>`:''}<button class="entry-cancel" data-close>Cancel</button><button class="primary" data-save-entry>Save</button>`);
+    editor={kind:'entry',id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:Boolean(e?e.end:defaults.end)};
+    modal(e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Start',e?.start||defaults.start)}<section id="end-section"><div class="time-field-head"><span>End</span>${nowButton('end','End')}</div><div class="end-state" data-ended="${editor.hasEnd}" role="group" aria-label="Sleep status"><span class="end-state-thumb" aria-hidden="true"></span><button data-end-state="running" aria-pressed="${!editor.hasEnd}" aria-controls="end-fields">Still napping</button><button data-end-state="ended" aria-pressed="${editor.hasEnd}" aria-controls="end-fields">Nap ended</button></div><div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','End',e?.end||defaults.end||Date.now(),false)}</div></section>`,
+      `<p id="time-preview" class="time-preview" role="status"></p><div class="entry-footer-actions"><button class="primary" data-save-entry>${icon('check')}Save</button><button class="entry-cancel" data-close>Cancel</button>${e?`<button class="danger entry-delete" data-delete-entry aria-label="Delete sleep" title="Delete sleep">${icon('trash-2')}</button>`:''}</div>`);
     $('#modal-footer').classList.add('entry-footer');HuckTimePicker.mount($('#modal-body'));
     editor.initial={start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null};
     updateTimePreview();
@@ -306,8 +315,7 @@
     const p={id:editor.id||uuid(),childId:editor.childId,start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null,expectedRev:editor.rev};
     const unchanged=p.start===editor.initial.start&&p.end===editor.initial.end;
     if(unchanged&&editor.id){$('#modal').close();return;}
-    if(editor.mode!=='start'&&!editor.id&&!p.end)return notice('Choose an end time.');
-    if(enqueue(editor.id?'edit':editor.mode==='start'?'start':'add',p))$('#modal').close();
+    if(enqueue(editor.id?'edit':editor.hasEnd?'add':'start',p))$('#modal').close();
   }
   function settings(){
     const s=projected();editor={settingsRevision:s.revision};
@@ -349,12 +357,12 @@
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
     const t=event.target.closest('button,a');if(!t)return;
-    if(t.matches('[data-toggle-end]')){editor.hasEnd=!editor.hasEnd;$('#end-fields').hidden=!editor.hasEnd;t.textContent=editor.hasEnd?'Still napping':'Set time';t.setAttribute('aria-expanded',String(editor.hasEnd));if(editor.hasEnd)setEntryTime('end',editor.original?.end||Date.now());updateTimePreview();}
-    if(t.matches('[data-now]'))setEntryTime(t.dataset.now,Date.now());
+    if(t.matches('[data-end-state]'))setEndState(t.dataset.endState==='ended');
+    if(t.matches('[data-now]')){if(t.dataset.now==='end')setEndState(true,Date.now());else setEntryTime(t.dataset.now,Date.now());}
     if(t.matches('[data-delay-apply]')){$('#actions').dataset.delayTouched='true';const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);if(t.disabled)return;const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
-    if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-end')&&!editor.hasEnd){editor.hasEnd=true;$('#end-fields').hidden=false;const toggle=$('[data-toggle-end]');toggle.textContent='Still napping';toggle.setAttribute('aria-expanded','true');setEntryTime('end',Date.now());}}
+    if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,Date.now());}
     if(t.matches('[data-custom-start]'))openEntry(null,'start');
     if(t.matches('[data-add]'))openEntry();
     if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(Date.now());expandedNaps=expandedNaps===napKey?'':napKey;render();}
