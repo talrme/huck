@@ -67,7 +67,10 @@ body[data-style=compact] .action-main>.primary{font-size:12px;padding:9px 7px}
 body[data-style=compact] .manual-time-row{flex-wrap:wrap;gap:0 4px;line-height:1.2;margin-top:0}
 body[data-style=compact] .manual-start{width:100%;padding:7px;min-height:40px}
 body[data-style=compact] .action-main{display:grid;grid-template-columns:minmax(0,1fr)}
-.last-duration{font-weight:750;margin-left:3px}
+.timer-detail .last-duration{display:block;max-width:100%;width:100%;min-height:36px;margin:0;padding:3px 0;text-align:inherit;font-size:12px;line-height:1.6;font-weight:450;text-decoration:none;white-space:normal}
+.last-duration .last-entry-label{color:var(--muted);font-weight:450}
+.last-duration strong{font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.last-time-range{display:inline-block;color:var(--muted);font-size:11px;font-weight:450}
 .estimate-note{display:inline-block;font-size:10px;margin-left:6px}
 .wake-window{--wake-color:var(--muted);width:100%;max-width:360px;margin:10px auto 0;grid-column:1/-1}
 .wake-window[data-phase=early]{--wake-color:#287358}

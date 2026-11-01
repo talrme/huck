@@ -174,6 +174,8 @@ Daybook is default with periwinkle original palette. Orbit and Compact remain us
 
 ## Time editor behavior
 
+Awake #timer-detail uses one .last-duration button: Last nap/sleep label, emphasized duration including long, and a muted parenthesized .last-time-range. Both duration and range open the same existing entry via data-edit. Allow natural wrapping on narrow/Compact/Orbit layouts; keep auto-ended/approximate labeling. Active sleep's separate start/end links are unchanged.
+
 Reopening should show the top/current timer, not the previous vertical scroll position. tools/page.html disables browser scroll restoration early. reopenAtTop uses instant window scroll plus a next-frame reset on initial render, load/pageshow (including bfcache), and visible foreground return. Do not reset on polling, ticks, resize, or ordinary focus: those would interrupt scrolling or editing. Chart horizontal scroll and modal drafts are not reset.
 
 The user explicitly requested replacing native time sheets with custom scrolling wheels. shared/time-picker.js exposes HuckTimePicker.mount/refresh/flush. Each visible time-field has day/hour/minute/AM-PM scroll-snap columns, 36px rows, five-row viewport, curved/faded nearby values, a highlight strip, spinbutton semantics and arrow/Page/Home/End keys. Hidden date/time inputs keep the existing timestamp parser and unchanged-precision behavior. Day choices cover the past730 days plus today and preserve an older record's date if necessary. Only mount visible fields; mount/refresh end after revealing it. Manual start defaults five minutes ago; pastDefaults finds a nonoverlapping gap up to45m (minimum5m) or before earliest record.
