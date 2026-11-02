@@ -173,6 +173,8 @@ Daybook is default with periwinkle original palette. Orbit and Compact remain us
 
 ## Time editor behavior
 
+End confirmation's .receipt-adjust is one native button spanning the row except its independent sibling X. The timestamp #end-confirmation-time is styled as a link, but not a nested anchor/button. Keep click/keyboard behavior available over the full adjustment area; X must never open the editor. end-adjust tests click timestamp, text and padding across styles.
+
 Awake #timer-detail uses one .last-duration button: Last nap/sleep label, emphasized duration including long, and a muted parenthesized .last-time-range. Both duration and range open the same existing entry via data-edit. Allow natural wrapping on narrow/Compact/Orbit layouts; keep auto-ended/approximate labeling. Active sleep's separate start/end links are unchanged.
 
 Reopening should show the top/current timer, not the previous vertical scroll position. tools/page.html disables browser scroll restoration early. reopenAtTop uses instant window scroll plus a next-frame reset on initial render, load/pageshow (including bfcache), and visible foreground return. Do not reset on polling, ticks, resize, or ordinary focus: those would interrupt scrolling or editing. Chart horizontal scroll and modal drafts are not reset.

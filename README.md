@@ -30,6 +30,8 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 
 ## Time entry and history
 
+The entire Ended at… confirmation row opens Adjust, including the underlined time and blank space. Its X is a separate button that only dismisses it.
+
 Backdated entries use the manual editor; there are no minutes-ago sliders on the main screen.
 
 The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.

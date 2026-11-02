@@ -10,7 +10,7 @@
   <link rel="icon" href="shared/favicon.png?v=20261030-pacifier" type="image/png">
   <link rel="apple-touch-icon" href="shared/apple-touch-icon.png?v=20261030-pacifier">
   <link rel="manifest" href="manifest.webmanifest?v=20261030-main">
-  <link rel="stylesheet" href="shared/styles.css?v=20261101-soft-zs">
+  <link rel="stylesheet" href="shared/styles.css?v=20261101-clickable-receipt">
   <link rel="stylesheet" href="shared/themes.css?v=20261101-quiet-awake">
 </head>
 <body data-style="daybook">
@@ -32,7 +32,7 @@
         <div id="wake-window" class="wake-window" hidden></div>
       </div>
       <section id="end-confirmation" class="end-confirmation" aria-label="Sleep ended" hidden>
-        <div class="end-confirmation-body"><span id="end-confirmation-text" role="status"></span><button class="text-link" data-adjust-ended>Adjust</button><button class="receipt-close" data-dismiss-ended aria-label="Dismiss end confirmation" title="Dismiss"><i data-lucide="x"></i></button></div>
+        <div class="end-confirmation-body"><button class="receipt-adjust" data-adjust-ended><span id="end-confirmation-text">Ended at <span id="end-confirmation-time" class="receipt-link"></span></span><span class="receipt-link">Adjust</span></button><button class="receipt-close" data-dismiss-ended aria-label="Dismiss end confirmation" title="Dismiss"><i data-lucide="x"></i></button></div>
         <div class="end-confirmation-progress" aria-hidden="true"></div>
       </section>
       <section id="today-naps" class="today-naps" aria-label="Today’s naps"></section>
@@ -56,6 +56,6 @@
   <script src="shared/core.js"></script>
   <script src="shared/wake.js?v=20261101-quiet-awake"></script>
   <script src="shared/time-picker.js?v=20261030-scroll-picker"></script>
-  <script src="shared/app.js?v=20261101-soft-zs"></script>
+  <script src="shared/app.js?v=20261101-clickable-receipt"></script>
 </body>
 </html>

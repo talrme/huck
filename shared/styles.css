@@ -134,9 +134,11 @@ body[data-theme=mint] .day-column .sleep-block.running{background:#f4dfa1;color:
 .start-edit svg{width:14px;height:14px}.start-now{display:inline-flex}
 .end-confirmation{margin-top:10px;background:var(--soft);border-radius:6px;overflow:hidden;animation:enter .2s ease-out;transition:opacity .18s,transform .18s}
 .end-confirmation.is-closing{opacity:0;transform:translateY(4px)}
-.end-confirmation-body{display:flex;align-items:center;gap:10px;padding:4px 7px 4px 12px;min-height:44px;font-size:12px}
-#end-confirmation-text{flex:1;color:var(--ink)}
-.end-confirmation .text-link{font-size:12px;min-height:36px}
+.end-confirmation-body{display:flex;align-items:stretch;min-height:44px;font-size:12px}
+.receipt-adjust{flex:1;min-width:0;display:flex;justify-content:space-between;gap:10px;padding:10px 12px;min-height:46px;border:0;border-radius:0;background:transparent;text-align:left;font-size:12px;font-weight:450}
+.receipt-adjust:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+#end-confirmation-text{color:var(--ink)}
+.receipt-link{color:var(--accent);text-decoration:underline;text-underline-offset:3px;font-weight:600}
 .receipt-close{width:32px;min-height:36px;padding:7px;border:0;background:transparent;color:var(--muted)}
 .receipt-close svg{width:14px;height:14px;transition:transform .2s}.receipt-close:hover svg{transform:rotate(90deg)}
 .end-confirmation-progress{height:2px;background:var(--accent);opacity:.35;transform-origin:left}

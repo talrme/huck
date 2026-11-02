@@ -104,7 +104,7 @@
     const entry=entries(s).find(e=>e.id===endReceipt.id);
     if(endReceipt.childId!==child(s).id||!entry?.end||C.active(s,child(s).id)){dismissEndConfirmation(false);return;}
     if(Date.now()>=endReceipt.until){dismissEndConfirmation();return;}
-    $('#end-confirmation-text').textContent='Ended at '+clock(entry.end);
+    $('#end-confirmation-time').textContent=clock(entry.end);
   }
   function showEndConfirmation(id){
     dismissEndConfirmation(false);const s=projected(),entry=entries(s).find(e=>e.id===id);if(!entry?.end)return;
