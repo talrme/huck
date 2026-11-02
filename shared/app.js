@@ -112,14 +112,15 @@
   }
   function showEndConfirmation(id){
     dismissEndConfirmation(false);const s=projected(),entry=entries(s).find(e=>e.id===id);if(!entry?.end)return;
-    endReceipt={id,childId:entry.childId,until:Date.now()+12000};
+    const lifetime=8000;
+    endReceipt={id,childId:entry.childId,until:Date.now()+lifetime};
     const box=$('#end-confirmation');box.hidden=false;renderEndConfirmation(s);
     const meter=$('.end-confirmation-progress');meter.getAnimations().forEach(a=>a.cancel());
     if(prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
-      meter.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:12000,easing:'linear',fill:'forwards'});
-      box.animate([{opacity:1,offset:0},{opacity:1,offset:2/3},{opacity:.55,offset:1}],{duration:12000,easing:'linear',fill:'forwards'});
+      meter.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:lifetime,easing:'linear',fill:'forwards'});
+      box.animate([{opacity:1},{opacity:.55}],{duration:lifetime,easing:'linear',fill:'forwards'});
     }
-    receiptTimer=setTimeout(()=>dismissEndConfirmation(),12000);
+    receiptTimer=setTimeout(()=>dismissEndConfirmation(),lifetime);
   }
   function pauseEndConfirmation(paused){
     if(!endReceipt||Boolean(endReceipt.pausedAt)===paused)return;
@@ -138,7 +139,7 @@
     const s=projected(),e=entries(s).find(e=>e.id===endReceipt?.id);if(!e?.end||C.active(s,e.childId))return;
     const noun=sleepName(e.start,s);
     editor={kind:'resume',id:e.id,childId:e.childId,start:e.start,rev:e.rev};dismissEndConfirmation(false);
-    modal(noun==='nap'?'Still napping?':'Still sleeping?',`<p>Remove the end time and continue the same ${noun} from ${esc(clock(e.start))}?</p>`,`<button data-close>Keep ended</button><button class="primary" data-confirm-resume>Resume ${noun}</button>`);
+    modal(noun==='nap'?'Still napping?':'Still sleeping?',`<p>Remove the end time and continue the same ${noun} from ${esc(clock(e.start))}?</p>`,`<button data-close>End ${noun}</button><button class="primary" data-confirm-resume>Resume ${noun}</button>`);
   }
   function animateArrival(){
     if(!arrival)return;const effect=arrival;arrival=null;

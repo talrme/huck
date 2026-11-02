@@ -12,7 +12,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    const before=await page.evaluate(()=>JSON.stringify(HuckTest.getState()));
    await page.locator('[data-resume-ended]').click();assert(await page.locator('#modal').isVisible());
    assert.equal(await page.evaluate(()=>JSON.stringify(HuckTest.getState())),before,'First tap must not reopen a sleep');
-   await page.locator('[data-close]').last().click();assert.equal(await page.evaluate(()=>JSON.stringify(HuckTest.getState())),before,'Cancel must keep the end');
+   assert.equal(await page.locator('#modal-footer [data-close]').innerText(),'End '+noun);await page.locator('#modal-footer [data-close]').click();assert.equal(await page.evaluate(()=>JSON.stringify(HuckTest.getState())),before,'End button must keep the saved end');
    // A second locally ended sleep exercises explicit confirmation and stable ID/start.
    await page.clock.runFor(60000);await page.locator('[data-start="0"]').click();await page.clock.runFor(60000);
    const active=await page.evaluate(()=>HuckTest.getState().entries.find(e=>!e.end&&!e.deleted));
@@ -24,9 +24,9 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles'}),page=await context.newPage();
   const now=Date.parse('2026-11-01T20:00:00Z');await page.clock.install({time:now});await page.clock.pauseAt(now);await page.goto('http://127.0.0.1:5190/?demo=1');
   await page.evaluate(()=>HuckTest.enqueue('start',{id:'fade-test',childId:'avi',start:Date.now()-7*60000}));await page.locator('[data-end="0"]').click();await page.mouse.move(0,0);
-  await page.clock.runFor(10000);const opacity=await page.locator('#end-confirmation').evaluate(e=>{const fade=e.getAnimations().find(a=>a.effect.getKeyframes().some(f=>'opacity' in f)&&a.effect.getTiming().duration===12000);fade.currentTime=10000;return Number(getComputedStyle(e).opacity);});assert(opacity<.95&&opacity>.5,'Receipt fades gently near expiry');
+  await page.clock.runFor(1000);const opacity=await page.locator('#end-confirmation').evaluate(e=>{const fade=e.getAnimations().find(a=>a.effect.getKeyframes().some(f=>'opacity' in f)&&a.effect.getTiming().duration===8000);fade.currentTime=1000;return Number(getComputedStyle(e).opacity);});assert(opacity<1&&opacity>.85,'Receipt starts fading immediately');
   await page.locator('[data-resume-ended]').focus();await page.clock.runFor(20000);assert(await page.locator('#end-confirmation').isVisible(),'Keyboard interaction pauses expiry');assert.equal(await page.locator('#end-confirmation').evaluate(e=>getComputedStyle(e).opacity),'1');
-  await page.locator('[data-start="0"]').focus();await page.clock.runFor(2300);await page.locator('#end-confirmation').waitFor({state:'hidden'});await context.close();
+  await page.locator('[data-start="0"]').focus();await page.clock.runFor(7300);await page.locator('#end-confirmation').waitFor({state:'hidden'});await context.close();
   console.log('PASS nap/sleep labels, guarded resume, cancel, stable original timer, reload persistence, progressive fade and paused keyboard dismissal');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
