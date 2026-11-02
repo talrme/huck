@@ -19,8 +19,8 @@ The app is already configured. The setup instructions below are for recreating o
 Opening, reloading, navigating back to, or returning to the app starts at the top instead of restoring the previous page scroll position. Normal scrolling while using the app is unchanged.
 
 - **Start nap now / Start sleep now** begins a timer immediately. The start time determines whether it is called a nap or sleep, using the shared day/night schedule.
-- **End nap now / End sleep now** ends that same session. Its name does not change just because it crosses morning or evening.
-- For a delayed entry, use **Started/Ended a few minutes ago?** The slider stays at **1–10 minutes**, defaulting to three. The preview shows the offset and clock time; the small Start/End button records it. Dragging alone never saves. Warnings stay hidden until you move the slider or try its Start/End button. An invalid attempt explains the conflict and disables confirmation without changing the scale. Now actions reset this interaction state.
+- **End nap now / End sleep now** ends that same session immediately. A dismissible **Ended at [time] · Adjust** confirmation appears for about12 seconds. Adjust opens the end-focused editor and cancels the confirmation timeout; X or letting it fade away never changes the saved sleep. The session name does not change just because it crosses morning or evening.
+- For a delayed start, use **Started a few minutes ago?** The slider stays at **1–10 minutes**, defaulting to three. The preview shows the offset and clock time; the small Start button records it. Dragging alone never saves. Warnings stay hidden until you move the slider or try its Start button. The ending slider was replaced by immediate End plus Adjust.
 - During sleep, the linked time row reads **9:06 PM to Enter end time**. Tap the start time to edit it or Enter end time to open the end fields. Both links sit inside the timer's accent area.
 - **Enter nap manually (Enter sleep manually at night)**, beside Start now, opens the same Add/Edit nap modal with **Still napping** selected and a start time five minutes ago. Choose **Nap ended** to enter both times instead. **Add sleep**, below Recent naps, opens that modal with a completed entry selected by default.
 - While awake, the clickable detail shows **Last nap: 26 minutes long (start–end)**, with smaller muted clock times. Tap the duration or time range to edit that same entry.
@@ -30,13 +30,15 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 
 ## Time entry and history
 
-The slider's Start/End confirmation button includes a tiny, muted second line (for example, **3m ago**) that follows the selected offset. Screen readers get the full wording. The main Now action is unchanged.
+The starting slider's confirmation button includes a tiny, muted second line (for example, **3m ago**) that follows the selected offset. Screen readers get the full wording.
 
 The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.
 
 A matching **Now** button stays visible in both the Start and End headers. It resets that field's date and time, but does not save the record. Use Save at the bottom to apply the draft.
 
 The modal labels its sections **Start** and **End**, each with a matching rounded Now button in the same place. End has a compact, inline sliding **Still napping / Nap ended** selector (Still sleeping / Sleep ended at night). Choosing Now for End also selects the ended state. Switching back and forth preserves the drafted end time. The duration stays visible above the footer buttons, including time so far for a running nap. Large **Save** is on the left, with smaller Cancel and an existing-record Delete icon on the right. Nothing is saved until Save is pressed.
+
+For existing records, Start is collapsed to a clock-time summary and pencil. The pencil expands/collapses its picker without losing draft changes. Enter end time and Adjust therefore focus on the End picker. New manual entries keep Start expanded. The Now control for Start appears when expanded; End's remains available in its header.
 
 Manual starts default to five minutes ago. Adding past sleep defaults to an available gap of up to 45 minutes. Saving an unchanged record preserves its original timestamp precision.
 
@@ -196,7 +198,7 @@ Browser tests need Playwright and Google Chrome. Optional icon regeneration need
 | `tests/performance.cjs` | Synthetic large history, one-request saves, cache expiry, retries/conflicts |
 | `tests/browser.cjs` | Main workflows, styles/themes, simulated two-device sync; starts its own server |
 | `tests/time-editor.cjs` / `tests/time-wheels.cjs` | Custom wheels, simulated touch/keyboard, Now, explicit Save/Cancel, active-end dismissal regression, validation, themes and phone/desktop fit |
-| `tests/end-controls.cjs` | Slider behavior, control layout, arrival/motion effects |
+| `tests/end-controls.cjs` / `tests/end-adjust.cjs` | Immediate End, dismiss/12s expiry, non-expiring Adjust editor, collapsed Start, retained starting slider, themes/widths and motion |
 | `tests/recent-naps.cjs` | Latest-three expansion, resume sleep, overlap protection, sandbox isolation |
 | `tests/sleep-labels.cjs` | Day/night boundaries and edited/backdated start naming |
 | `tests/timer-polish.cjs` | Inline seconds, long-duration fit, imagery and delayed sync indicator |

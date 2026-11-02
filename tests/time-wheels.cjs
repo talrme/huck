@@ -1,6 +1,7 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 const now=Date.parse('2026-10-30T18:00:00Z');
 async function wheel(p,prefix,kind,value){
+ if(prefix==='start'&&await p.locator('#start-fields').isHidden())await p.locator('[data-toggle-start]').click();
  const el=p.locator(`[data-time-field="${prefix}"] [data-wheel="${kind}"]`);
  await el.evaluate((el,value)=>{const node=[...el.children].find(n=>n.textContent===value);if(!node)throw Error('Missing wheel value '+value);el.scrollTop=Number(node.dataset.index)*36;el.dispatchEvent(new Event('scroll'));},value);
 }

@@ -16,7 +16,7 @@
   // Older versions mistakenly persisted temporary lock failures as edit conflicts.
   for(const command of queue)if(command.blocked&&temporaryError(command.blocked))delete command.blocked;
   let historyChild=null,selectedSleep=null;
-  const delays={start:3,end:3};let arrival=null;
+  const delays={start:3,end:3};let arrival=null,endReceipt=null,receiptTimer=null,receiptHideTimer=null;
   const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
   function formatter(kind,timezone=base.settings.timezone){
     const id=kind+':'+timezone;if(!formatters.has(id))formatters.set(id,new Intl.DateTimeFormat(kind==='parts'?'en-CA':'en-US',kind==='parts'?{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{timeZone:timezone,hour:'numeric',minute:'2-digit'}));return formatters.get(id);
@@ -78,18 +78,21 @@
     $('#timer-art').src=new URL(running?'shared/sleeping.png':'shared/awake.png',root);
     $('#timer-art').alt='';
     renderActions(s,running);
-    renderChart(s);tick();icons();persist();animateArrival();
+    renderEndConfirmation(s);renderChart(s);tick();icons();persist();animateArrival();
   }
   function renderActions(s,running){
     const box=$('#actions'),mode=running?'end':'start',context=child(s).id+':'+(running?.id||'awake');
     if(box.dataset.context!==context){
       box.dataset.context=context;
       box.dataset.delayTouched='false';
-      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start>${icon('clock-3')}<span id="manual-action">Enter nap manually</span></button>`}</div><p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span><small id="delay-offset"></small></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`;
+      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start>${icon('clock-3')}<span id="manual-action">Enter nap manually</span></button>`}</div>${running?'':`<p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span><small id="delay-offset"></small></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`}`;
     }
     updateDelay(s,running);
   }
   function updateDelay(s=projected(),running=C.active(s,child(s).id)){
+    const mainNoun=sleepName(running?running.start:Date.now(),s);
+    $('#primary-action').textContent=(running?'End ':'Start ')+mainNoun+' now';
+    if($('#manual-action'))$('#manual-action').textContent='Enter '+mainNoun+' manually';
     const input=$('#sleep-delay');if(!input)return;
     const mode=running?'end':'start',now=Date.now(),last=entries(s).find(e=>e.end),selected=delays[mode],at=now-selected*60000;
     const invalid=running?at<=running.start:Boolean(last&&at<last.end);input.max=10;input.disabled=false;
@@ -97,9 +100,7 @@
     input.setAttribute('aria-valuetext',selected+' minutes ago');
     $('#delay-prompt').textContent=running?'Ended a few minutes ago?':'Started a few minutes ago?';
     $('#delay-label').textContent=selected+' '+(selected===1?'minute':'minutes')+' ago';$('#delay-max').textContent='10m';
-    const noun=sleepName(running?running.start:at,s),mainNoun=sleepName(running?running.start:now,s);
-    $('#primary-action').textContent=(running?'End ':'Start ')+mainNoun+' now';
-    if($('#manual-action'))$('#manual-action').textContent='Enter '+mainNoun+' manually';
+    const noun=sleepName(running?running.start:at,s);
     input.setAttribute('aria-label',(running?'End ':'Start ')+noun+', minutes ago');
     $('#delay-action').textContent=(running?'End ':'Start ')+noun;
     $('#delay-offset').textContent=selected+'m ago';
@@ -108,6 +109,27 @@
     $('#delay-error').hidden=!showError;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
     $('[data-delay-apply]').disabled=showError;if(showError)$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');else $('[data-delay-apply]').removeAttribute('aria-describedby');
     $('#delay-clock').textContent=clock(now-selected*60000);
+  }
+  function dismissEndConfirmation(animate=true){
+    clearTimeout(receiptTimer);clearTimeout(receiptHideTimer);endReceipt=null;
+    const box=$('#end-confirmation');
+    if(animate&&prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){box.classList.add('is-closing');receiptHideTimer=setTimeout(()=>{box.hidden=true;box.classList.remove('is-closing');},180);}
+    else{box.hidden=true;box.classList.remove('is-closing');}
+  }
+  function renderEndConfirmation(s=projected()){
+    if(!endReceipt)return;
+    const entry=entries(s).find(e=>e.id===endReceipt.id);
+    if(endReceipt.childId!==child(s).id||!entry?.end||C.active(s,child(s).id)){dismissEndConfirmation(false);return;}
+    if(Date.now()>=endReceipt.until){dismissEndConfirmation();return;}
+    $('#end-confirmation-text').textContent='Ended at '+clock(entry.end);
+  }
+  function showEndConfirmation(id){
+    dismissEndConfirmation(false);const s=projected(),entry=entries(s).find(e=>e.id===id);if(!entry?.end)return;
+    endReceipt={id,childId:entry.childId,until:Date.now()+12000};
+    const box=$('#end-confirmation');box.hidden=false;renderEndConfirmation(s);
+    const meter=$('.end-confirmation-progress');meter.getAnimations().forEach(a=>a.cancel());
+    if(prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches)meter.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:12000,easing:'linear',fill:'forwards'});
+    receiptTimer=setTimeout(()=>dismissEndConfirmation(),12000);
   }
   function animateArrival(){
     if(!arrival)return;const effect=arrival;arrival=null;
@@ -141,7 +163,7 @@
       elapsed.removeAttribute('aria-label');
     }
     renderWakeCue(s,r,last);
-    renderHistoryDetails(s);
+    renderHistoryDetails(s);renderEndConfirmation(s);
     updateDelay(s,r);
     requestAnimationFrame(fitElapsed);
   }
@@ -281,6 +303,7 @@
     else if(end!==null&&end<=start)error='End must be after start.';
     const noun=Number.isFinite(start)?sleepName(start):'sleep';
     $('#time-preview').textContent=error||(end?`${duration(end-start)} ${noun}`:`${duration(Date.now()-start)} so far`);
+    const summary=$('#start-summary-value');if(summary&&Number.isFinite(start))summary.textContent=(dateKey(start)===dateKey(Date.now())?'':dateKey(start).slice(5).replace('-','/')+' · ')+clock(start);
     const state=$('.end-state');state.dataset.ended=String(editor.hasEnd);
     state.querySelectorAll('[data-end-state]').forEach(button=>{
       button.setAttribute('aria-pressed',String((button.dataset.endState==='ended')===editor.hasEnd));
@@ -302,9 +325,10 @@
     updateTimePreview();
   }
   function openEntry(id,mode){
+    if(id&&endReceipt?.id===id)dismissEndConfirmation(false);
     const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
     editor={kind:'entry',id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:Boolean(e?e.end:defaults.end)};
-    modal(e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}${timeField('start','Start',e?.start||defaults.start)}<section id="end-section"><div class="time-field-head"><span>End</span><div class="end-state" data-ended="${editor.hasEnd}" role="group" aria-label="Sleep status"><span class="end-state-thumb" aria-hidden="true"></span><button data-end-state="running" aria-pressed="${!editor.hasEnd}" aria-controls="end-fields">Still napping</button><button data-end-state="ended" aria-pressed="${editor.hasEnd}" aria-controls="end-fields">Nap ended</button></div>${nowButton('end','End')}</div><div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','End',e?.end||defaults.end||Date.now(),false)}</div></section>`,
+    modal(e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}<section class="start-section"><div class="start-summary" ${e?'':'hidden'}><span>Start</span><span id="start-summary-value"></span><button class="start-edit" data-toggle-start aria-expanded="false" aria-controls="start-fields" aria-label="Edit start time" title="Edit start time">${icon('pencil')}</button><span class="start-now" hidden>${e?nowButton('start','Start'):''}</span></div><div id="start-fields" ${e?'hidden':''}>${timeField('start','Start',e?.start||defaults.start,!e)}</div></section><section id="end-section"><div class="time-field-head"><span>End</span><div class="end-state" data-ended="${editor.hasEnd}" role="group" aria-label="Sleep status"><span class="end-state-thumb" aria-hidden="true"></span><button data-end-state="running" aria-pressed="${!editor.hasEnd}" aria-controls="end-fields">Still napping</button><button data-end-state="ended" aria-pressed="${editor.hasEnd}" aria-controls="end-fields">Nap ended</button></div>${nowButton('end','End')}</div><div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','End',e?.end||defaults.end||Date.now(),false)}</div></section>`,
       `<p id="time-preview" class="time-preview" role="status"></p><div class="entry-footer-actions"><button class="primary" data-save-entry>${icon('check')}Save</button><button class="entry-cancel" data-close>Cancel</button>${e?`<button class="danger entry-delete" data-delete-entry aria-label="Delete sleep" title="Delete sleep">${icon('trash-2')}</button>`:''}</div>`);
     $('#modal-footer').classList.add('entry-footer');HuckTimePicker.mount($('#modal-body'));
     editor.initial={start:entryTime('start'),end:editor.hasEnd?entryTime('end'):null};
@@ -358,11 +382,14 @@
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
     const t=event.target.closest('button,a');if(!t)return;
+    if(t.matches('[data-toggle-start]')){const fields=$('#start-fields'),expanded=fields.hidden;fields.hidden=!expanded;$('.start-now').hidden=!expanded;t.setAttribute('aria-expanded',String(expanded));t.setAttribute('aria-label',expanded?'Collapse start time':'Edit start time');t.title=expanded?'Collapse start time':'Edit start time';t.innerHTML=icon(expanded?'chevron-up':'pencil');if(expanded)HuckTimePicker.mount(fields);icons();}
+    if(t.matches('[data-adjust-ended]')){const id=endReceipt?.id;dismissEndConfirmation(false);if(id)openEntry(id);}
+    if(t.matches('[data-dismiss-ended]'))dismissEndConfirmation();
     if(t.matches('[data-end-state]'))setEndState(t.dataset.endState==='ended');
     if(t.matches('[data-now]')){if(t.dataset.now==='end')setEndState(true,Date.now());else setEntryTime(t.dataset.now,Date.now());}
     if(t.matches('[data-delay-apply]')){$('#actions').dataset.delayTouched='true';const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);if(t.disabled)return;const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
-    if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r)enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev});}
+    if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r&&enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev}))showEndConfirmation(r.id);}
     if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,Date.now());}
     if(t.matches('[data-custom-start]'))openEntry(null,'start');
     if(t.matches('[data-add]'))openEntry();
