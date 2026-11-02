@@ -19,7 +19,7 @@ The app is already configured. The setup instructions below are for recreating o
 Opening, reloading, navigating back to, or returning to the app starts at the top instead of restoring the previous page scroll position. Normal scrolling while using the app is unchanged.
 
 - **Start nap now / Start sleep now** begins a timer immediately. The start time determines whether it is called a nap or sleep, using the shared day/night schedule.
-- **End Nap / End Sleep** ends that same session immediately. A dismissible **Ended at [time] · Adjust** confirmation appears for about12 seconds. Adjust opens the end-focused editor and cancels the confirmation timeout; X or letting it fade away never changes the saved sleep. The session name does not change just because it crosses morning or evening.
+- **End Nap / End Sleep** ends that same session immediately. A dismissible **Nap ended at [time] · Adjust time** confirmation (Sleep at night) appears for about12 seconds. Adjust opens the end-focused editor and cancels the confirmation timeout; X or letting it fade away never changes the saved sleep. A subtle **Still napping? / Still sleeping?** link asks for confirmation before removing the end time and resuming the same timer. The session name does not change just because it crosses morning or evening.
 - The awake screen has just **Start nap now** and **Enter nap manually**. Both the starting and ending sliders were removed. Use the manual editor for a backdated start, or Adjust after ending.
 - During sleep, the linked time row reads **9:06 PM to Enter end time**. Tap the start time to edit it or Enter end time to open the end fields. Both links sit inside the timer's accent area.
 - **Enter nap manually (Enter sleep manually at night)**, beside Start now, opens the same Add/Edit nap modal with **Still napping** selected and a start time five minutes ago. Choose **Nap ended** to enter both times instead. **Add sleep**, below Recent naps, opens that modal with a completed entry selected by default.
@@ -30,7 +30,7 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 
 ## Time entry and history
 
-The entire Ended at… confirmation row opens Adjust, including the underlined time and blank space. Its X is a separate button that only dismisses it.
+The main confirmation row opens Adjust, including the underlined time and blank space. Its X only dismisses it; the secondary Still napping? link opens a protected Resume confirmation. Cancel/X/backdrop/Escape in that dialog leave the completed sleep untouched. The bar stays solid for eight seconds, then gently fades during its final four seconds before dismissal. Hover or keyboard focus pauses its countdown and restores full visibility. Reduced-motion/animations-off mode skips the fade. This is temporary local UI; saved sleep still syncs normally.
 
 Backdated entries use the manual editor; there are no minutes-ago sliders on the main screen.
 

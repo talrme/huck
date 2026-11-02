@@ -96,6 +96,7 @@
   function dismissEndConfirmation(animate=true){
     clearTimeout(receiptTimer);clearTimeout(receiptHideTimer);endReceipt=null;
     const box=$('#end-confirmation');
+    box.getAnimations({subtree:true}).forEach(a=>a.cancel());
     if(animate&&prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){box.classList.add('is-closing');receiptHideTimer=setTimeout(()=>{box.hidden=true;box.classList.remove('is-closing');},180);}
     else{box.hidden=true;box.classList.remove('is-closing');}
   }
@@ -103,7 +104,10 @@
     if(!endReceipt)return;
     const entry=entries(s).find(e=>e.id===endReceipt.id);
     if(endReceipt.childId!==child(s).id||!entry?.end||C.active(s,child(s).id)){dismissEndConfirmation(false);return;}
-    if(Date.now()>=endReceipt.until){dismissEndConfirmation();return;}
+    if(!endReceipt.pausedAt&&Date.now()>=endReceipt.until){dismissEndConfirmation();return;}
+    const noun=sleepName(entry.start,s);
+    $('#end-confirmation-label').textContent=(noun==='nap'?'Nap':'Sleep')+' ended at';
+    $('[data-resume-ended]').textContent=noun==='nap'?'Still napping?':'Still sleeping?';
     $('#end-confirmation-time').textContent=clock(entry.end);
   }
   function showEndConfirmation(id){
@@ -111,8 +115,30 @@
     endReceipt={id,childId:entry.childId,until:Date.now()+12000};
     const box=$('#end-confirmation');box.hidden=false;renderEndConfirmation(s);
     const meter=$('.end-confirmation-progress');meter.getAnimations().forEach(a=>a.cancel());
-    if(prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches)meter.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:12000,easing:'linear',fill:'forwards'});
+    if(prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      meter.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:12000,easing:'linear',fill:'forwards'});
+      box.animate([{opacity:1,offset:0},{opacity:1,offset:2/3},{opacity:.55,offset:1}],{duration:12000,easing:'linear',fill:'forwards'});
+    }
     receiptTimer=setTimeout(()=>dismissEndConfirmation(),12000);
+  }
+  function pauseEndConfirmation(paused){
+    if(!endReceipt||Boolean(endReceipt.pausedAt)===paused)return;
+    const box=$('#end-confirmation');
+    if(paused){endReceipt.pausedAt=Date.now();clearTimeout(receiptTimer);box.getAnimations({subtree:true}).forEach(a=>a.pause());}
+    else{endReceipt.until+=Date.now()-endReceipt.pausedAt;delete endReceipt.pausedAt;box.getAnimations({subtree:true}).forEach(a=>a.play());receiptTimer=setTimeout(()=>dismissEndConfirmation(),Math.max(0,endReceipt.until-Date.now()));}
+  }
+  const receiptBox=$('#end-confirmation');
+  let receiptHover=false;
+  const updateReceiptPause=()=>pauseEndConfirmation(receiptHover||receiptBox.contains(document.activeElement));
+  receiptBox.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse'){receiptHover=true;updateReceiptPause();}});
+  receiptBox.addEventListener('pointerleave',()=>{receiptHover=false;updateReceiptPause();});
+  receiptBox.addEventListener('focusin',updateReceiptPause);
+  receiptBox.addEventListener('focusout',()=>queueMicrotask(updateReceiptPause));
+  function confirmResumeEnded(){
+    const s=projected(),e=entries(s).find(e=>e.id===endReceipt?.id);if(!e?.end||C.active(s,e.childId))return;
+    const noun=sleepName(e.start,s);
+    editor={kind:'resume',id:e.id,childId:e.childId,start:e.start,rev:e.rev};dismissEndConfirmation(false);
+    modal(noun==='nap'?'Still napping?':'Still sleeping?',`<p>Remove the end time and continue the same ${noun} from ${esc(clock(e.start))}?</p>`,`<button data-close>Keep ended</button><button class="primary" data-confirm-resume>Resume ${noun}</button>`);
   }
   function animateArrival(){
     if(!arrival)return;const effect=arrival;arrival=null;
@@ -370,6 +396,8 @@
     const t=event.target.closest('button,a');if(!t)return;
     if(t.matches('[data-toggle-start]'))setStartExpanded($('#start-fields').hidden);
     if(t.matches('[data-adjust-ended]')){const id=endReceipt?.id;dismissEndConfirmation(false);if(id)openEntry(id);}
+    if(t.matches('[data-resume-ended]'))confirmResumeEnded();
+    if(t.matches('[data-confirm-resume]')&&editor.kind==='resume'){if(enqueue('edit',{id:editor.id,childId:editor.childId,start:editor.start,end:null,expectedRev:editor.rev}))close();}
     if(t.matches('[data-dismiss-ended]'))dismissEndConfirmation();
     if(t.matches('[data-end-state]'))setEndState(t.dataset.endState==='ended');
     if(t.matches('[data-now]')){if(t.dataset.now==='end')setEndState(true,Date.now());else setEntryTime(t.dataset.now,Date.now());}
