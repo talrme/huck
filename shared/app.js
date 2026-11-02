@@ -241,9 +241,17 @@
     if(!rendered||!$('[data-older]'))return;days+=30;renderChart(projected());icons();
   }
   function enqueue(type,payload){
-    if(queue.some(c=>c.blocked)){notice('Resolve the pending sync issue first.');return false;}
+    if(queue.some(c=>c.blocked)){notice('Resolve the pending sync issue first.',true);return false;}
     const command={id:uuid(),type,payload,createdAt:Date.now()};
-    try{C.apply(projected(),command,Date.now());}catch(e){notice(e.message);return false;}
+    try{C.apply(projected(),command,Date.now());}catch(e){
+      let detail=e.message;
+      if(/overlaps another sleep/.test(detail)){
+        const s=projected(),original=s.entries.find(e=>e.id===payload.id),start=payload.start??original?.start,end=payload.end===undefined?original?.end:payload.end;
+        const other=s.entries.find(e=>!e.deleted&&e.id!==payload.id&&e.childId===payload.childId&&start<(e.end||Infinity)&&(end||Infinity)>e.start);
+        if(other)detail=`This overlaps the sleep on ${dateKey(other.start).slice(5).replace('-','/')} from ${clock(other.start)} to ${other.end?clock(other.end):'still sleeping'}. Remove the accidental entry using its Delete button, or adjust the times, then try again. Only one sleep can be running.`;
+      }
+      notice(detail,true);return false;
+    }
     const old=projected().entries.find(e=>e.id===payload.id&&!e.end&&!e.deleted);
     if(old&&payload.end&&(type==='end'||type==='edit'))arrival={id:old.id,duration:payload.end-old.start,from:$('#elapsed').getBoundingClientRect()};
     if(demo||!HUCK_CONFIG.backendUrl){base=C.apply(projected(),command,Date.now());persist();render();}
@@ -282,10 +290,16 @@
       lastChecked=Date.now();message='';retryAt=0;retryFailures=0;
     }catch(e){message=e.message;if(temporaryError(e)){retryFailures++;retryAt=Date.now()+Math.min(45000,5000*2**Math.min(retryFailures-1,4))+Math.floor(Math.random()*1500);scheduleRetry();if(retryFailures===1)notice(/lock/i.test(e.message)?'Connection is busy. Saved changes will retry automatically.':message);}else notice(message);}finally{busy=false;persist();if(changed)render();else{renderSyncActivity();$('#connection').textContent=stateLabel();tick();}}
   }
-  function notice(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(notice.timeout);notice.timeout=setTimeout(()=>$('#toast').hidden=true,6500);}
+  function notice(text,isError=false){
+    clearTimeout(notice.timeout);
+    if($('#modal').open&&$('#modal-notice')){
+      $('#toast').hidden=true;const message=$('#modal-notice');message.textContent=text;message.classList.toggle('is-error',isError);message.setAttribute('role',isError?'alert':'status');message.hidden=false;message.scrollIntoView({block:'nearest',behavior:'instant'});return;
+    }
+    $('#toast').textContent=text;$('#toast').hidden=false;notice.timeout=setTimeout(()=>$('#toast').hidden=true,6500);
+  }
   function modal(title,body,footer=''){
     $('#modal-footer').classList.remove('entry-footer');
-    $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML=footer;
+    $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML='<p id="modal-notice" class="modal-notice" role="alert" hidden></p>'+footer;$('#toast').hidden=true;
     if(title==='Settings'&&!demo&&HUCK_CONFIG.backendUrl&&localStorage.getItem('huck-local-backup-v1')){
       $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
     }
@@ -313,6 +327,7 @@
   }
   function updateTimePreview(){
     if(editor?.kind!=='entry'||!$('#modal').open||!$('#time-preview'))return;
+    $('#modal-notice').hidden=true;
     const start=entryTime('start'),end=editor.hasEnd?entryTime('end'):null;
     let error='';if(!Number.isFinite(start)||(!end&&end!==null))error='Choose a date and time.';
     else if(start>Date.now()||end>Date.now())error='Choose a time in the past or now.';

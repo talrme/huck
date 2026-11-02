@@ -27,6 +27,7 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 - **Recent naps** shows today's latest three completed entries, newest first. Expand to see all of today's entries. Active sleep stays in the timer and chart, not this list.
 - Tap a recent entry to edit. Tapping a history chart block selects it and shows its time range and duration below the chart, with a separate **Edit** link. Active sleep has a contrasting fill and an In progress label. **Still napping / Still sleeping** in the editor clears an accidental end time and resumes the same record, provided it does not overlap another sleep.
 - Time edits require **Save**. **Cancel**, tapping outside, X, and Escape discard the draft, including a suggested end time. Opening Enter end time and closing it never ends the sleep. Existing entries also have **Delete**, with confirmation. Unchanged existing entries are not rewritten.
+- Validation and sync messages raised while a modal is open appear inside its footer, above the buttons, not blurred behind the backdrop. Overlap errors identify the other sleep's date/times. Overlapping sleeps are still rejected: remove an accidental entry with its editor's Delete button, then reopen the original sleep and choose Still napping/sleeping. Only one sleep can run per child; rejected edits never merge or delete logs automatically.
 
 ## Time entry and history
 

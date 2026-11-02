@@ -167,6 +167,10 @@ body[data-theme=mint] .day-column .sleep-block.running{background:#f4dfa1;color:
 [data-wheel=day] .wheel-value{font-size:13px;font-weight:550}
 [data-wheel=period] .wheel-value{font-size:15px}
 .modal-footer.entry-footer{display:block}
+.modal-footer{flex-wrap:wrap}
+.modal-notice{flex:0 0 100%;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--accent);background:var(--soft);color:var(--ink);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.modal-notice.is-error{color:#a52d42;border-color:#ba3c51}
+body[data-theme=night] .modal-notice.is-error{color:#ffa6b9;border-color:#ffa6b9}
 .entry-footer-actions{display:flex;align-items:center;gap:8px}
 .entry-footer .entry-delete{flex:none;width:40px;min-height:44px;border:0;background:transparent;padding:8px}
 .entry-footer .entry-cancel{flex:none;background:transparent;border-color:transparent;font-size:12px;padding:8px}
