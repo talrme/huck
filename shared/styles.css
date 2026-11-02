@@ -129,9 +129,9 @@ body[data-theme=mint] .day-column .sleep-block.running{background:#f4dfa1;color:
 .time-field{padding:0 0 17px;border-bottom:1px solid var(--line)}
 .time-field{position:relative;min-width:0}
 .start-summary{display:flex;align-items:center;gap:8px;min-height:44px;padding-bottom:10px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted)}
-#start-summary-value{flex:1;min-width:0;color:var(--ink);font-variant-numeric:tabular-nums}
+#start-summary-value{flex:0 1 auto;min-width:0;color:var(--ink);font-variant-numeric:tabular-nums}
 .start-edit{min-height:36px;width:32px;padding:6px;border:0;background:transparent;color:var(--accent)}
-.start-edit svg{width:14px;height:14px}.start-now{display:inline-flex}
+.start-edit svg{width:14px;height:14px}.start-now{display:inline-flex;margin-left:auto}
 .end-confirmation{margin-top:10px;background:var(--soft);border-radius:6px;overflow:hidden;animation:enter .2s ease-out;transition:opacity .18s,transform .18s}
 .end-confirmation.is-closing{opacity:0;transform:translateY(4px)}
 .end-confirmation-body{display:flex;align-items:stretch;min-height:44px;font-size:12px}

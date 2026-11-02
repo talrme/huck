@@ -173,6 +173,8 @@ Daybook is default with periwinkle original palette. Orbit and Compact remain us
 
 ## Time editor behavior
 
+Keep the Start summary pencil immediately beside #start-summary-value, not pushed to the far right by a flex-growing time label. Only .start-now uses margin-left:auto when expanded; the pencil remains visibly associated with the start time.
+
 End confirmation's .receipt-adjust is one native button spanning the row except its independent sibling X. The timestamp #end-confirmation-time is styled as a link, but not a nested anchor/button. Keep click/keyboard behavior available over the full adjustment area; X must never open the editor. end-adjust tests click timestamp, text and padding across styles.
 
 Awake #timer-detail uses one .last-duration button: Last nap/sleep label, emphasized duration including long, and a muted parenthesized .last-time-range. Both duration and range open the same existing entry via data-edit. Allow natural wrapping on narrow/Compact/Orbit layouts; keep auto-ended/approximate labeling. Active sleep's separate start/end links are unchanged.
