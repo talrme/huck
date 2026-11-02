@@ -68,6 +68,8 @@ The pacifier icon is used for browser tabs and phone installation. **Save / Shar
 
 State artwork indicates sleeping/awake, not nighttime/daytime. Sleeping has floating Zs; awake has a playful baby face and sparkles. Completed naps make a curved flight into Recent naps with a landing bounce. Both the app's animation toggle and OS reduced-motion preference are respected.
 
+The in-progress sleep block in history also has tiny drifting Zs at its edges. Duration and Now remain readable and tappable; finished sleeps do not animate. Turning off animations or enabling reduced motion stops the Zs.
+
 The sleeping face has three original floating Zs plus five smaller, softer Zs drifting from different spots around its head. These are decorative only and add no network requests.
 
 ## Wake-window guide

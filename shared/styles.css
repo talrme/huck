@@ -110,6 +110,13 @@ body[data-theme=night] .wake-window[data-phase=past]{--wake-color:#e8a9b7}
 .day-column:not(.is-today) .sleep-block{background:color-mix(in srgb,var(--sleep) 65%,var(--paper));border-color:var(--line);font-weight:550}
 .day-column:not(.is-today) .sleep-block:hover{background:var(--soft)}
 .day-column .sleep-block.running{background:#bce9d3;color:#184d3c;border:2px solid #358267;outline:0;flex-direction:row;gap:3px}
+.sleep-block.running>span:not(.history-zs),.sleep-block.running>small{position:relative;z-index:1}
+.history-zs{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.history-zs i{position:absolute;left:2px;top:50%;font-style:normal;font-size:7px;font-weight:600;line-height:1;opacity:0;animation:history-dream 4.8s ease-in-out infinite}
+.history-zs i:nth-child(2){left:auto;right:2px;font-size:9px;animation-delay:-2.4s}
+.history-zs i:nth-child(3){animation-delay:-1.2s}
+.history-zs i:nth-child(4){left:auto;right:2px;animation-delay:-3.6s}
+@keyframes history-dream{0%{opacity:0;transform:translateY(4px) scale(.8) rotate(-8deg)}35%{opacity:.48}75%{opacity:.25}100%{opacity:0;transform:translateY(-12px) scale(1.05) rotate(8deg)}}
 body[data-theme=night] .day-column .sleep-block.running{background:#d5c486;color:#322c17;border-color:#e9dca8}
 body[data-theme=mint] .day-column .sleep-block.running{background:#f4dfa1;color:#57451b;border-color:#ab863b}
 .day-column .sleep-block[aria-pressed=true]{outline:2px solid var(--ink);outline-offset:2px;box-shadow:0 0 0 4px var(--paper)}
