@@ -20,7 +20,7 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 
 - **Start nap now / Start sleep now** begins a timer immediately. The start time determines whether it is called a nap or sleep, using the shared day/night schedule.
 - **End nap now / End sleep now** ends that same session immediately. A dismissible **Ended at [time] · Adjust** confirmation appears for about12 seconds. Adjust opens the end-focused editor and cancels the confirmation timeout; X or letting it fade away never changes the saved sleep. The session name does not change just because it crosses morning or evening.
-- For a delayed start, use **Started a few minutes ago?** The slider stays at **1–10 minutes**, defaulting to three. The preview shows the offset and clock time; the small Start button records it. Dragging alone never saves. Warnings stay hidden until you move the slider or try its Start button. The ending slider was replaced by immediate End plus Adjust.
+- The awake screen has just **Start nap now** and **Enter nap manually**. Both the starting and ending sliders were removed. Use the manual editor for a backdated start, or Adjust after ending.
 - During sleep, the linked time row reads **9:06 PM to Enter end time**. Tap the start time to edit it or Enter end time to open the end fields. Both links sit inside the timer's accent area.
 - **Enter nap manually (Enter sleep manually at night)**, beside Start now, opens the same Add/Edit nap modal with **Still napping** selected and a start time five minutes ago. Choose **Nap ended** to enter both times instead. **Add sleep**, below Recent naps, opens that modal with a completed entry selected by default.
 - While awake, the clickable detail shows **Last nap: 26 minutes long (start–end)**, with smaller muted clock times. Tap the duration or time range to edit that same entry.
@@ -30,7 +30,7 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 
 ## Time entry and history
 
-The starting slider's confirmation button includes a tiny, muted second line (for example, **3m ago**) that follows the selected offset. Screen readers get the full wording.
+Backdated entries use the manual editor; there are no minutes-ago sliders on the main screen.
 
 The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.
 
@@ -82,7 +82,9 @@ There is no separate custom-range mode. The birthday selects a row from the edit
 
 From 12 months there is currently no supported age band. These broad ranges are adapted from [Cleveland Clinic](https://health.clevelandclinic.org/wake-windows-by-age); see also [AAP infant sleep guidance](https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx). They are approximate cues, not deadlines, predictions, or instructions to keep a baby awake. Follow sleepy/hunger cues and ask your pediatrician about individual needs or prematurity.
 
-Daytime cues progress from Recently awake to Within usual nap range to Beyond usual range. Nighttime is neutral. Auto-ended logs produce estimated wake time without a colored range judgment. Missing/invalid/stale wake time shows a dash rather than a misleading long timer.
+The main wake-window cue is a single subtle line **below the buttons**, shown only while awake during daytime with reliable logs and a configured birthday/range. It starts **15 minutes before the lower end** of the range. For a60–75-minute range: before45 minutes show nothing;45–59 show a muted green dot/range;60–75 use amber; after75 use muted rose until the log becomes stale. The wording stays **Target wake window 60–75 min**; only the small dot and range text change color. Tap it for the guide. There is no progress bar, extra status copy or nighttime message.
+
+Auto-ended, missing, invalid or stale logs hide the target cue rather than guessing. Auto-ended logs may still show estimated awake time in the main timer. Missing/invalid/stale wake time shows a dash rather than a misleading long timer. Ranges remain approximate guides, not deadlines.
 
 The missing-log heuristic marks a wake time stale after the longer of three hours or twice the upper range; without a range the fallback is six hours. This is a bookkeeping heuristic, not a medical threshold, and cannot detect every unrecorded nap.
 
@@ -198,7 +200,7 @@ Browser tests need Playwright and Google Chrome. Optional icon regeneration need
 | `tests/performance.cjs` | Synthetic large history, one-request saves, cache expiry, retries/conflicts |
 | `tests/browser.cjs` | Main workflows, styles/themes, simulated two-device sync; starts its own server |
 | `tests/time-editor.cjs` / `tests/time-wheels.cjs` | Custom wheels, simulated touch/keyboard, Now, explicit Save/Cancel, active-end dismissal regression, validation, themes and phone/desktop fit |
-| `tests/end-controls.cjs` / `tests/end-adjust.cjs` | Immediate End, dismiss/12s expiry, non-expiring Adjust editor, collapsed Start, retained starting slider, themes/widths and motion |
+| `tests/end-controls.cjs` / `tests/end-adjust.cjs` | Immediate End, dismiss/12s expiry, non-expiring Adjust editor, collapsed Start, manual starts, themes/widths and motion |
 | `tests/recent-naps.cjs` | Latest-three expansion, resume sleep, overlap protection, sandbox isolation |
 | `tests/sleep-labels.cjs` | Day/night boundaries and edited/backdated start naming |
 | `tests/timer-polish.cjs` | Inline seconds, long-duration fit, imagery and delayed sync indicator |

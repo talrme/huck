@@ -158,19 +158,16 @@ Footer: Settings and Save / Share.
 
 The overall status "Sleeping" is generic. Session-specific wording uses `sleepName(start, state)`:
 - Main start uses now.
-- Slider start uses its proposed timestamp.
+- Manual start uses the edited timestamp.
 - End actions use recorded start, never current clock time.
 - Editor titles, duration noun and Still napping/Still sleeping use the edited start.
 Crossing morning/evening alone must not rename an active session.
 
-The STARTING slider is always1–10, default three; dragging previews only. Above it show "3 minutes ago · 2:34 PM" under "Started a few minutes ago?". Small right-hand confirmation says Start nap/sleep. The ending slider was explicitly removed in favor of immediate End plus Adjust. updateDelay must update primary action labeling before returning when no slider exists while sleeping.
-Invalid selections stay selected. #actions.dataset.delayTouched starts false per child/running-entry/awake context; tick/poll must not mark it touched. Slider input or a backdated confirmation attempt sets it true. Show inline error and disable confirmation only when touched and at <= active.start or at < previous.end. An untouched invalid default remains enabled so its first click can reveal the reason; that click must return before enqueue. New context after Now resets warnings. Do not dynamically shorten the scale or silently adjust the selected offset.
+The user explicitly removed BOTH minutes-ago sliders. Awake actions are only Start now and Enter nap/sleep manually; sleeping actions are End now. renderActions renders only .action-main, and updateActionLabels updates the timestamp-derived noun without slider references. Delay state, event handlers and styles were removed. Backdated starts use the unified manual editor, default five minutes ago. Ending remains immediate End plus Adjust.
 
 Immediate-end confirmation: only a locally successful main End enqueue calls showEndConfirmation(id). Never create one on polling/replay/auto-expiry. #end-confirmation sits after the timer and before Recent naps, shows Ended at clock(end), Adjust, X and a subtle12s progress line. Dismiss/fade only clears transient UI, never deletes/resumes/changes the saved nap or outbox. Adjust clears its timers and opens the existing record with Start collapsed and End visible; it must never auto-close that editor. Opening the same record elsewhere also clears the receipt. Receipt state is memory-only and is invalidated on child change, new active sleep, missing/deleted/reopened record, or expiry; fresh remote state may update the displayed time. Respect reduced motion, prevent old hide timers from hiding a new receipt, and preserve record timestamps on expiry. Do not infer server sync success from the receipt: normal sync status/outbox still applies.
 
-`renderActions` preserves its DOM for the same child/running entry/awake context, avoiding lost slider focus or a dropped drag during polling. Keep form DOM stable across sync as well.
-
-The backdated confirmation button stacks #delay-action above #delay-offset. updateDelay keeps the latter in sync (1m ago / Nm ago), with full wording in the button aria-label. The user found spelled-out minutes too prominent: keep the subtitle9px/400, muted, centered, with tight padding and a44px minimum touch target across compact/phone layouts. Do not add it to the main Now action or change validation/save timing.
+`renderActions` preserves its DOM for the same child/running entry/awake context, avoiding lost focus during polling. Keep form DOM stable across sync as well. Do not reintroduce the removed delay controls.
 
 Daybook is default with periwinkle original palette. Orbit and Compact remain usable alternatives, not staging sites. Check all three with all four themes, particularly Night contrast.
 
@@ -239,11 +236,13 @@ Data quality:
 - No/invalid/future end: unknown.
 - Stale elapsed >= max(180min, 2*upper range): unknown; fallback upper180 means6h.
 - Recent auto-ended record: estimated (~), no colored judgment.
-- Reliable nighttime: neutral.
-- Reliable daytime: recently awake / within usual nap range / beyond usual range.
+- Reliable nighttime: main cue completely hidden, not a neutral Nighttime message.
+- Reliable daytime: assess still computes early/range/past; cue filters visibility as below.
 Staleness is a missing-log heuristic, not clinical advice or detection of all unlogged naps.
 
-`#wake-window` stays outside .readout so Orbit does not overflow; Compact has named readout/actions/wake areas. Cache generated cue markup before Lucide replaces <i> nodes; do not replace the cue every second unnecessarily.
+HuckWake.cue(info) returns null unless recorded quality, a valid age window, daytime phase early/range/past, and elapsed >= max(0,min-15) minutes. At exactly the lower bound use range color; through the upper bound inclusive use range color, then past. Example60–75: hidden before45, green45–<60, amber60–75, rose>75 until stale; at180+ minutes the existing stale-log rule hides this example. Hide for active sleep, local wakeInfo=false, no birthday/age band, nighttime, missing/future/stale/auto-ended logs. These are display rules, not new medical thresholds or new age defaults.
+
+#wake-window follows #actions in tools/page.html, outside .readout so Orbit does not overflow; Compact keeps it in the wake grid area beneath actions. Render one clickable line: Target wake window [min]–[max] min. Keep label muted and11px, only dot/range lightly colored, no progress meter, countdown, second status line or nighttime text. Existing early green/range amber/past rose colors have Night equivalents. Tap retains the source/caution dialog. Cache markup before Lucide replaces icons; no per-second DOM replacement.
 
 ## Animation and artwork
 
@@ -277,7 +276,7 @@ Playwright:
 - tests/browser.cjs: owns ephemeral server, main workflows/themes/simulated two-device sync.
 - tests/time-editor.cjs delegates to time-wheels.cjs: scrolling/keyboard/simulated finger swipe, defaults, Now, validation, explicit Save/Cancel, active-end dismissal safety, unchanged edits, reopen/delete and all styles/themes/320/390/1280.
 - tests/editor-layout.cjs: unified manual running/completed saves, aligned Start/End Now controls, status pill and drafted end preservation, sticky duration, Save-left/Cancel/Delete-right proportions, cancel safety and320/390/1280 widths across styles.
-- tests/end-controls.cjs delegates to end-adjust.cjs: immediate End plus12s dismissible receipt, saved correction/Adjust surviving timeouts, Start collapse/expand/draft preservation, retained starting slider, all styles/themes/widths and receipt/arrival motion.
+- tests/end-controls.cjs delegates to end-adjust.cjs: immediate End plus12s dismissible receipt, saved correction/Adjust surviving timeouts, Start collapse/expand/draft preservation, manual starts/no sliders, all styles/themes/widths and receipt/arrival motion.
 - tests/recent-naps.cjs: cap3/reverse order/expand/reopen/overlap/sandbox isolation.
 - tests/sleep-labels.cjs: morning/evening crossings and edited start classification.
 - tests/timer-polish.cjs: seconds/long durations/images/delayed sync lifecycle/reduced motion.
@@ -285,6 +284,7 @@ Playwright:
 - tests/reopen-scroll.cjs: reload, history/back restoration, simulated hidden/foreground events, page-show fallback, normal scrolling/focus/sync stability and open draft preservation. Headless Chrome does not hide other tabs on this machine; physical phone app switching still needs a manual check.
 - tests/sync-recovery.cjs: legacy lock and new BUSY responses, snapshot backoff, transport failure, committed-but-lost response, stable retry IDs/no duplicates, automatic recovery of persisted lock-blocked commands and stalled foreground requests. All use mocked backend data.
 - tests/wake.browser.cjs: shared profile, birthday requirement, reset, local toggle, stale/missing data and night cues.
+- tests/quiet-awake.cjs and wake.test.cjs: exact45/60/75-minute appearance/color boundaries for60–75 settings, below-button placement, no sliders/meters, early/night/estimated/stale/no-birthday suppression and3 styles/4 themes/phone-desktop widths.
 
 Except browser.cjs, browser scripts expect the local preview on5190. Most hardcode macOS Google Chrome; main browser.cjs also supports PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH. Playwright and sharp must be resolvable; no package/build dependency is needed for the deployed site.
 Current Codex runtime (machine-specific convenience, rediscover on another machine):

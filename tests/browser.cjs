@@ -4,7 +4,7 @@ const C=require('../shared/core.js');
 const root=path.resolve(__dirname,'..');
 const server=http.createServer((req,res)=>{let f=path.join(root,new URL(req.url,'http://local').pathname);try{if(fs.statSync(f).isDirectory())f=path.join(f,'index.html');res.setHeader('Content-Type',({'.js':'text/javascript','.css':'text/css','.html':'text/html','.png':'image/png'})[path.extname(f)]||'text/plain');res.end(fs.readFileSync(f));}catch{res.writeHead(404);res.end();}});
 const now=Date.parse('2026-10-30T18:00:00Z');
-async function chooseAgo(p,n){await p.locator('#sleep-delay').evaluate((input,n)=>{input.value=n;input.dispatchEvent(new Event('input',{bubbles:true}));},n);await p.locator('[data-delay-apply]').click();}
+async function chooseAgo(p,n){await p.locator('[data-custom-start]').click();await p.evaluate(n=>{const at=new Date(Date.now()-n*60000),parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(at).map(p=>[p.type,p.value]));document.querySelector('#start-date').value=parts.year+'-'+parts.month+'-'+parts.day;document.querySelector('#start-time').value=parts.hour+':'+parts.minute;const field=document.querySelector('[data-time-field=start]');HuckTimePicker.refresh(field);field.dispatchEvent(new Event('input',{bubbles:true}));},n);await p.locator('[data-save-entry]').click();}
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});

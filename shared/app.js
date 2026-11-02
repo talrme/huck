@@ -16,7 +16,7 @@
   // Older versions mistakenly persisted temporary lock failures as edit conflicts.
   for(const command of queue)if(command.blocked&&temporaryError(command.blocked))delete command.blocked;
   let historyChild=null,selectedSleep=null;
-  const delays={start:3,end:3};let arrival=null,endReceipt=null,receiptTimer=null,receiptHideTimer=null;
+  let arrival=null,endReceipt=null,receiptTimer=null,receiptHideTimer=null;
   const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
   function formatter(kind,timezone=base.settings.timezone){
     const id=kind+':'+timezone;if(!formatters.has(id))formatters.set(id,new Intl.DateTimeFormat(kind==='parts'?'en-CA':'en-US',kind==='parts'?{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{timeZone:timezone,hour:'numeric',minute:'2-digit'}));return formatters.get(id);
@@ -84,31 +84,14 @@
     const box=$('#actions'),mode=running?'end':'start',context=child(s).id+':'+(running?.id||'awake');
     if(box.dataset.context!==context){
       box.dataset.context=context;
-      box.dataset.delayTouched='false';
-      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start>${icon('clock-3')}<span id="manual-action">Enter nap manually</span></button>`}</div>${running?'':`<p class="delay-prompt" id="delay-prompt"></p><div class="delay-row"><div class="delay-control"><label for="sleep-delay"><span id="delay-label"></span><span class="delay-preview-time"> · <span id="delay-clock"></span></span></label><input id="sleep-delay" type="range" min="1" max="10" step="1" value="${delays[mode]}" aria-label="${running?'End':'Start'} sleep, minutes ago"><div class="delay-scale" aria-hidden="true"><span>1m</span><span id="delay-max">10m</span></div></div><button class="delay-apply" data-delay-apply><span id="delay-action"></span><small id="delay-offset"></small></button></div><p class="delay-error" id="delay-error" role="status" hidden></p>`}`;
+      box.innerHTML=`<div class="action-main"><button class="primary" data-${mode}="0">${running?'':icon('play')}<span id="primary-action"></span></button>${running?'':`<button class="manual-start manual-time" data-custom-start>${icon('clock-3')}<span id="manual-action"></span></button>`}</div>`;
     }
-    updateDelay(s,running);
+    updateActionLabels(s,running);
   }
-  function updateDelay(s=projected(),running=C.active(s,child(s).id)){
-    const mainNoun=sleepName(running?running.start:Date.now(),s);
-    $('#primary-action').textContent=(running?'End ':'Start ')+mainNoun+' now';
-    if($('#manual-action'))$('#manual-action').textContent='Enter '+mainNoun+' manually';
-    const input=$('#sleep-delay');if(!input)return;
-    const mode=running?'end':'start',now=Date.now(),last=entries(s).find(e=>e.end),selected=delays[mode],at=now-selected*60000;
-    const invalid=running?at<=running.start:Boolean(last&&at<last.end);input.max=10;input.disabled=false;
-    if(input.value!==String(selected))input.value=selected;
-    input.setAttribute('aria-valuetext',selected+' minutes ago');
-    $('#delay-prompt').textContent=running?'Ended a few minutes ago?':'Started a few minutes ago?';
-    $('#delay-label').textContent=selected+' '+(selected===1?'minute':'minutes')+' ago';$('#delay-max').textContent='10m';
-    const noun=sleepName(running?running.start:at,s);
-    input.setAttribute('aria-label',(running?'End ':'Start ')+noun+', minutes ago');
-    $('#delay-action').textContent=(running?'End ':'Start ')+noun;
-    $('#delay-offset').textContent=selected+'m ago';
-    $('[data-delay-apply]').setAttribute('aria-label',$('#delay-action').textContent+' '+selected+' '+(selected===1?'minute':'minutes')+' ago');
-    const showError=invalid&&$('#actions').dataset.delayTouched==='true';
-    $('#delay-error').hidden=!showError;$('#delay-error').textContent=running?'Choose a time after this sleep started.':'That time overlaps the previous sleep.';
-    $('[data-delay-apply]').disabled=showError;if(showError)$('[data-delay-apply]').setAttribute('aria-describedby','delay-error');else $('[data-delay-apply]').removeAttribute('aria-describedby');
-    $('#delay-clock').textContent=clock(now-selected*60000);
+  function updateActionLabels(s=projected(),running=C.active(s,child(s).id)){
+    const noun=sleepName(running?running.start:Date.now(),s);
+    $('#primary-action').textContent=(running?'End ':'Start ')+noun+' now';
+    if($('#manual-action'))$('#manual-action').textContent='Enter '+noun+' manually';
   }
   function dismissEndConfirmation(animate=true){
     clearTimeout(receiptTimer);clearTimeout(receiptHideTimer);endReceipt=null;
@@ -164,7 +147,7 @@
     }
     renderWakeCue(s,r,last);
     renderHistoryDetails(s);renderEndConfirmation(s);
-    updateDelay(s,r);
+    updateActionLabels(s,r);
     requestAnimationFrame(fitElapsed);
   }
   function fitElapsed(){
@@ -174,11 +157,9 @@
   }
   function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],Date.now(),dateKey(Date.now()),C.isNight(Date.now(),s.settings));}
   function renderWakeCue(s,running,last){
-    const box=$('#wake-window');box.hidden=Boolean(running)||!prefs.wakeInfo||!HuckWake.age(s.settings.wakeProfiles?.[child(s).id]?.birthday,dateKey(Date.now()));if(box.hidden)return;
-    const info=wakeState(s,last),range=info.window;
-    const detail=info.quality==='stale'?'Last wake-up may be missing':info.quality==='unknown'?'Log sleep to start a wake timer':info.quality==='estimated'?'Last sleep was auto-ended':info.phase==='night'?'Follow baby’s cues':range?`${duration(range.min*60000)}–${duration(range.max*60000)} · approximate`:'Optional age-based guide';
-    box.dataset.phase=info.phase;
-    const markup=`<button class="wake-info" data-wake-details><span class="wake-caption"><span class="wake-dot" aria-hidden="true"></span><span>${esc(info.label)}</span>${icon('circle-help')}</span><small>${esc(detail)}</small></button>${['early','range','past'].includes(info.phase)?`<div class="wake-meter" role="meter" aria-label="Recorded awake time compared with the approximate upper range" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${info.percent}"><span style="width:${info.percent}%"></span></div>`:''}`;
+    const box=$('#wake-window'),info=wakeState(s,last),cue=HuckWake.cue(info);
+    box.dataset.phase=info.phase;box.hidden=Boolean(running)||!prefs.wakeInfo||!cue;if(box.hidden)return;
+    const markup=`<button class="wake-info" data-wake-details><span class="wake-caption"><span class="wake-dot" aria-hidden="true"></span><span>Target wake window <span class="wake-range">${cue.min}–${cue.max} min</span></span>${icon('circle-help')}</span></button>`;
     if(box._markup!==markup){box._markup=markup;box.innerHTML=markup;icons();}
   }
   function wakeDetails(){
@@ -392,7 +373,6 @@
     if(t.matches('[data-dismiss-ended]'))dismissEndConfirmation();
     if(t.matches('[data-end-state]'))setEndState(t.dataset.endState==='ended');
     if(t.matches('[data-now]')){if(t.dataset.now==='end')setEndState(true,Date.now());else setEntryTime(t.dataset.now,Date.now());}
-    if(t.matches('[data-delay-apply]')){$('#actions').dataset.delayTouched='true';const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);if(t.disabled)return;const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r&&enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev}))showEndConfirmation(r.id);}
     if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-start'))setStartExpanded(true);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,Date.now());}
@@ -444,7 +424,6 @@
     if(t.id==='show-wake-info'){prefs.wakeInfo=t.checked;persist();render();updateWakeProfilePreview();}
     updateTimePreview();
   });
-  document.addEventListener('input',event=>{if(event.target.id==='sleep-delay'){$('#actions').dataset.delayTouched='true';const s=projected(),mode=C.active(s,child(s).id)?'end':'start';delays[mode]=Number(event.target.value);updateDelay(s);}});
   $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
   function reopenAtTop(){
     const reset=()=>window.scrollTo({top:0,left:0,behavior:'instant'});

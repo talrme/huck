@@ -21,4 +21,8 @@ assert.equal(W.range({birthday:'2024-01-01'},today),null);
 assert.equal(W.range({mode:'custom',min:40,max:70},today),null);
 assert.equal(W.range({...profile,mode:'custom',min:40,max:70},today).max,120);
 assert.equal(W.range({mode:'custom',min:80,max:70},today),null);
+const narrow={...profile,ranges:{3:{min:60,max:75}}};
+for(const minutes of [0,30,44.999])assert.equal(W.cue(W.assess(last(minutes),narrow,now,today)),null);
+for(const [minutes,phase] of [[45,'early'],[59.999,'early'],[60,'range'],[75,'range'],[75.001,'past'],[179,'past']])assert.equal(W.cue(W.assess(last(minutes),narrow,now,today)).phase,phase);
+for(const info of [W.assess(last(45),narrow,now,today,true),W.assess(last(45,{autoEnded:true}),narrow,now,today),W.assess(last(180),narrow,now,today),W.assess(null,narrow,now,today),W.assess(last(60),{},now,today)])assert.equal(W.cue(info),null);
 console.log('PASS wake logic: six-week age, calendar boundaries, invalid/future birthdays, ranges, early/within/past, stale and auto-ended data, night suppression, custom ranges');

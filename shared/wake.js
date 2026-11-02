@@ -33,6 +33,10 @@
     const minutes=elapsed/60000,phase=minutes<window.min?'early':minutes<=window.max?'range':'past';
     return {quality:'recorded',phase,label:{early:'Recently awake',range:'Within usual nap range',past:'Beyond usual range'}[phase],elapsed,window,age:childAge,percent:Math.min(100,Math.round(minutes/window.max*100))};
   }
-  root.HuckWake={ranges,configuredRanges,validRange,validDate,age,range,assess};
+  function cue(info){
+    if(info.quality!=='recorded'||!info.window||!['early','range','past'].includes(info.phase)||info.elapsed<Math.max(0,info.window.min-15)*60000)return null;
+    return {min:info.window.min,max:info.window.max,phase:info.phase};
+  }
+  root.HuckWake={ranges,configuredRanges,validRange,validDate,age,range,assess,cue};
   if(typeof module!=='undefined')module.exports=root.HuckWake;
 })(typeof globalThis!=='undefined'?globalThis:this);
