@@ -74,7 +74,7 @@
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
     const lastLabel=last&&C.isNight(last.start,s.settings)?'Last sleep':'Last nap';
-    $('#timer-detail').innerHTML=running?`<div class="session-time"><button class="text-link" data-edit="${esc(running.id)}" aria-label="Edit start time, ${clock(running.start)}">${clock(running.start)}</button><span class="time-separator">to</span><button id="session-ending" class="text-link manual-time" data-open-end="${esc(running.id)}" aria-label="End time not set. Enter end time">Enter end time</button></div>`:last?`<button class="last-duration text-link" data-edit="${esc(last.id)}" aria-label="Edit ${lastLabel.toLowerCase()}, ${clock(last.start)} to ${clock(last.end)}"><span class="last-entry-label">${lastLabel}:</span> <strong>${last.autoEnded?'~':''}${longDuration(last.end-last.start)} long</strong> <span class="last-time-range">(${clock(last.start)}–${clock(last.end)})</span></button>${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
+    $('#timer-detail').innerHTML=running?`<div class="session-time"><button class="text-link" data-edit="${esc(running.id)}" data-open-start aria-label="Edit start time, ${clock(running.start)}">${clock(running.start)}</button><span class="time-separator">to</span><button id="session-ending" class="text-link manual-time" data-open-end="${esc(running.id)}" aria-label="End time not set. Enter end time">Enter end time</button></div>`:last?`<button class="last-duration text-link" data-edit="${esc(last.id)}" aria-label="Edit ${lastLabel.toLowerCase()}, ${clock(last.start)} to ${clock(last.end)}"><span class="last-entry-label">${lastLabel}:</span> <strong>${last.autoEnded?'~':''}${longDuration(last.end-last.start)} long</strong> <span class="last-time-range">(${clock(last.start)}–${clock(last.end)})</span></button>${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
     $('#timer-art').src=new URL(running?'shared/sleeping.png':'shared/awake.png',root);
     $('#timer-art').alt='';
     renderActions(s,running);
@@ -324,6 +324,11 @@
     if(hasEnd)setEntryTime('end',at||editor.endDraft||editor.original?.end||Date.now());
     updateTimePreview();
   }
+  function setStartExpanded(expanded){
+    const fields=$('#start-fields'),button=$('[data-toggle-start]');fields.hidden=!expanded;$('.start-now').hidden=!expanded;
+    button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-label',expanded?'Collapse start time':'Edit start time');button.title=expanded?'Collapse start time':'Edit start time';button.innerHTML=icon(expanded?'chevron-up':'pencil');
+    if(expanded)HuckTimePicker.mount(fields);icons();
+  }
   function openEntry(id,mode){
     if(id&&endReceipt?.id===id)dismissEndConfirmation(false);
     const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
@@ -382,7 +387,7 @@
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
     const t=event.target.closest('button,a');if(!t)return;
-    if(t.matches('[data-toggle-start]')){const fields=$('#start-fields'),expanded=fields.hidden;fields.hidden=!expanded;$('.start-now').hidden=!expanded;t.setAttribute('aria-expanded',String(expanded));t.setAttribute('aria-label',expanded?'Collapse start time':'Edit start time');t.title=expanded?'Collapse start time':'Edit start time';t.innerHTML=icon(expanded?'chevron-up':'pencil');if(expanded)HuckTimePicker.mount(fields);icons();}
+    if(t.matches('[data-toggle-start]'))setStartExpanded($('#start-fields').hidden);
     if(t.matches('[data-adjust-ended]')){const id=endReceipt?.id;dismissEndConfirmation(false);if(id)openEntry(id);}
     if(t.matches('[data-dismiss-ended]'))dismissEndConfirmation();
     if(t.matches('[data-end-state]'))setEndState(t.dataset.endState==='ended');
@@ -390,7 +395,7 @@
     if(t.matches('[data-delay-apply]')){$('#actions').dataset.delayTouched='true';const s=projected(),running=C.active(s,child(s).id);updateDelay(s,running);if(t.disabled)return;const at=Date.now()-Number($('#sleep-delay').value)*60000;if(running)enqueue('end',{id:running.id,childId:running.childId,end:at,expectedRev:running.rev});else enqueue('start',{id:uuid(),childId:child(s).id,start:at});}
     if(t.matches('[data-start]'))enqueue('start',{id:uuid(),childId:child().id,start:Date.now()-Number(t.dataset.start)*60000});
     if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r&&enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev}))showEndConfirmation(r.id);}
-    if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,Date.now());}
+    if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-start'))setStartExpanded(true);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,Date.now());}
     if(t.matches('[data-custom-start]'))openEntry(null,'start');
     if(t.matches('[data-add]'))openEntry();
     if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(Date.now());expandedNaps=expandedNaps===napKey?'':napKey;render();}

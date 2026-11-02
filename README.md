@@ -38,7 +38,7 @@ A matching **Now** button stays visible in both the Start and End headers. It re
 
 The modal labels its sections **Start** and **End**, each with a matching rounded Now button in the same place. End has a compact, inline sliding **Still napping / Nap ended** selector (Still sleeping / Sleep ended at night). Choosing Now for End also selects the ended state. Switching back and forth preserves the drafted end time. The duration stays visible above the footer buttons, including time so far for a running nap. Large **Save** is on the left, with smaller Cancel and an existing-record Delete icon on the right. Nothing is saved until Save is pressed.
 
-For existing records, Start is collapsed to a clock-time summary and pencil. The pencil expands/collapses its picker without losing draft changes. Enter end time and Adjust therefore focus on the End picker. New manual entries keep Start expanded. The Now control for Start appears when expanded; End's remains available in its header.
+For existing records, Start normally collapses to a clock-time summary and pencil. Tapping the active timer's start-time link opens Start expanded for immediate editing. Enter end time and Adjust keep Start collapsed and focus on End. The pencil expands/collapses Start without losing draft changes. New manual entries keep Start expanded. The Now control for Start appears when expanded; End's remains available in its header.
 
 Manual starts default to five minutes ago. Adding past sleep defaults to an available gap of up to 45 minutes. Saving an unchanged record preserves its original timestamp precision.
 
