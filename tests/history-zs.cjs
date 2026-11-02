@@ -6,7 +6,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   await page.locator('[data-settings]').click();await page.locator(`button[data-style=${style}]`).click();await page.locator('[data-save-settings]').click();
   await page.evaluate(()=>HuckTest.enqueue('start',{id:'history-dream',childId:'avi',start:Date.now()-60*60000}));const block=page.locator('.sleep-block.running');
   assert.equal(await block.locator('.history-zs i').count(),4);assert.equal(await page.locator('.sleep-block:not(.running) .history-zs').count(),0);assert.equal(await block.locator('.history-zs').getAttribute('aria-hidden'),'true');
-  const z=block.locator('.history-zs i').first();assert.equal(await z.evaluate(e=>getComputedStyle(e).animationName),'history-dream');
+  const z=block.locator('.history-zs i').first();assert.equal(await z.evaluate(e=>getComputedStyle(e).animationName),'history-dream');assert(await z.evaluate(e=>parseFloat(getComputedStyle(e).fontSize)>=11));assert.equal(await block.evaluate(e=>getComputedStyle(e).animationName),'history-glow');
   const a=await z.evaluate(e=>getComputedStyle(e).transform);await new Promise(r=>setTimeout(r,200));assert.notEqual(await z.evaluate(e=>getComputedStyle(e).transform),a,'Zs actually drift');
   for(const theme of ['original','night','berry','mint'])for(const width of [320,390,1280]){
    await page.setViewportSize({width,height:844});await page.evaluate(theme=>document.body.dataset.theme=theme,theme);await block.scrollIntoViewIfNeeded();
