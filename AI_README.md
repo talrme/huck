@@ -151,7 +151,7 @@ Keep it compact, approachable and usable one-handed. No marketing titles/subtitl
 Header: small pacifier, Huck, selected child, temporary sync activity.
 Timer: sleeping/awake state artwork, large duration, small inline ticking seconds only during active sleep.
 Active time row: linked start time + muted "to" + linked "Enter end time"; same link font/color. It lives inside .readout and Daybook's accent line, not under the actions.
-Actions: Start/End nap/sleep now; separate earlier-time group with breathing room and subtle divider.
+Actions: Start nap/sleep now while awake; End Nap / End Sleep while sleeping (title case, no now suffix). No earlier-time sliders remain.
 Recent naps: completed records intersecting current home day, latest three, newest first; Show all of today's naps/Show fewer; subtle Add sleep at bottom. Expansion is transient childId:period key. Do not show the active record here.
 History: newest day initially visible at right, sticky Y-axis, emphasized today, muted older blocks, editable chart blocks.
 Footer: Settings and Save / Share.
@@ -245,6 +245,8 @@ HuckWake.cue(info) returns null unless recorded quality, a valid age window, day
 #wake-window follows #actions in tools/page.html, outside .readout so Orbit does not overflow; Compact keeps it in the wake grid area beneath actions. Render one clickable line: Target wake window [min]–[max] min. Keep label muted and11px, only dot/range lightly colored, no progress meter, countdown, second status line or nighttime text. Existing early green/range amber/past rose colors have Night equivalents. Tap retains the source/caution dialog. Cache markup before Lucide replaces icons; no per-second DOM replacement.
 
 ## Animation and artwork
+
+Sleeping .sleep-zs has8 spans: preserve the original3 bold Zs and add5 smaller8px/500-weight Zs with --z-peak .4 from varied head positions,4.8s drift and staggered negative delays. --z-drift varies horizontal direction; all use drifting-z. Keep decorations aria-hidden/noninteractive and animation-free while awake, motion=false, or OS reduced motion. tests/sleep-zs.cjs checks origins, sizes/opacity config, animation switching and phone/desktop framing.
 
 Awake timers now share the same #elapsed-main/#elapsed-seconds rendering as sleeping timers whenever wakeState.quality=recorded (birthday/range configuration is not required for seconds). tick toggles has-seconds for both and computes awake elapsed from the last completed end timestamp. Keep aria-live=off and the aria-label awake/asleep specific. Estimated awake time remains ~duration without seconds; missing/stale time is a dash with no seconds. Reuse stable nodes and fitElapsed for long values; no new API calls. tests/awake-seconds.cjs checks ticking/rollover, preserved nodes, all styles/themes/320/390/1280 and unreliable-data suppression.
 

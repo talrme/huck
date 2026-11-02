@@ -90,7 +90,7 @@
   }
   function updateActionLabels(s=projected(),running=C.active(s,child(s).id)){
     const noun=sleepName(running?running.start:Date.now(),s);
-    $('#primary-action').textContent=(running?'End ':'Start ')+noun+' now';
+    $('#primary-action').textContent=running?'End '+(noun==='nap'?'Nap':'Sleep'):'Start '+noun+' now';
     if($('#manual-action'))$('#manual-action').textContent='Enter '+noun+' manually';
   }
   function dismissEndConfirmation(animate=true){
