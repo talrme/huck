@@ -241,7 +241,7 @@
     if(!rendered||!$('[data-older]'))return;days+=30;renderChart(projected());icons();
   }
   function enqueue(type,payload){
-    if(queue.some(c=>c.blocked)){notice('Resolve the pending sync issue first.',true);return false;}
+    if(queue.some(c=>c.blocked)){reviewSyncIssue();return false;}
     const command={id:uuid(),type,payload,createdAt:Date.now()};
     try{C.apply(projected(),command,Date.now());}catch(e){
       let detail=e.message;
@@ -297,7 +297,27 @@
     }
     $('#toast').textContent=text;$('#toast').hidden=false;notice.timeout=setTimeout(()=>$('#toast').hidden=true,6500);
   }
+  function reviewSyncIssue(){
+    const cmd=queue.find(c=>c.blocked);if(!cmd)return;
+    const detail=`An earlier ${cmd.type} change was rejected: ${cmd.blocked}`;
+    const explanation='Saved sleep history is unchanged. Discard only this rejected change to unblock syncing; other pending changes are kept.';
+    if($('#modal').open){
+      notice(detail+' '+explanation+' Your current draft stays here.',true);
+      const button=document.createElement('button');button.className='text-link';button.dataset.discard=cmd.id;button.textContent='Discard rejected change';$('#modal-notice').append(document.createElement('br'),button);
+    }else{modal('Sync needs review',`<p>${esc(detail)}</p><p>${explanation}</p>`,`<button data-close>Cancel</button><button class="primary" data-discard="${esc(cmd.id)}">Discard rejected change</button>`);$('#modal').dataset.syncReview='true';}
+  }
+  function discardRejectedChange(id){
+    const cmd=queue.find(c=>c.id===id&&c.blocked);if(!cmd)return;
+    // Preserve a local recovery copy before explicitly removing a rejected command.
+    try{const backup=JSON.parse(localStorage.getItem('huck-discarded-changes-v1')||'[]');backup.push({discardedAt:Date.now(),command:cmd});localStorage.setItem('huck-discarded-changes-v1',JSON.stringify(backup));}
+    catch{return notice('Could not back up the rejected change. Nothing was discarded.',true);}
+    queue=queue.filter(c=>c.id!==id);persist();
+    const editing=$('#modal').open&&!$('#modal').dataset.syncReview;
+    if(!editing)close();render();sync(true);
+    notice(editing?'Rejected change removed. Your draft is still here; try Save again. If the entry changed on the other phone, close and reopen it before editing.':'Rejected change removed. Other pending changes will sync normally.');
+  }
   function modal(title,body,footer=''){
+    delete $('#modal').dataset.syncReview;
     $('#modal-footer').classList.remove('entry-footer');
     $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML='<p id="modal-notice" class="modal-notice" role="alert" hidden></p>'+footer;$('#toast').hidden=true;
     if(title==='Settings'&&!demo&&HUCK_CONFIG.backendUrl&&localStorage.getItem('huck-local-backup-v1')){
@@ -452,8 +472,8 @@
     if(t.matches('[data-history-entry]'))selectHistory(t.dataset.historyEntry);
     if(t.matches('[data-clear-history]'))selectHistory(null);
     if(t.matches('[data-today]')){$('#chart-scroll').scrollLeft=$('#chart-scroll').scrollWidth;}
-    if(t.matches('[data-review]'))modal('Sync needs review',`<p>${esc(queue.find(c=>c.blocked)?.blocked||message)}</p><p>The other phone’s saved version is preserved. Discard this pending change, then try again with the updated entry.</p>`,'<button class="primary" data-discard>Discard pending change</button>');
-    if(t.matches('[data-discard]')){queue=queue.filter(c=>!c.blocked);persist();close();sync();render();}
+    if(t.matches('[data-review]'))reviewSyncIssue();
+    if(t.matches('[data-discard]'))discardRejectedChange(t.dataset.discard);
     if(t.matches('[data-reset-demo]')){base=sample();queue=[];persist();close();render();}
     if(t.matches('[data-download-local]')){const blob=new Blob([localStorage.getItem('huck-local-backup-v1')],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='huck-local-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
     if(t.matches('[data-import-local]')){

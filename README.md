@@ -118,6 +118,8 @@ Requests time out after 35 seconds. If a phone suspended its timers and returns 
 
 Settings writes also check the shared revision. If another phone changed things meanwhile, reopen settings before retrying. A blocked outbox item must be resolved/discarded before new edits can be queued.
 
+If Save is blocked by a rejected earlier change, the editor now shows its actual rejection reason and **Discard rejected change** directly above Save. This discards only that explicitly selected failed command, not saved sleep logs or other queued changes, and preserves the current editor draft. A recovery copy is saved locally under `huck-discarded-changes-v1` before discarding; if backup fails, nothing is discarded. Try Save again afterward. If the sleep itself changed on another phone, close/reopen the entry before applying your edit. The footer's Review sync issue offers the same one-at-a-time resolution outside an editor. Do not clear browser storage to fix this.
+
 Storage belongs to an origin: localhost, a different local port, and GitHub Pages have separate preferences/outboxes. They still read the same backend when configured. This is not an offline-first service-worker app; there is no service-worker cache.
 
 Earlier real local-only records are backed up before connecting to the backend. Settings exposes explicit import/download of that backup when available. Import checks overlaps and existing IDs and keeps the backup. Samples are never imported.
