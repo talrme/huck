@@ -116,6 +116,8 @@ Checks run on opening/reload, foreground return, reconnection, and every 15 seco
 
 Requests time out after 35 seconds. If a phone suspended its timers and returns with a request older than 40 seconds, the app cancels that stale client request and retries safely; the server may already have saved it, so the original request ID is retained. Retry timers pause while hidden. Advanced settings → Check connection and returning online can retry immediately. Do not clear browser storage to fix syncing: it can contain unsent records.
 
+**November 1 clock fix:** A locally valid sleep timestamp rejected with “Choose a time in the past or now” is treated as a clock-timing retry, not a permanent conflict. The original command ID and recorded time stay unchanged, the pending end stays visible, and matching old blocked commands resume automatically on opening. True overlap/revision conflicts still require review. The new backend includes `serverNow` in responses; once deployed, the app calibrates new Start/End/Now timestamps and timer durations against that clock with a conservative one-second buffer. This avoids ordinary phone/server clock skew. Calibration is memory-only and does not rewrite earlier logs. Without the backend update, automatic retry still helps small clock differences, but a significantly wrong phone clock can keep a change pending longer; use the phone's automatic date/time setting.
+
 Settings writes also check the shared revision. If another phone changed things meanwhile, reopen settings before retrying. A blocked outbox item must be resolved/discarded before new edits can be queued.
 
 If Save is blocked by a rejected earlier change, the editor now shows its actual rejection reason and **Discard rejected change** directly above Save. This discards only that explicitly selected failed command, not saved sleep logs or other queued changes, and preserves the current editor draft. A recovery copy is saved locally under `huck-discarded-changes-v1` before discarding; if backup fails, nothing is discarded. Try Save again afterward. If the sleep itself changed on another phone, close/reopen the entry before applying your edit. The footer's Review sync issue offers the same one-at-a-time resolution outside an editor. Do not clear browser storage to fix this.
@@ -158,6 +160,8 @@ For Pages, select **Settings → Pages → Deploy from a branch → main → / (
 References: [Apps Script web apps](https://developers.google.com/apps-script/guides/web), [LockService](https://developers.google.com/apps-script/reference/lock/lock-service).
 
 ## When Apps Script needs updating
+
+**November 1 clock calibration update:** The deployed backend was still `2026-10-31-lock-retry` when checked. The frontend retry fix works now; server-clock calibration requires replacing Code.gs with the complete latest `backend.sample.gs`, saving, then **Deploy → Manage deployments → pencil → New version → Deploy**, keeping the same URL. The expected new backend version is `2026-11-01-clock-sync`. No Sheet reset or reimport is needed. Do not copy a diff view; use the full file contents.
 
 **October 31 lock recovery update:** The frontend recovery works with the existing backend. The latest generated backend also waits only two seconds for a lock (instead of 25), returns an explicitly retryable busy response, opens the Sheet only once per request, and flushes new events before unlocking. **These backend changes still require the owner to deploy the latest script; a GitHub push does not deploy Apps Script.**
 

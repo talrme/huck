@@ -23,5 +23,6 @@ const restored=call('snapshot').state;assert.equal(restored.settings.wakeProfile
 const finalRows=rows.length;rows[0][0]='unexpected';assert(!call('snapshot').ok);assert.equal(rows.length,finalRows,'Unknown headers must never clear data');
 rows[0][0]='id';opens=0;headerReads=0;lastRowReads=0;assert(call('snapshot').ok);assert.equal(opens,1);assert.equal(headerReads,1);assert.equal(lastRowReads,1,'Read Sheet metadata once per request');
 const beforeLock=rows.length,released=releases;lockedOut=true;const unavailable=call('snapshot');assert.equal(unavailable.ok,false);assert.equal(unavailable.code,'BUSY');assert.equal(unavailable.retryable,true);assert.equal(lockWait,2000);assert.equal(releases,released,'Never release another request’s lock');assert.equal(rows.length,beforeLock);assert.equal(call('command',{id:'busy-start',type:'start',payload:{id:'busy-sleep',childId:'avi',start:Date.now()}}).retryable,true);assert.equal(rows.length,beforeLock);lockedOut=false;assert(call('snapshot').ok);
-assert.equal(call('snapshot').backendVersion,'2026-10-31-lock-retry');
+assert.equal(call('snapshot').backendVersion,'2026-11-01-clock-sync');
+assert(Number.isFinite(call('snapshot').serverNow));
 console.log('PASS backend: idempotent setup and retries, duplicate active timer rejected, revision protection, deterministic replay, unexpected headers preserved');

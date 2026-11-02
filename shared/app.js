@@ -12,9 +12,16 @@
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
   let busy = false, message = '', lastChecked = 0, editor = null, days = 30, rendered = false, expandedNaps = '';
   let retryAt=0,retryFailures=0,retryTimer=null,pendingRequest=null;
+  let clockOffset=0;
+  const recordNow=()=>Date.now()+clockOffset;
+  function clockRejection(command,error){
+    if(!/^Choose a time in the past or now\.$/.test(String(error))||!['start','end','edit','add'].includes(command.type)||!Number.isFinite(command.createdAt))return false;
+    const times=[command.payload?.start,command.payload?.end].filter(t=>t!==undefined&&t!==null);
+    return times.length>0&&times.every(t=>Number.isFinite(t)&&t>0&&t<=command.createdAt+1000);
+  }
   function temporaryError(error){return Boolean(error?.retryable)||/lock timeout|could not acquire.*lock|unable to acquire.*lock|timed out.*lock|lock.*timed out|another process was holding the lock|service invoked too many times|too many (?:simultaneous|requests)|temporarily unavailable|server error occurred|service timed out|try again later/i.test(String(error?.error||error?.message||error||''));}
   // Older versions mistakenly persisted temporary lock failures as edit conflicts.
-  for(const command of queue)if(command.blocked&&temporaryError(command.blocked))delete command.blocked;
+  for(const command of queue)if(command.blocked&&(temporaryError(command.blocked)||clockRejection(command,command.blocked)))delete command.blocked;
   let historyChild=null,selectedSleep=null;
   let arrival=null,endReceipt=null,receiptTimer=null,receiptHideTimer=null;
   const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
@@ -50,7 +57,7 @@
   function acceptSnapshot(state){const signature=JSON.stringify(state);if(signature===baseSignature)return false;base=state;baseSignature=signature;return true;}
   function persist(){const encoded=JSON.stringify({base,queue,prefs,localOnly:!HUCK_CONFIG.backendUrl});if(encoded!==lastPersisted){localStorage.setItem(key,encoded);lastPersisted=encoded;}}
   function projected(){
-    const now=Date.now(),pending=queue.map(c=>c.id+':'+(c.blocked||'')).join('|');
+    const now=recordNow(),pending=queue.map(c=>c.id+':'+(c.blocked||'')).join('|');
     if(projectionCache&&projectionCache.base===base&&projectionCache.pending===pending&&now>=projectionCache.at&&now<projectionCache.expires)return projectionCache.state;
     let s=JSON.parse(JSON.stringify(base));for(const cmd of queue.filter(c=>!c.blocked)){try{s=C.apply(s,cmd,cmd.createdAt);}catch{}}C.settle(s,now);
     let expires=Infinity;for(const e of s.entries){if(!e.end&&!e.deleted)expires=Math.min(expires,e.start+Number(C.isNight(e.start,s.settings)?s.settings.nightLimit:s.settings.dayLimit)*60000);}
@@ -170,7 +177,7 @@
     elapsed.classList.toggle('has-seconds',counting);
     elapsed.setAttribute('role','timer');elapsed.setAttribute('aria-live','off');
     if(counting){
-      const ms=Math.max(0,r?Date.now()-r.start:info.elapsed),seconds=Math.floor(ms/1000)%60;
+    const ms=Math.max(0,r?recordNow()-r.start:info.elapsed),seconds=Math.floor(ms/1000)%60;
       if(!$('#elapsed-main'))elapsed.innerHTML='<span id="elapsed-main"></span><small class="timer-seconds" id="elapsed-seconds"></small>';
       $('#elapsed-main').textContent=duration(ms);
       $('#elapsed-seconds').textContent=String(seconds).padStart(2,'0')+'s';
@@ -190,7 +197,7 @@
     main.style.fontSize='';const size=parseFloat(getComputedStyle(box).fontSize),available=box.clientWidth-seconds.getBoundingClientRect().width-6,width=main.getBoundingClientRect().width;
     if(width>available)main.style.fontSize=Math.max(18,Math.floor(size*available/width))+'px';
   }
-  function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],Date.now(),dateKey(Date.now()),C.isNight(Date.now(),s.settings));}
+  function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],recordNow(),dateKey(recordNow()),C.isNight(recordNow(),s.settings));}
   function renderWakeCue(s,running,last){
     const box=$('#wake-window'),info=wakeState(s,last),cue=HuckWake.cue(info);
     box.dataset.phase=info.phase;box.hidden=Boolean(running)||!prefs.wakeInfo||!cue;if(box.hidden)return;
@@ -242,8 +249,8 @@
   }
   function enqueue(type,payload){
     if(queue.some(c=>c.blocked)){reviewSyncIssue();return false;}
-    const command={id:uuid(),type,payload,createdAt:Date.now()};
-    try{C.apply(projected(),command,Date.now());}catch(e){
+    const command={id:uuid(),type,payload,createdAt:recordNow()};
+    try{C.apply(projected(),command,recordNow());}catch(e){
       let detail=e.message;
       if(/overlaps another sleep/.test(detail)){
         const s=projected(),original=s.entries.find(e=>e.id===payload.id),start=payload.start??original?.start,end=payload.end===undefined?original?.end:payload.end;
@@ -254,7 +261,7 @@
     }
     const old=projected().entries.find(e=>e.id===payload.id&&!e.end&&!e.deleted);
     if(old&&payload.end&&(type==='end'||type==='edit'))arrival={id:old.id,duration:payload.end-old.start,from:$('#elapsed').getBoundingClientRect()};
-    if(demo||!HUCK_CONFIG.backendUrl){base=C.apply(projected(),command,Date.now());persist();render();}
+    if(demo||!HUCK_CONFIG.backendUrl){base=C.apply(projected(),command,recordNow());persist();render();}
     else{queue.push(command);persist();render();sync();}return true;
   }
   function request(action,payload){return new Promise((resolve,reject)=>{
@@ -264,7 +271,11 @@
     const fail=text=>{if(done(true))reject(Object.assign(Error(text),{retryable:true}));};
     const timer=setTimeout(()=>fail('Connection timed out. Saved changes will retry.'),35000);
     pendingRequest={startedAt:Date.now(),cancel:()=>fail('Connection paused. Saved changes will retry.')};
-    window[callback]=data=>{if(done())resolve(data);};script.onerror=()=>fail('Offline. Saved changes will retry.');script.src=url;document.body.append(script);
+    window[callback]=data=>{if(done()){
+      // Use a conservative server time: network travel can make us slightly late, never early.
+      if(Number.isFinite(data?.serverNow)){clockOffset=data.serverNow-Date.now()-1000;projectionCache=null;}
+      resolve(data);
+    }};script.onerror=()=>fail('Offline. Saved changes will retry.');script.src=url;document.body.append(script);
   });}
   function scheduleRetry(){
     clearTimeout(retryTimer);retryTimer=null;
@@ -284,7 +295,7 @@
       if(!queue.length||queue[0].blocked){const result=await request('snapshot');if(!result.ok)throw Object.assign(Error(result.error),{retryable:temporaryError(result)});changed=acceptSnapshot(result.state)||changed;}
       while(queue.length&&!queue[0].blocked){
         const cmd=queue[0],response=await request('command',cmd);
-        if(!response.ok){if(temporaryError(response))throw Object.assign(Error(response.error),{retryable:true});cmd.blocked=response.error;changed=true;notice(response.error);persist();const fresh=await request('snapshot');if(fresh.ok)acceptSnapshot(fresh.state);break;}
+        if(!response.ok){if(temporaryError(response)||clockRejection(cmd,response.error))throw Object.assign(Error(response.error==='Choose a time in the past or now.'?'Phone and server clocks differ. Your change is saved here and will retry automatically.':response.error),{retryable:true});cmd.blocked=response.error;changed=true;notice(response.error,true);persist();const fresh=await request('snapshot');if(fresh.ok)acceptSnapshot(fresh.state);break;}
         acceptSnapshot(response.state);changed=true;queue.shift();persist();
       }
       lastChecked=Date.now();message='';retryAt=0;retryFailures=0;
@@ -350,10 +361,10 @@
     $('#modal-notice').hidden=true;
     const start=entryTime('start'),end=editor.hasEnd?entryTime('end'):null;
     let error='';if(!Number.isFinite(start)||(!end&&end!==null))error='Choose a date and time.';
-    else if(start>Date.now()||end>Date.now())error='Choose a time in the past or now.';
+    else if(start>recordNow()+1000||end>recordNow()+1000)error='Choose a time in the past or now.';
     else if(end!==null&&end<=start)error='End must be after start.';
     const noun=Number.isFinite(start)?sleepName(start):'sleep';
-    $('#time-preview').textContent=error||(end?`${duration(end-start)} ${noun}`:`${duration(Date.now()-start)} so far`);
+    $('#time-preview').textContent=error||(end?`${duration(end-start)} ${noun}`:`${duration(recordNow()-start)} so far`);
     const summary=$('#start-summary-value');if(summary&&Number.isFinite(start))summary.textContent=(dateKey(start)===dateKey(Date.now())?'':dateKey(start).slice(5).replace('-','/')+' · ')+clock(start);
     const state=$('.end-state');state.dataset.ended=String(editor.hasEnd);
     state.querySelectorAll('[data-end-state]').forEach(button=>{
@@ -365,14 +376,14 @@
     $('[data-save-entry]').disabled=Boolean(error);
   }
   function pastDefaults(s){
-    const list=[...entries(s)].sort((a,b)=>a.start-b.start),now=Date.now();let finish=now;
+    const list=[...entries(s)].sort((a,b)=>a.start-b.start),now=recordNow();let finish=now;
     for(let i=list.length-1;i>=0;i--){const e=list[i];if(e.end&&finish-e.end>=5*60000)return {start:Math.max(e.end,finish-45*60000),end:finish};finish=e.start;}
     return {start:finish-45*60000,end:finish};
   }
   function setEndState(hasEnd,at){
     if(editor.hasEnd&&!hasEnd)editor.endDraft=entryTime('end');
     editor.hasEnd=hasEnd;$('#end-fields').hidden=!hasEnd;
-    if(hasEnd)setEntryTime('end',at||editor.endDraft||editor.original?.end||Date.now());
+    if(hasEnd)setEntryTime('end',at||editor.endDraft||editor.original?.end||recordNow());
     updateTimePreview();
   }
   function setStartExpanded(expanded){
@@ -382,7 +393,7 @@
   }
   function openEntry(id,mode){
     if(id&&endReceipt?.id===id)dismissEndConfirmation(false);
-    const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:Date.now()-5*60000,end:null}:pastDefaults(s);
+    const s=projected(),e=s.entries.find(e=>e.id===id),defaults=mode==='start'?{start:recordNow()-5*60000,end:null}:pastDefaults(s);
     editor={kind:'entry',id,mode,rev:e?.rev,childId:child(s).id,original:e?{start:e.start,end:e.end}:null,hasEnd:Boolean(e?e.end:defaults.end)};
     modal(e?'Edit sleep':'Add sleep',`${e?.autoEnded?'<p class="callout">Auto-ended after a forgotten timer. Adjust the times below.</p>':''}<section class="start-section"><div class="start-summary" ${e?'':'hidden'}><span>Start</span><span id="start-summary-value"></span><button class="start-edit" data-toggle-start aria-expanded="false" aria-controls="start-fields" aria-label="Edit start time" title="Edit start time">${icon('pencil')}</button><span class="start-now" hidden>${e?nowButton('start','Start'):''}</span></div><div id="start-fields" ${e?'hidden':''}>${timeField('start','Start',e?.start||defaults.start,!e)}</div></section><section id="end-section"><div class="time-field-head"><span>End</span><div class="end-state" data-ended="${editor.hasEnd}" role="group" aria-label="Sleep status"><span class="end-state-thumb" aria-hidden="true"></span><button data-end-state="running" aria-pressed="${!editor.hasEnd}" aria-controls="end-fields">Still napping</button><button data-end-state="ended" aria-pressed="${editor.hasEnd}" aria-controls="end-fields">Nap ended</button></div>${nowButton('end','End')}</div><div id="end-fields" ${editor.hasEnd?'':'hidden'}>${timeField('end','End',e?.end||defaults.end||Date.now(),false)}</div></section>`,
       `<p id="time-preview" class="time-preview" role="status"></p><div class="entry-footer-actions"><button class="primary" data-save-entry>${icon('check')}Save</button><button class="entry-cancel" data-close>Cancel</button>${e?`<button class="danger entry-delete" data-delete-entry aria-label="Delete sleep" title="Delete sleep">${icon('trash-2')}</button>`:''}</div>`);
@@ -445,10 +456,10 @@
     if(t.matches('[data-confirm-cancel-start]')&&editor.kind==='cancel-start'){if(enqueue('delete',{id:editor.id,childId:editor.childId,expectedRev:editor.rev}))close();}
     if(t.matches('[data-dismiss-ended]'))dismissEndConfirmation();
     if(t.matches('[data-end-state]'))setEndState(t.dataset.endState==='ended');
-    if(t.matches('[data-now]')){if(t.dataset.now==='end')setEndState(true,Date.now());else setEntryTime(t.dataset.now,Date.now());}
-    if(t.matches('[data-start]')){const id=uuid();if(enqueue('start',{id,childId:child().id,start:Date.now()-Number(t.dataset.start)*60000}))showEndConfirmation(id,'start');}
-    if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r&&enqueue('end',{id:r.id,childId:r.childId,end:Date.now()-Number(t.dataset.end)*60000,expectedRev:r.rev}))showEndConfirmation(r.id);}
-    if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-start'))setStartExpanded(true);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,Date.now());}
+    if(t.matches('[data-now]')){if(t.dataset.now==='end')setEndState(true,recordNow());else setEntryTime(t.dataset.now,recordNow());}
+    if(t.matches('[data-start]')){const id=uuid();if(enqueue('start',{id,childId:child().id,start:recordNow()-Number(t.dataset.start)*60000}))showEndConfirmation(id,'start');}
+    if(t.matches('[data-end]')){const r=C.active(projected(),child().id);if(r&&enqueue('end',{id:r.id,childId:r.childId,end:Math.max(r.start+1,recordNow()-Number(t.dataset.end)*60000),expectedRev:r.rev}))showEndConfirmation(r.id);}
+    if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-start'))setStartExpanded(true);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,recordNow());}
     if(t.matches('[data-custom-start]'))openEntry(null,'start');
     if(t.matches('[data-add]'))openEntry();
     if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(Date.now());expandedNaps=expandedNaps===napKey?'':napKey;render();}
