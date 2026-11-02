@@ -246,6 +246,8 @@ HuckWake.cue(info) returns null unless recorded quality, a valid age window, day
 
 ## Animation and artwork
 
+Awake timers now share the same #elapsed-main/#elapsed-seconds rendering as sleeping timers whenever wakeState.quality=recorded (birthday/range configuration is not required for seconds). tick toggles has-seconds for both and computes awake elapsed from the last completed end timestamp. Keep aria-live=off and the aria-label awake/asleep specific. Estimated awake time remains ~duration without seconds; missing/stale time is a dash with no seconds. Reuse stable nodes and fitElapsed for long values; no new API calls. tests/awake-seconds.cjs checks ticking/rollover, preserved nodes, all styles/themes/320/390/1280 and unreliable-data suppression.
+
 `#elapsed-main` and `#elapsed-seconds` are stable nodes in a baseline flex row. Seconds are tabular, 14px and muted; primary duration stays larger. `fitElapsed` refits long primary text to the actual container and reserves Daybook's mascot area. Refit on tick/resize without restarting the timer or re-rendering active inputs. role=timer with aria-live=off prevents continuous announcements.
 
 `.timer-mascot` owns position/dimensions in themes. #timer-art fills it. sleeping.png/awake.png are bundled Twemoji images, not day/night symbols. Sleeping uses breathing motion plus staggered floating Zs. Awake uses a stronger bounce/tilt and Lucide sparkles. Decorations are aria-hidden, noninteractive, and do not change layout dimensions.

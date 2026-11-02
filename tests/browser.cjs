@@ -29,7 +29,7 @@ async function chooseAgo(p,n){await p.locator('[data-custom-start]').click();awa
    await p.clock.setFixedTime(now+1000);await p.waitForFunction(()=>document.querySelector('#elapsed-seconds')?.textContent==='01s');
    await p.screenshot({path:`/tmp/huck-live-seconds-${i}.png`});
    await p.reload();assert.equal(await p.locator('#timer-status').innerText(),'Sleeping');assert.equal(await p.locator('body').getAttribute('data-style'),style);
-   await p.locator('[data-end="0"]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');assert.equal(await p.locator('#elapsed-seconds').count(),0);
+   await p.locator('[data-end="0"]').click();assert.equal(await p.locator('#timer-status').innerText(),'Awake');assert.equal(await p.locator('#elapsed-seconds').innerText(),'00s');
    await p.locator('.nap-entry').first().click();assert(await p.locator('#modal').isVisible());await p.locator('[data-save-entry]').click();assert(!(await p.locator('#modal').isVisible()));
    await p.locator('.nap-entry').first().click();await p.locator('[data-delete-entry]').click();await p.locator('[data-confirm-delete]').click();assert(!(await p.locator('#modal').isVisible()));
    await p.locator('[data-settings]').click();

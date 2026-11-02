@@ -18,7 +18,7 @@ const now=Date.parse('2026-10-30T18:00:00Z');
    await p.waitForTimeout(100);await p.evaluate(()=>scrollTo(0,0));await p.screenshot({path:`/tmp/huck-inline-timer-${style}.png`});
    for(const theme of ['night','berry','mint','original']){await p.locator('[data-settings]').click();await p.locator(`button[data-theme="${theme}"]`).click();await p.locator('[data-save-settings]').click();}
    let finishAgain;release=new Promise(resolve=>finishAgain=resolve);await p.evaluate(()=>{HuckTest.sync();});await p.locator('#sync-activity').waitFor({state:'visible'});finishAgain();await p.locator('#sync-activity').waitFor({state:'hidden'});
-   state.entries[0].end=now-10000;await p.evaluate(()=>HuckTest.sync());await p.locator('#sync-activity').waitFor({state:'hidden'});assert((await p.locator('#timer-art').getAttribute('src')).endsWith('/shared/awake.png'));assert(await p.locator('#timer-art').evaluate(img=>img.complete&&img.naturalWidth>0));assert.equal(await p.locator('#elapsed-seconds').count(),0);
+   state.entries[0].end=now-10000;await p.evaluate(()=>HuckTest.sync());await p.locator('#sync-activity').waitFor({state:'hidden'});assert((await p.locator('#timer-art').getAttribute('src')).endsWith('/shared/awake.png'));assert(await p.locator('#timer-art').evaluate(img=>img.complete&&img.naturalWidth>0));assert.equal(await p.locator('#elapsed-seconds').innerText(),'11s');
    assert.equal(await p.locator('#timer-art').evaluate(el=>getComputedStyle(el).animationName),'none');assert.deepEqual(errors,[]);console.log('PASS '+style+': inline seconds through 11h59m, 320/390/1280 fit, both images, sync activity lifecycle, themes and reduced motion');await context.close();
   }
  }finally{await browser.close();}

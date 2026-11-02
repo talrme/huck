@@ -131,20 +131,20 @@
   }
   function tick(){
     const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end),elapsed=$('#elapsed');
-    elapsed.classList.toggle('has-seconds',Boolean(r));
+    const info=r?null:wakeState(s,last),counting=Boolean(r)||info.quality==='recorded';
+    elapsed.classList.toggle('has-seconds',counting);
     elapsed.setAttribute('role','timer');elapsed.setAttribute('aria-live','off');
-    if(r){
-      const ms=Math.max(0,Date.now()-r.start),seconds=Math.floor(ms/1000)%60;
+    if(counting){
+      const ms=Math.max(0,r?Date.now()-r.start:info.elapsed),seconds=Math.floor(ms/1000)%60;
       if(!$('#elapsed-main'))elapsed.innerHTML='<span id="elapsed-main"></span><small class="timer-seconds" id="elapsed-seconds"></small>';
       $('#elapsed-main').textContent=duration(ms);
       $('#elapsed-seconds').textContent=String(seconds).padStart(2,'0')+'s';
-      elapsed.setAttribute('aria-label',`${duration(ms)} ${seconds} seconds asleep`);
+      elapsed.setAttribute('aria-label',`${duration(ms)} ${seconds} seconds ${r?'asleep':'awake'}`);
     }else{
-      const info=wakeState(s,last);
       elapsed.textContent=info.quality==='unknown'||info.quality==='stale'?'—':(info.quality==='estimated'?'~':'')+duration(info.elapsed);
-      $('#timer-status').textContent=info.quality==='unknown'||info.quality==='stale'?'Wake time unknown':info.quality==='estimated'?'Awake · estimated':'Awake';
       elapsed.removeAttribute('aria-label');
     }
+    if(!r)$('#timer-status').textContent=info.quality==='unknown'||info.quality==='stale'?'Wake time unknown':info.quality==='estimated'?'Awake · estimated':'Awake';
     renderWakeCue(s,r,last);
     renderHistoryDetails(s);renderEndConfirmation(s);
     updateActionLabels(s,r);

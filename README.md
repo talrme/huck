@@ -42,7 +42,7 @@ For existing records, Start normally collapses to a clock-time summary and penci
 
 Manual starts default to five minutes ago. Adding past sleep defaults to an available gap of up to 45 minutes. Saving an unchanged record preserves its original timestamp precision.
 
-The timer uses saved timestamps, not a background stopwatch. Closing the app does not stop it. Active hours/minutes stay large, with smaller ticking seconds on the same baseline. Seconds update locally without network requests or per-second screen-reader announcements.
+The timer uses saved timestamps, not a background stopwatch. Closing the app does not stop it. Both sleeping and reliably recorded awake time show large hours/minutes with smaller ticking seconds on the same baseline. Estimated awake time keeps its ~minutes display without seconds; missing/stale wake times show a dash. Seconds update locally without network requests or per-second screen-reader announcements.
 
 History columns are chronological, newest on the right and initially in view. The time axis stays fixed while dates scroll horizontally. By default each column covers **7 AM to the next 7 AM**, with nighttime shading from **8 PM**. Today is emphasized; older columns are quieter. Sleeps crossing a boundary are split visually but remain one editable record. Recent naps uses the full duration for each record intersecting the current period.
 
