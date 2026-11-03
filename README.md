@@ -78,6 +78,21 @@ The in-progress sleep block in history has bold drifting Zs at its edges and a g
 
 The sleeping face has three original floating Zs plus five smaller, softer Zs drifting from different spots around its head. These are decorative only and add no network requests.
 
+## Animation settings
+
+Settings now includes **Animation settings** with an **Off / Gentle / Playful / Custom** slider. Playful is the default when animations were previously enabled; an existing disabled preference stays Off. Changes apply immediately and are saved on this device. Customize effects contains individual switches; changing one selects Custom. Returning to Custom restores the last manual combination.
+
+- **Off:** no decorative motion; the nighttime grid and static awake-time marker remain usable.
+- **Gentle:** floating characters/Zs, rolling timer values, mascot reactions, icon pops, entry expansion and the existing sleep-to-entry animation. Color ripples and celebrations are off.
+- **Playful:** all effects on.
+- **Custom:** your own combination, remembered independently of presets.
+
+Timer adjustments count smoothly to their new elapsed value over about one second, in either direction. Ordinary ticks, refreshes and syncs do not replay the count-up, and a reset to zero stays immediate. Starting/ending sleep gives the mascot a settling or happy reaction and, when enabled, sends a brief color ripple from the action area. Changing a mascot pops the new icon; expanding today's entries gives additional tiles a small stagger.
+
+The history chart keeps hour grid lines above nighttime shading in every color scheme. While awake, a colored line/dot marks the current clock time in today's column; it updates locally and disappears while sleeping.
+
+**Celebrate nighttime sleep over** defaults to **3 hours** and is editable from0.5 to12 hours. With celebrations enabled, ending a sleep that started at night and exceeds the threshold produces a brief confetti burst and a duration message. This is a personal celebration preference, not a sleep recommendation. It fires only after a newly completed local action is confirmed by the backend (immediately in sample/local mode), at most once per sleep on that device. Rejected saves, imported/backfilled completed records, auto-ended timers, refreshes, repeated completed-entry edits, hidden pages and confirmations delayed over a minute do not celebrate. It does not replay from background sync. All effects respect OS reduced motion; hiding the page or disabling animations clears active effects. No sound or additional Sheet polling is used.
+
 ## Wake-window guide
 
 Open **Settings → Wake-window settings**. Turn on Show wake-window info and enter the child's birthday. Without a valid birthday, guidance stays hidden and a red birthday-required message appears. A missing birthday does not prevent saving unrelated settings.

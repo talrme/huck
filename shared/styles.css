@@ -122,6 +122,28 @@ body[data-theme=night] .wake-window[data-phase=past]{--wake-color:#e8a9b7}
 .wake-block{position:absolute;left:8px;right:8px;width:calc(100% - 16px);min-height:0;padding:0 2px;border:1px dashed color-mix(in srgb,var(--awake-accent) 55%,transparent);border-radius:3px;background:color-mix(in srgb,var(--awake-soft) 60%,transparent);color:var(--awake-accent);font-size:9px;font-weight:600;line-height:1;overflow:hidden}
 .wake-block:hover,.wake-block[aria-pressed=true]{background:var(--awake-soft);outline:1px solid var(--awake-accent);outline-offset:-1px}
 .sleep-block{z-index:1}.wake-block{z-index:0}
+.day-track{background-image:none;isolation:isolate}
+.day-track:after{content:'';position:absolute;inset:0 0 16px;pointer-events:none;z-index:1;background:repeating-linear-gradient(to bottom,transparent 0,transparent 23px,color-mix(in srgb,var(--ink) 18%,transparent) 23px,color-mix(in srgb,var(--ink) 18%,transparent) 24px)}
+.sleep-block{z-index:2}
+.history-now{position:absolute;left:0;right:0;height:2px;z-index:3;background:var(--awake-accent);pointer-events:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--paper) 70%,transparent)}
+.history-now i{position:absolute;right:3px;top:-2px;width:6px;height:6px;border-radius:50%;background:var(--awake-accent);animation:now-glow 2.5s ease-in-out infinite}
+@keyframes now-glow{50%{box-shadow:0 0 0 4px color-mix(in srgb,var(--awake-accent) 20%,transparent)}}
+.animation-settings{display:grid;gap:12px;border-top:1px solid var(--line);padding-top:12px}
+.animation-settings>legend{font-size:13px}
+.animation-preset-heading{display:flex;align-items:center;justify-content:space-between;font-size:11px}.animation-preset-heading strong{color:var(--accent);font-size:11px}
+#animation-level{appearance:auto;min-height:28px;padding:0;margin:0;border:0;background:transparent;accent-color:var(--accent);width:100%}
+.animation-level-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:-8px}
+.animation-options{display:grid;gap:14px;padding:8px 0 12px}.animation-options label{font-size:11px;font-weight:450;gap:12px}
+.animation-options input{flex:none}
+.celebration-threshold{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:11px;font-weight:450}
+.celebration-threshold span{display:flex;align-items:center;gap:5px;color:var(--muted);white-space:nowrap}
+.celebration-threshold input{width:65px;min-height:38px;padding:7px;font-size:14px}
+.state-ripple{position:fixed;inset:0;z-index:6;overflow:hidden;pointer-events:none}
+.state-ripple i{position:absolute;width:20px;height:20px;border-radius:50%;transform-origin:center}
+.celebration-confetti{position:fixed;inset:0;z-index:30;pointer-events:none;overflow:hidden}
+.celebration-confetti i{position:absolute;top:70%;width:7px;height:11px;border-radius:2px}
+.celebration-note{position:fixed;left:50%;bottom:24px;z-index:31;max-width:calc(100% - 32px);width:max-content;background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:12px 20px;font-size:16px;font-weight:650;box-shadow:0 4px 24px #0002;text-align:center;pointer-events:none}
+body.no-ambient .timer-art,body.no-ambient .sleep-zs>span,body.no-ambient .awake-sparks,body.no-ambient .history-zs i,body.no-ambient .sleep-block.running,body.no-ambient .history-now i,body.no-ambient .status-dot{animation:none!important}
 body[data-theme=night] .entry-glyph{color:var(--sleep-accent)}
 .day-column.is-today{border-left:1px solid var(--accent);border-right:1px solid var(--accent)}
 .day-column.is-today>header{background:var(--soft);box-shadow:inset 0 3px 0 var(--accent);color:var(--accent);font-size:12px;font-weight:750}

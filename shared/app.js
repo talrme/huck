@@ -9,6 +9,16 @@
     localStorage.setItem('huck-local-backup-v1', JSON.stringify(saved.base));
   }
   let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
+  prefs.animations=HuckMotion.normalize(prefs.animations,prefs.motion);
+  if(!['off','gentle','playful','custom'].includes(prefs.animationPreset))prefs.animationPreset=prefs.motion?'playful':'off';
+  if(!Number.isFinite(prefs.celebrateHours)||prefs.celebrateHours<.5||prefs.celebrateHours>12)prefs.celebrateHours=3;
+  const motionOn=effect=>HuckMotion.enabled(prefs,effect),pendingCelebrations=new Map();
+  function clearMotionEffects(){
+    HuckMotion.clear();
+    document.querySelectorAll('.sleep-transfer,.nap-entry').forEach(node=>{node.getAnimations().forEach(a=>a.cancel());if(node.classList.contains('sleep-transfer'))node.remove();});
+    if(!prefs.motion||document.hidden||matchMedia('(prefers-reduced-motion: reduce)').matches)$('#end-confirmation').getAnimations({subtree:true}).forEach(a=>a.cancel());
+  }
+  let timerJump=false,lastCounter=null;
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
   const mascots={sleep:[['sleeping','Sleepy face'],['teddy','Teddy'],['cat','Cat'],['koala','Koala']],awake:[['awake','Baby'],['smile','Smile'],['fox','Fox'],['chick','Chick']]};
   for(const state of ['sleep','awake'])if(!mascots[state].some(([id])=>id===prefs[state+'Mascot']))prefs[state+'Mascot']=mascots[state][0][0];
@@ -77,9 +87,10 @@
     renderSyncActivity();
     const s=projected(), c=child(s);prefs.child=c.id;
     document.body.dataset.theme=prefs.theme;document.body.dataset.style=prefs.style;document.body.classList.toggle('reduce-motion',!prefs.motion);
+    document.body.classList.toggle('no-ambient',!prefs.animations.ambient);
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
     $('#review').hidden=!queue.some(c=>c.blocked);
-    const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(Date.now()), start=wallTime(today), end=wallTime(shiftDate(today,1));
+    const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(recordNow()), start=wallTime(today), end=wallTime(shiftDate(today,1));
     document.body.dataset.state=running?'sleep':'awake';
     document.querySelector('meta[name="theme-color"]').content=getComputedStyle(document.body).getPropertyValue('--accent').trim();
     const todaysNaps=list.filter(e=>e.end&&e.start<end&&e.end>start),napKey=c.id+':'+today,showAll=expandedNaps===napKey;
@@ -170,13 +181,13 @@
     if(!arrival)return;const effect=arrival;arrival=null;
     const target=[...document.querySelectorAll('.nap-entry')].find(row=>row.dataset.edit===effect.id);
     if(!target)return;
-    if(!prefs.motion||matchMedia('(prefers-reduced-motion: reduce)').matches){notice(duration(effect.duration)+' saved to Recent naps.');return;}
+    if(!motionOn('arrival'))return;
     const end=target.getBoundingClientRect(),from=effect.from;
     const ghost=document.createElement('div');ghost.className='sleep-transfer';ghost.setAttribute('aria-hidden','true');ghost.textContent=duration(effect.duration);ghost.style.left=from.left+'px';ghost.style.top=from.top+'px';document.body.append(ghost);
     const x=end.left-from.left,y=end.top-from.top;
     const motion=ghost.animate([{transform:'translate(0,0) scale(.85) rotate(-4deg)',opacity:0},{transform:'translate(18px,-24px) scale(1.15) rotate(-7deg)',opacity:1,offset:.16},{transform:`translate(${x*.7+25}px,${y*.5}px) scale(1.05) rotate(7deg)`,opacity:1,offset:.55},{transform:`translate(${x}px,${y-12}px) scale(.9) rotate(0)`,opacity:1,offset:.84},{transform:`translate(${x}px,${y}px) scale(.8)`,opacity:0}],{duration:1050,easing:'cubic-bezier(.22,.7,.3,1)'});
     motion.finished.then(()=>{
-      if(!prefs.motion||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      if(!motionOn('arrival'))return;
       const row=[...document.querySelectorAll('.nap-entry')].find(row=>row.dataset.edit===effect.id);
       row?.animate([{background:'var(--soft)',transform:'translateY(7px) scale(.98)'},{background:'var(--soft)',transform:'translateY(-5px) scale(1.02)',offset:.35},{background:'transparent',transform:'translateY(0) scale(1)'}],{duration:850,easing:'ease-out'});
     }).catch(()=>{}).finally(()=>ghost.remove());
@@ -189,15 +200,19 @@
     if(counting){
     const ms=Math.max(0,r?recordNow()-r.start:info.elapsed),seconds=Math.floor(ms/1000)%60;
       if(!$('#elapsed-main'))elapsed.innerHTML='<span id="elapsed-main"></span><small class="timer-seconds" id="elapsed-seconds"></small>';
-      $('#elapsed-main').textContent=duration(ms);
-      $('#elapsed-seconds').textContent=String(seconds).padStart(2,'0')+'s';
+      const signature=(r?'sleep:'+r.id+':'+r.start:'awake:'+last?.id+':'+last?.end),sameMode=lastCounter?.sleeping===Boolean(r),from=sameMode?lastCounter?.ms||0:0;
+      if(timerJump&&ms>=60000&&motionOn('counter')&&lastCounter){HuckMotion.roll({from,to:ms,main:$('#elapsed-main'),seconds:$('#elapsed-seconds'),format:duration,fit:fitElapsed,allowed:()=>motionOn('counter')});}
+      else if(!HuckMotion.isRolling()||lastCounter?.signature!==signature){HuckMotion.stopCounter();$('#elapsed-main').textContent=duration(ms);$('#elapsed-seconds').textContent=String(seconds).padStart(2,'0')+'s';}
+      lastCounter={signature,ms,sleeping:Boolean(r)};
       elapsed.setAttribute('aria-label',`${duration(ms)} ${seconds} seconds ${r?'asleep':'awake'}`);
     }else{
+      HuckMotion.stopCounter();lastCounter=null;
       elapsed.textContent=info.quality==='unknown'||info.quality==='stale'?'—':(info.quality==='estimated'?'~':'')+duration(info.elapsed);
       elapsed.removeAttribute('aria-label');
     }
     if(!r)$('#timer-status').textContent=info.quality==='unknown'||info.quality==='stale'?'Wake time unknown':info.quality==='estimated'?'Awake · estimated':'Awake';
     renderWakeCue(s,r,last);
+    timerJump=false;renderHistoryNow(s,r);
     renderHistoryDetails(s);renderEndConfirmation(s);
     updateActionLabels(s,r);
     requestAnimationFrame(fitElapsed);
@@ -206,6 +221,22 @@
     const main=$('#elapsed-main'),seconds=$('#elapsed-seconds'),box=$('#elapsed');if(!main||!seconds||!box.clientWidth)return;
     main.style.fontSize='';const size=parseFloat(getComputedStyle(box).fontSize),available=box.clientWidth-seconds.getBoundingClientRect().width-6,width=main.getBoundingClientRect().width;
     if(width>available)main.style.fontSize=Math.max(18,Math.floor(size*available/width))+'px';
+  }
+  function renderHistoryNow(s,running){
+    const existing=$('.history-now');
+    if(running){existing?.remove();return;}
+    const track=$('.day-column.is-today .day-track');if(!track)return;
+    let line=existing;if(!line){line=document.createElement('div');line.className='history-now';line.setAttribute('aria-hidden','true');line.innerHTML='<i></i>';track.append(line);}
+    const lo=wallTime(periodDate(recordNow())),hi=wallTime(shiftDate(periodDate(recordNow()),1));line.style.top=Math.max(0,Math.min(576,(recordNow()-lo)/(hi-lo)*576))+'px';
+  }
+  function celebrateConfirmed(command,s){
+    const candidate=pendingCelebrations.get(command.id);pendingCelebrations.delete(command.id);if(!candidate)return;
+    const e=s.entries.find(e=>e.id===candidate.entryId&&!e.deleted),seen=prefs.celebratedSleeps||[];
+    if(!e?.end||e.autoEnded||seen.includes(e.id))return;
+    if(!C.isNight(e.start,s.settings)||e.end-e.start<=prefs.celebrateHours*3600000)return;
+    prefs.celebratedSleeps=[...seen,e.id];persist();
+    if(e.childId!==child(s).id||performance.now()-candidate.at>60000||!motionOn('celebration'))return;
+    HuckMotion.celebrate(duration(e.end-e.start)+' of sleep!');
   }
   function wakeState(s,last){return HuckWake.assess(last,s.settings.wakeProfiles?.[child(s).id],recordNow(),dateKey(recordNow()),C.isNight(recordNow(),s.settings));}
   function renderWakeCue(s,running,last){
@@ -222,7 +253,7 @@
     const id=child(s).id;
     if(historyChild!==id){historyChild=id;days=30;selectedSleep=null;selectedWake=null;rendered=false;}
     $('#history-wake').checked=Boolean(prefs.historyWake);
-    const period=periodDate(Date.now()),key=id+'|'+days+'|'+period+'|'+prefs.style+'|'+Boolean(prefs.historyWake)+'|'+(C.active(s,id)?Math.floor(Date.now()/60000):'');
+    const period=periodDate(recordNow()),key=id+'|'+days+'|'+period+'|'+prefs.style+'|'+Boolean(prefs.historyWake)+'|'+(C.active(s,id)?Math.floor(recordNow()/60000):'');
     if(chartCache?.state===s&&chartCache.key===key)return;chartCache={state:s,key};
     const scroller=$('#chart-scroll'),previous=scroller.scrollLeft,atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
     const oldFirst=$('.day-column')?.dataset.date,oldMarker=Boolean($('[data-older]')),history=entries(s),today=period;
@@ -273,7 +304,8 @@
   function enqueue(type,payload){
     if(queue.some(c=>c.blocked)){reviewSyncIssue();return false;}
     const command={id:uuid(),type,payload,createdAt:recordNow()};
-    try{C.apply(projected(),command,recordNow());}catch(e){
+    const before=projected();let next;
+    try{next=C.apply(before,command,recordNow());}catch(e){
       let detail=e.message;
       if(/overlaps another sleep/.test(detail)){
         const s=projected(),original=s.entries.find(e=>e.id===payload.id),start=payload.start??original?.start,end=payload.end===undefined?original?.end:payload.end;
@@ -282,10 +314,14 @@
       }
       notice(detail,true);return false;
     }
-    const old=projected().entries.find(e=>e.id===payload.id&&!e.end&&!e.deleted);
-    if(old&&payload.end&&(type==='end'||type==='edit'))arrival={id:old.id,duration:payload.end-old.start,from:$('#elapsed').getBoundingClientRect()};
-    if(demo||!HUCK_CONFIG.backendUrl){base=C.apply(projected(),command,recordNow());persist();render();}
-    else{queue.push(command);persist();render();sync();}return true;
+    const reference=s=>{const active=C.active(s,child(s).id),last=entries(s).find(e=>e.end);return active?'sleep:'+active.id+':'+active.start:'awake:'+last?.id+':'+last?.end;};
+    timerJump=reference(before)!==reference(next);
+    const wasSleeping=Boolean(C.active(before,child(before).id)),sleeping=Boolean(C.active(next,child(next).id)),rect=$('#actions .primary').getBoundingClientRect();
+    const old=before.entries.find(e=>e.id===payload.id&&!e.end&&!e.deleted);
+    if(old&&payload.end&&(type==='end'||type==='edit')){arrival={id:old.id,duration:payload.end-old.start,from:$('#elapsed').getBoundingClientRect()};pendingCelebrations.set(command.id,{entryId:old.id,at:performance.now()});}
+    if(demo||!HUCK_CONFIG.backendUrl){base=next;persist();render();celebrateConfirmed(command,base);}
+    else{queue.push(command);persist();render();sync();}
+    if(wasSleeping!==sleeping){if(motionOn('mascotReaction'))HuckMotion.mascot($('#timer-art'),sleeping);if(motionOn('stateRipple'))HuckMotion.ripple({x:rect.x+rect.width/2,y:rect.y+rect.height/2},getComputedStyle(document.body).getPropertyValue('--accent'));}return true;
   }
   function request(action,payload){return new Promise((resolve,reject)=>{
     const callback='huck_'+uuid().replaceAll('-',''),url=new URL(HUCK_CONFIG.backendUrl);url.searchParams.set('action',action);url.searchParams.set('callback',callback);url.searchParams.set('_',Date.now());if(payload)url.searchParams.set('payload',JSON.stringify(payload));
@@ -318,8 +354,8 @@
       if(!queue.length||queue[0].blocked){const result=await request('snapshot');if(!result.ok)throw Object.assign(Error(result.error),{retryable:temporaryError(result)});changed=acceptSnapshot(result.state)||changed;}
       while(queue.length&&!queue[0].blocked){
         const cmd=queue[0],response=await request('command',cmd);
-        if(!response.ok){if(temporaryError(response)||clockRejection(cmd,response.error))throw Object.assign(Error(response.error==='Choose a time in the past or now.'?'Phone and server clocks differ. Your change is saved here and will retry automatically.':response.error),{retryable:true});cmd.blocked=response.error;changed=true;notice(response.error,true);persist();const fresh=await request('snapshot');if(fresh.ok)acceptSnapshot(fresh.state);break;}
-        acceptSnapshot(response.state);changed=true;queue.shift();persist();
+        if(!response.ok){if(temporaryError(response)||clockRejection(cmd,response.error))throw Object.assign(Error(response.error==='Choose a time in the past or now.'?'Phone and server clocks differ. Your change is saved here and will retry automatically.':response.error),{retryable:true});pendingCelebrations.delete(cmd.id);cmd.blocked=response.error;changed=true;notice(response.error,true);persist();const fresh=await request('snapshot');if(fresh.ok)acceptSnapshot(fresh.state);break;}
+        acceptSnapshot(response.state);changed=true;queue.shift();persist();celebrateConfirmed(cmd,response.state);
       }
       lastChecked=Date.now();message='';retryAt=0;retryFailures=0;
     }catch(e){message=e.message;if(temporaryError(e)){retryFailures++;retryAt=Date.now()+Math.min(45000,5000*2**Math.min(retryFailures-1,4))+Math.floor(Math.random()*1500);scheduleRetry();if(retryFailures===1)notice(/lock/i.test(e.message)?'Connection is busy. Saved changes will retry automatically.':message);}else notice(message);}finally{busy=false;persist();if(changed)render();else{renderSyncActivity();$('#connection').textContent=stateLabel();tick();}}
@@ -358,6 +394,7 @@
       $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
     }
     if(title==='Settings'){
+      $('#motion').closest('label').outerHTML=animationSettings();
       $('.swatches').closest('fieldset').insertAdjacentHTML('afterend',`<section class="mascot-settings">${['sleep','awake'].map(state=>`<fieldset><legend>${state==='sleep'?'Sleeping icon':'Awake icon'}</legend><div class="mascot-options">${mascots[state].map(([id,name])=>`<button class="mascot-option" data-mascot-state="${state}" data-mascot="${id}" aria-pressed="${prefs[state+'Mascot']===id}"><img src="${new URL('shared/'+id+'.png',root)}" width="36" height="36" alt=""><span>${name}</span></button>`).join('')}</div></fieldset>`).join('')}</section>`);
       $('.swatches').insertAdjacentHTML('afterend','<div class="palette-key"><span>Awake</span><span>Sleeping</span></div>');
       document.querySelectorAll('button[data-theme]').forEach(b=>b.title=b.dataset.theme+' · awake / sleeping');
@@ -368,6 +405,16 @@
     $('#modal').showModal();icons();
   }
   const close=()=>$('#modal').close();
+  function animationSettings(){
+    const names=['Off','Gentle','Playful','Custom'],index=['off','gentle','playful','custom'].indexOf(prefs.animationPreset);
+    return `<fieldset class="animation-settings"><legend>Animation settings</legend><label class="toggle">Enable animations<input id="motion" type="checkbox" ${prefs.motion?'checked':''}></label><div class="animation-preset-heading"><label for="animation-level">Animation level</label><strong id="animation-level-name">${names[index]}</strong></div><input type="range" id="animation-level" min="0" max="3" step="1" value="${index}" aria-valuetext="${names[index]}"><div class="animation-level-labels">${names.map(n=>`<span>${n}</span>`).join('')}</div><details><summary>Customize effects</summary><div class="animation-options">${Object.entries(HuckMotion.labels).map(([id,label])=>`<label class="toggle">${label}<input type="checkbox" data-animation="${id}" ${prefs.animations[id]?'checked':''}></label>`).join('')}</div></details><label class="celebration-threshold">Celebrate nighttime sleep over<span><input id="celebrate-hours" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" value="${prefs.celebrateHours}"> hours</span></label></fieldset>`;
+  }
+  function setAnimations(options,preset){
+    prefs.animations={...options};if(preset==='custom')prefs.customAnimations={...options};prefs.animationPreset=preset;prefs.motion=Object.values(options).some(Boolean);clearMotionEffects();persist();render();
+    const names=['Off','Gentle','Playful','Custom'],index=['off','gentle','playful','custom'].indexOf(preset);
+    $('#motion').checked=prefs.motion;$('#animation-level').value=index;$('#animation-level').setAttribute('aria-valuetext',names[index]);$('#animation-level-name').textContent=names[index];
+    document.querySelectorAll('[data-animation]').forEach(input=>input.checked=Boolean(prefs.animations[input.dataset.animation]));
+  }
   function nowButton(prefix,title){return `<button type="button" class="time-now" data-now="${prefix}" aria-label="${title}: set to now">${icon('rotate-ccw')}Now</button>`;}
   function timeField(prefix,title,at,showHeader=true){
     return `<fieldset class="time-field" data-time-field="${prefix}" data-title="${title}" data-picker-today="${dateKey(Date.now())}"><legend class="sr-only">${title}</legend>${showHeader?`<div class="time-field-head"><span>${title}</span>${nowButton(prefix,title)}</div>`:''}<input id="${prefix}-date" type="hidden" value="${dateKey(at)}"><input id="${prefix}-time" type="hidden" value="${inputTime(at).split('T')[1]}"><div class="wheel-picker"></div></fieldset>`;
@@ -475,8 +522,8 @@
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
     const t=event.target.closest('button,a');if(!t)return;
-    if(t.matches('[data-cycle-mascot]')){const state=C.active(projected(),child().id)?'sleep':'awake',options=mascots[state],i=options.findIndex(([id])=>id===prefs[state+'Mascot']);prefs[state+'Mascot']=options[(i+1)%options.length][0];persist();render();}
-    if(t.matches('[data-mascot]')){prefs[t.dataset.mascotState+'Mascot']=t.dataset.mascot;persist();render();document.querySelectorAll('[data-mascot]').forEach(b=>b.setAttribute('aria-pressed',String(prefs[b.dataset.mascotState+'Mascot']===b.dataset.mascot)));}
+    if(t.matches('[data-cycle-mascot]')){const state=C.active(projected(),child().id)?'sleep':'awake',options=mascots[state],i=options.findIndex(([id])=>id===prefs[state+'Mascot']);prefs[state+'Mascot']=options[(i+1)%options.length][0];persist();render();if(motionOn('iconPop'))HuckMotion.pop($('#timer-art'));}
+    if(t.matches('[data-mascot]')){prefs[t.dataset.mascotState+'Mascot']=t.dataset.mascot;persist();render();document.querySelectorAll('[data-mascot]').forEach(b=>b.setAttribute('aria-pressed',String(prefs[b.dataset.mascotState+'Mascot']===b.dataset.mascot)));if(motionOn('iconPop'))HuckMotion.pop(t.querySelector('img'));}
     if(t.matches('[data-toggle-start]'))setStartExpanded($('#start-fields').hidden);
     if(t.matches('[data-adjust-ended]')){const id=endReceipt?.id,starting=endReceipt?.kind==='start';dismissEndConfirmation(false);if(id){openEntry(id);if(starting)setStartExpanded(true);}}
     if(t.matches('[data-resume-ended]')){if(endReceipt?.kind==='start')confirmCancelStarted();else confirmResumeEnded();}
@@ -490,7 +537,7 @@
     if(t.matches('[data-edit],[data-open-end]')){openEntry(t.dataset.edit||t.dataset.openEnd);if(t.hasAttribute('data-open-start'))setStartExpanded(true);if(t.hasAttribute('data-open-end')&&!editor.hasEnd)setEndState(true,recordNow());}
     if(t.matches('[data-custom-start]'))openEntry(null,'start');
     if(t.matches('[data-add]'))openEntry();
-    if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(Date.now());expandedNaps=expandedNaps===napKey?'':napKey;render();}
+    if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(recordNow()),expanding=expandedNaps!==napKey;expandedNaps=expanding?napKey:'';render();if(expanding&&motionOn('listExpand'))HuckMotion.expand([...document.querySelectorAll('.nap-entry')].slice(3));}
     if(t.matches('[data-close]'))close();
     if(t.matches('[data-save-entry]'))saveEntry();
     if(t.matches('[data-delete-entry]')){const entry={...editor,kind:'delete'};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the Sheet.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
@@ -533,21 +580,25 @@
   $('#modal').addEventListener('cancel',event=>{event.preventDefault();close();});
   $('#modal').addEventListener('change',event=>{
     const t=event.target;
+    if(t.id==='motion')setAnimations(HuckMotion.presets[t.checked?'playful':'off'],t.checked?'playful':'off');
+    if(t.dataset.animation)setAnimations({...prefs.animations,[t.dataset.animation]:t.checked},'custom');
+    if(t.id==='celebrate-hours'){const n=Number(t.value);if(Number.isFinite(n)&&n>=.5&&n<=12){prefs.celebrateHours=n;persist();}else{t.value=prefs.celebrateHours;notice('Choose a celebration threshold from 0.5 to 12 hours.',true);}}
     if(t.id==='child-select'&&editor?.wakeDrafts){captureWakeDraft();editor.wakeChild=t.value;renderWakeFields();}
     if(t.id==='show-wake-info'){prefs.wakeInfo=t.checked;persist();render();updateWakeProfilePreview();}
     updateTimePreview();
   });
-  $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
+  $('#modal').addEventListener('input',event=>{if(event.target.id==='animation-level'){const preset=['off','gentle','playful','custom'][Number(event.target.value)];setAnimations(preset==='custom'?HuckMotion.normalize(prefs.customAnimations||prefs.animations,prefs.motion):HuckMotion.presets[preset],preset);}updateTimePreview();updateWakeProfilePreview();});
   $('#history-wake').addEventListener('change',event=>{prefs.historyWake=event.target.checked;if(!prefs.historyWake)selectedWake=null;persist();render();});
   function reopenAtTop(){
     const reset=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
     reset();requestAnimationFrame(reset);
   }
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();reopenAtTop();}else{clearTimeout(retryTimer);retryTimer=null;}});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();reopenAtTop();}else{clearTimeout(retryTimer);retryTimer=null;clearMotionEffects();}});
   $('#chart-scroll').addEventListener('scroll',()=>{if($('#chart-scroll').scrollLeft<60)loadOlderHistory();},{passive:true});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',()=>sync(true));
   window.addEventListener('resize',()=>requestAnimationFrame(fitElapsed));
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',event=>{if(event.matches){clearMotionEffects();tick();}});
   window.addEventListener('pageshow',e=>{reopenAtTop();if(e.persisted)sync();});
   window.addEventListener('load',reopenAtTop,{once:true});
   const requested=new URL(location.href).searchParams.get('child');if(requested)prefs.child=requested;
