@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    await p.clock.setFixedTime(Date.parse('2026-10-31T01:00:00Z'));await p.goto('http://127.0.0.1:5190/?demo=1');
    await p.locator('[data-settings]').click();await p.locator(`button[data-style="${style}"]`).click();await p.getByText('Advanced settings',{exact:true}).click();
    assert.equal(await p.locator('[data-sandbox-link]').innerText(),'Open real tracker');assert(!(await p.locator('[data-sandbox-link]').getAttribute('href')).includes('demo=1'));await p.locator('[data-save-settings]').click();
-   assert.equal(await p.locator('#today-naps h2').innerText(),'Recent naps');assert.equal(await p.locator('.nap-entry').count(),3);
+   assert.equal(await p.locator('#today-naps h2').innerText(),'Recent entries');assert.equal(await p.locator('.nap-entry').count(),3);
    assert((await p.locator('.nap-times').first().innerText()).startsWith('5:00 PM'));assert((await p.locator('#timer-detail').innerText()).includes('Last nap: 35 minutes long'));assert.equal(await p.locator('.last-time-range').innerText(),'(5:00 PM–5:35 PM)');
    await p.locator('.last-time-range').click();assert(await p.locator('#modal').isVisible());await p.locator('.entry-cancel').click();
    await p.locator('[data-more-naps]').click();assert.equal(await p.locator('.nap-entry').count(),4);assert.equal(await p.locator('[data-more-naps]').getAttribute('aria-expanded'),'true');

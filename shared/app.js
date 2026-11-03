@@ -10,6 +10,10 @@
   }
   let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
   if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
+  const mascots={sleep:[['sleeping','Sleepy face'],['teddy','Teddy'],['cat','Cat'],['koala','Koala']],awake:[['awake','Baby'],['smile','Smile'],['fox','Fox'],['chick','Chick']]};
+  for(const state of ['sleep','awake'])if(!mascots[state].some(([id])=>id===prefs[state+'Mascot']))prefs[state+'Mascot']=mascots[state][0][0];
+  const gapCache=new WeakMap();
+  function wakeIntervals(s=projected()){const list=entries(s);if(!gapCache.has(list))gapCache.set(list,HuckVisuals.wakeIntervals(list));return gapCache.get(list);}
   let busy = false, message = '', lastChecked = 0, editor = null, days = 30, rendered = false, expandedNaps = '';
   let retryAt=0,retryFailures=0,retryTimer=null,pendingRequest=null;
   let clockOffset=0;
@@ -22,7 +26,7 @@
   function temporaryError(error){return Boolean(error?.retryable)||/lock timeout|could not acquire.*lock|unable to acquire.*lock|timed out.*lock|lock.*timed out|another process was holding the lock|service invoked too many times|too many (?:simultaneous|requests)|temporarily unavailable|server error occurred|service timed out|try again later/i.test(String(error?.error||error?.message||error||''));}
   // Older versions mistakenly persisted temporary lock failures as edit conflicts.
   for(const command of queue)if(command.blocked&&(temporaryError(command.blocked)||clockRejection(command,command.blocked)))delete command.blocked;
-  let historyChild=null,selectedSleep=null;
+  let historyChild=null,selectedSleep=null,selectedWake=null;
   let arrival=null,endReceipt=null,receiptTimer=null,receiptHideTimer=null;
   const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
   function formatter(kind,timezone=base.settings.timezone){
@@ -76,13 +80,19 @@
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
     $('#review').hidden=!queue.some(c=>c.blocked);
     const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(Date.now()), start=wallTime(today), end=wallTime(shiftDate(today,1));
+    document.body.dataset.state=running?'sleep':'awake';
+    document.querySelector('meta[name="theme-color"]').content=getComputedStyle(document.body).getPropertyValue('--accent').trim();
     const todaysNaps=list.filter(e=>e.end&&e.start<end&&e.end>start),napKey=c.id+':'+today,showAll=expandedNaps===napKey;
-    $('#today-naps').innerHTML=`<h2>Recent naps</h2>${todaysNaps.length?(showAll?todaysNaps:todaysNaps.slice(0,3)).map(e=>`<button class="nap-entry" data-edit="${esc(e.id)}"><span class="nap-duration"><strong>${duration((e.end||Date.now())-e.start)}</strong>${!e.end?'<small>Sleeping</small>':e.autoEnded?'<small>Auto-ended</small>':''}</span><span class="nap-times">${clock(e.start)}–${e.end?clock(e.end):'now'}</span>${icon('pencil')}</button>`).join(''):'<p class="fine">No naps yet today.</p>'}${todaysNaps.length>3?`<button class="text-link nap-more" data-more-naps aria-expanded="${showAll}">${showAll?'Show fewer':'Show all of today’s naps'} ${icon(showAll?'chevron-up':'chevron-down')}</button>`:''}<button class="text-link nap-add" data-add>${icon('plus')} Add sleep</button>`;
+    const recent=showAll?todaysNaps:todaysNaps.slice(0,3),gaps=wakeIntervals(s);
+    $('#today-naps').innerHTML=`<h2>Recent entries</h2>${recent.length?recent.map((e,i)=>{const gap=recent[i+1]&&gaps.find(g=>g.before===recent[i+1].id&&g.after===e.id);return `<button class="nap-entry" data-edit="${esc(e.id)}"><span class="entry-glyph" aria-hidden="true">${icon(C.isNight(e.start,s.settings)?'moon-star':'cloud-moon')}</span><span class="nap-duration"><small class="nap-kind">${C.isNight(e.start,s.settings)?'Sleep':'Nap'}</small><strong>${duration(e.end-e.start)}</strong>${e.autoEnded?'<small>Auto-ended</small>':''}</span><span class="nap-times">${clock(e.start)}–${clock(e.end)}</span>${icon('pencil')}</button>${gap?`<div class="entry-wake">Wake window <span>${gap.approximate?'~':''}${duration(gap.end-gap.start)}</span></div>`:''}`;}).join(''):'<p class="fine">No entries yet today.</p>'}${todaysNaps.length>3?`<button class="text-link nap-more" data-more-naps aria-expanded="${showAll}">${showAll?'Show fewer':'Show all of today’s entries'} ${icon(showAll?'chevron-up':'chevron-down')}</button>`:''}<button class="text-link nap-add" data-add>${icon('plus')} Add sleep</button>`;
     $('#timer').dataset.asleep=Boolean(running);
     $('#timer-status').textContent=running?'Sleeping':'Awake';
     const lastLabel=last&&C.isNight(last.start,s.settings)?'Last sleep':'Last nap';
     $('#timer-detail').innerHTML=running?`<div class="session-time"><button class="text-link" data-edit="${esc(running.id)}" data-open-start aria-label="Edit start time, ${clock(running.start)}">${clock(running.start)}</button><span class="time-separator">to</span><button id="session-ending" class="text-link manual-time" data-open-end="${esc(running.id)}" aria-label="End time not set. Enter end time">Enter end time</button></div>`:last?`<button class="last-duration text-link" data-edit="${esc(last.id)}" aria-label="Edit ${lastLabel.toLowerCase()}, ${clock(last.start)} to ${clock(last.end)}"><span class="last-entry-label">${lastLabel}:</span> <strong>${last.autoEnded?'~':''}${longDuration(last.end-last.start)} long</strong> <span class="last-time-range">(${clock(last.start)}–${clock(last.end)})</span></button>${last.autoEnded?'<small class="estimate-note">auto-ended</small>':''}`:'No sleep logged yet';
-    $('#timer-art').src=new URL(running?'shared/sleeping.png':'shared/awake.png',root);
+    const mascot=prefs[(running?'sleep':'awake')+'Mascot'];
+    $('#timer-art').src=new URL('shared/'+mascot+'.png',root);
+    $('.timer-mascot').dataset.character=mascot;
+    $('.timer-mascot').setAttribute('aria-label',`${running?'Sleeping':'Awake'} icon: ${mascots[running?'sleep':'awake'].find(([id])=>id===mascot)[1]}. Change icon`);
     $('#timer-art').alt='';
     renderActions(s,running);
     renderEndConfirmation(s);renderChart(s);tick();icons();persist();animateArrival();
@@ -210,8 +220,9 @@
   }
   function renderChart(s){
     const id=child(s).id;
-    if(historyChild!==id){historyChild=id;days=30;selectedSleep=null;rendered=false;}
-    const period=periodDate(Date.now()),key=id+'|'+days+'|'+period+'|'+prefs.style+'|'+(C.active(s,id)?Math.floor(Date.now()/60000):'');
+    if(historyChild!==id){historyChild=id;days=30;selectedSleep=null;selectedWake=null;rendered=false;}
+    $('#history-wake').checked=Boolean(prefs.historyWake);
+    const period=periodDate(Date.now()),key=id+'|'+days+'|'+period+'|'+prefs.style+'|'+Boolean(prefs.historyWake)+'|'+(C.active(s,id)?Math.floor(Date.now()/60000):'');
     if(chartCache?.state===s&&chartCache.key===key)return;chartCache={state:s,key};
     const scroller=$('#chart-scroll'),previous=scroller.scrollLeft,atEnd=!rendered||previous+scroller.clientWidth>=scroller.scrollWidth-8;
     const oldFirst=$('.day-column')?.dataset.date,oldMarker=Boolean($('[data-older]')),history=entries(s),today=period;
@@ -226,21 +237,33 @@
       const p=new Date(date+'T12:00:00Z');
       return `<section class="day-column ${date===today?'is-today':''}" data-date="${date}" ${date===today?'aria-current="date"':''}><header>${date===today?'Today':new Intl.DateTimeFormat('en-US',{weekday:'short',timeZone:'UTC'}).format(p)}<strong>${Number(date.slice(5,7))}/${Number(date.slice(8))}</strong></header><div class="day-track"><div class="night-zone" style="top:${nightOffset*24}px;height:${576-nightOffset*24}px"></div>${list.map(e=>{const a=Math.max(lo,e.start),b=Math.min(hi,e.end||Date.now()),top=(a-lo)/(hi-lo)*576,h=Math.max(e.end?14:18,(b-a)/(hi-lo)*576);return `<button class="sleep-block ${!e.end?'running':''} ${e.autoEnded?'auto-ended':''}" style="top:${top}px;height:${h}px" data-history-entry="${esc(e.id)}" aria-pressed="${selectedSleep===e.id}" title="${clock(e.start)} to ${e.end?clock(e.end):'now'} · ${duration((e.end||Date.now())-e.start)}${e.autoEnded?' · Auto-ended':''}" aria-label="View ${sleepName(e.start,s)}, ${date}, ${clock(e.start)}, ${duration((e.end||Date.now())-e.start)}${!e.end?', in progress':''}"><span>${duration((e.end||Date.now())-e.start)}</span>${!e.end?'<small>Now</small><span class="history-zs" aria-hidden="true"><i>z</i><i>Z</i><i>z</i><i>Z</i></span>':e.autoEnded?'<small>Auto</small>':''}</button>`;}).join('')}</div></section>`;
     }).join('');
+    if(prefs.historyWake){const gaps=wakeIntervals(s);document.querySelectorAll('.day-column').forEach(column=>{
+      const lo=wallTime(column.dataset.date),hi=wallTime(shiftDate(column.dataset.date,1));
+      column.querySelector('.day-track').insertAdjacentHTML('beforeend',gaps.filter(g=>g.start<hi&&g.end>lo).map(g=>{
+        const top=(Math.max(lo,g.start)-lo)/(hi-lo)*576,height=Math.max(2,(Math.min(hi,g.end)-Math.max(lo,g.start))/(hi-lo)*576);
+        return `<button class="wake-block" style="top:${top}px;height:${height}px" data-history-wake="${esc(g.id)}" aria-pressed="${selectedWake===g.id}" aria-label="Recorded wake window, ${duration(g.end-g.start)}, ${clock(g.start)} to ${clock(g.end)}" title="Wake window · ${duration(g.end-g.start)}"><span ${height<14?'class="sr-only"':''}>${g.approximate?'~':''}${duration(g.end-g.start)}</span></button>`;
+      }).join(''));
+    });}
     const dateShift=oldFirst?Math.round((Date.parse(oldFirst+'T12:00:00Z')-Date.parse(dates[0]+'T12:00:00Z'))/86400000):0;
     scroller.scrollLeft=atEnd?scroller.scrollWidth:Math.max(0,previous+(dateShift+Number(hasOlder)-Number(oldMarker))*94);rendered=true;
     $('#chart-date').textContent=`${Number(today.slice(5,7))}/${Number(today.slice(8))} · ${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}–${s.settings.dayStart%12||12}${s.settings.dayStart<12?'am':'pm'}`;
   }
   function renderHistoryDetails(s=projected()){
+    if(selectedWake){
+      const gap=wakeIntervals(s).find(g=>g.id===selectedWake),box=$('#history-details');box.hidden=!gap;
+      if(!gap){selectedWake=null;return;}
+      const markup=`<div class="history-detail-head"><span>Wake window</span><button class="detail-close" data-clear-history aria-label="Close details">${icon('x')}</button></div><div class="history-detail-body"><div><strong>${gap.approximate?'~':''}${longDuration(gap.end-gap.start)}</strong><p>${clock(gap.start)} – ${clock(gap.end)}</p><small>${gap.approximate?'Approximate · auto-ended sleep':'Between recorded sleeps'}</small></div></div>`;
+      if(box._markup!==markup){box._markup=markup;box.innerHTML=markup;icons();}return;
+    }
     const box=$('#history-details'),entry=entries(s).find(e=>e.id===selectedSleep);box.hidden=!entry;
     if(!entry){selectedSleep=null;return;}
-    const startDate=dateKey(entry.start),endDate=dateKey(entry.end||Date.now());
-    const short=date=>`${Number(date.slice(5,7))}/${Number(date.slice(8))}/${date.slice(0,4)}`;
-    const timeRange=(startDate!==endDate?short(startDate)+' ':'')+clock(entry.start)+' – '+(entry.end?(startDate!==endDate?short(endDate)+' ':'')+clock(entry.end):'now');
-    const noun=sleepName(entry.start,s),markup=`<div class="history-detail-head"><span>${short(startDate)} · ${noun==='nap'?'Nap':'Sleep'}</span><button class="detail-close" data-clear-history aria-label="Close sleep details" title="Close details">${icon('x')}</button></div><div class="history-detail-body"><div><strong>${longDuration((entry.end||Date.now())-entry.start)}</strong><p>${timeRange}</p>${!entry.end?'<small class="active-label">In progress</small>':entry.autoEnded?'<small>Auto-ended · approximate</small>':''}</div><button class="text-link" data-edit="${esc(entry.id)}">${icon('pencil')}Edit</button></div>`;
+    const timeRange=clock(entry.start)+' – '+(entry.end?clock(entry.end):'now');
+    const noun=sleepName(entry.start,s),markup=`<div class="history-detail-head"><span>${noun==='nap'?'Nap':'Sleep'}</span><button class="detail-close" data-clear-history aria-label="Close sleep details" title="Close details">${icon('x')}</button></div><div class="history-detail-body"><div><strong>${longDuration((entry.end||recordNow())-entry.start)}</strong><p>${timeRange}</p>${!entry.end?'<small class="active-label">In progress</small>':entry.autoEnded?'<small>Auto-ended · approximate</small>':''}</div><button class="text-link" data-edit="${esc(entry.id)}">${icon('pencil')}Edit</button></div>`;
     if(box._markup!==markup){box._markup=markup;box.innerHTML=markup;icons();}
   }
   function selectHistory(id){
-    selectedSleep=id||null;renderHistoryDetails();
+    selectedWake=null;selectedSleep=id||null;renderHistoryDetails();
+    document.querySelectorAll('[data-history-wake]').forEach(block=>block.setAttribute('aria-pressed','false'));
     document.querySelectorAll('[data-history-entry]').forEach(block=>block.setAttribute('aria-pressed',String(block.dataset.historyEntry===selectedSleep)));
     if(id)$('#history-details').scrollIntoView({block:'nearest',behavior:prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches?'smooth':'instant'});
   }
@@ -335,6 +358,9 @@
       $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
     }
     if(title==='Settings'){
+      $('.swatches').closest('fieldset').insertAdjacentHTML('afterend',`<section class="mascot-settings">${['sleep','awake'].map(state=>`<fieldset><legend>${state==='sleep'?'Sleeping icon':'Awake icon'}</legend><div class="mascot-options">${mascots[state].map(([id,name])=>`<button class="mascot-option" data-mascot-state="${state}" data-mascot="${id}" aria-pressed="${prefs[state+'Mascot']===id}"><img src="${new URL('shared/'+id+'.png',root)}" width="36" height="36" alt=""><span>${name}</span></button>`).join('')}</div></fieldset>`).join('')}</section>`);
+      $('.swatches').insertAdjacentHTML('afterend','<div class="palette-key"><span>Awake</span><span>Sleeping</span></div>');
+      document.querySelectorAll('button[data-theme]').forEach(b=>b.title=b.dataset.theme+' · awake / sleeping');
       editor.wakeChild=$('#child-select').value;editor.wakeDrafts={};
       $('#child-select').closest('label').insertAdjacentHTML('afterend',`<section class="wake-settings"><details><summary>Wake-window settings</summary><label class="toggle">Show wake-window info<input id="show-wake-info" type="checkbox" ${prefs.wakeInfo?'checked':''}></label><div id="wake-fields"></div></details></section>`);
       renderWakeFields();
@@ -449,6 +475,8 @@
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261030-pacifier',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
     const t=event.target.closest('button,a');if(!t)return;
+    if(t.matches('[data-cycle-mascot]')){const state=C.active(projected(),child().id)?'sleep':'awake',options=mascots[state],i=options.findIndex(([id])=>id===prefs[state+'Mascot']);prefs[state+'Mascot']=options[(i+1)%options.length][0];persist();render();}
+    if(t.matches('[data-mascot]')){prefs[t.dataset.mascotState+'Mascot']=t.dataset.mascot;persist();render();document.querySelectorAll('[data-mascot]').forEach(b=>b.setAttribute('aria-pressed',String(prefs[b.dataset.mascotState+'Mascot']===b.dataset.mascot)));}
     if(t.matches('[data-toggle-start]'))setStartExpanded($('#start-fields').hidden);
     if(t.matches('[data-adjust-ended]')){const id=endReceipt?.id,starting=endReceipt?.kind==='start';dismissEndConfirmation(false);if(id){openEntry(id);if(starting)setStartExpanded(true);}}
     if(t.matches('[data-resume-ended]')){if(endReceipt?.kind==='start')confirmCancelStarted();else confirmResumeEnded();}
@@ -481,6 +509,7 @@
     if(t.matches('[data-sync]')){sync(true);notice(HUCK_CONFIG.backendUrl?'Checking connection…':'Backend not connected yet.');}
     if(t.matches('[data-older]'))loadOlderHistory();
     if(t.matches('[data-history-entry]'))selectHistory(t.dataset.historyEntry);
+    if(t.matches('[data-history-wake]')){selectHistory(null);selectedWake=t.dataset.historyWake;renderHistoryDetails();document.querySelectorAll('[data-history-wake]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.historyWake===selectedWake)));$('#history-details').scrollIntoView({block:'nearest',behavior:'instant'});}
     if(t.matches('[data-clear-history]'))selectHistory(null);
     if(t.matches('[data-today]')){$('#chart-scroll').scrollLeft=$('#chart-scroll').scrollWidth;}
     if(t.matches('[data-review]'))reviewSyncIssue();
@@ -509,6 +538,7 @@
     updateTimePreview();
   });
   $('#modal').addEventListener('input',()=>{updateTimePreview();updateWakeProfilePreview();});
+  $('#history-wake').addEventListener('change',event=>{prefs.historyWake=event.target.checked;if(!prefs.historyWake)selectedWake=null;persist();render();});
   function reopenAtTop(){
     const reset=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
     reset();requestAnimationFrame(reset);

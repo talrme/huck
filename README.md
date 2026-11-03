@@ -22,9 +22,9 @@ Opening, reloading, navigating back to, or returning to the app starts at the to
 - **End Nap / End Sleep** ends that same session immediately. A dismissible **Nap ended at [time] · Adjust time** confirmation (Sleep at night) appears for about8 seconds. Adjust opens the end-focused editor and cancels the confirmation timeout; X or letting it fade away never changes the saved sleep. A subtle **Still napping? / Still sleeping?** link asks for confirmation before removing the end time and resuming the same timer. The session name does not change just because it crosses morning or evening.
 - The awake screen has just **Start nap now** and **Enter nap manually**. Both the starting and ending sliders were removed. Use the manual editor for a backdated start, or Adjust after ending.
 - During sleep, the linked time row reads **9:06 PM to Enter end time**. Tap the start time to edit it or Enter end time to open the end fields. Both links sit inside the timer's accent area.
-- **Enter nap manually (Enter sleep manually at night)**, beside Start now, opens the same Add/Edit nap modal with **Still napping** selected and a start time five minutes ago. Choose **Nap ended** to enter both times instead. **Add sleep**, below Recent naps, opens that modal with a completed entry selected by default.
+- **Enter nap manually (Enter sleep manually at night)**, beside Start now, opens the same Add/Edit nap modal with **Still napping** selected and a start time five minutes ago. Choose **Nap ended** to enter both times instead. **Add sleep**, below Recent entries, opens that modal with a completed entry selected by default.
 - While awake, the clickable detail shows **Last nap: 26 minutes long (start–end)**, with smaller muted clock times. Tap the duration or time range to edit that same entry.
-- **Recent naps** shows today's latest three completed entries, newest first. Expand to see all of today's entries. Active sleep stays in the timer and chart, not this list.
+- **Recent entries** shows today's latest three completed entries, newest first. Expand to see all of today's entries. Active sleep stays in the timer and chart, not this list.
 - Tap a recent entry to edit. Tapping a history chart block selects it and shows its time range and duration below the chart, with a separate **Edit** link. Active sleep has a contrasting fill and an In progress label. **Still napping / Still sleeping** in the editor clears an accidental end time and resumes the same record, provided it does not overlap another sleep.
 - Time edits require **Save**. **Cancel**, tapping outside, X, and Escape discard the draft, including a suggested end time. Opening Enter end time and closing it never ends the sleep. Existing entries also have **Delete**, with confirmation. Unchanged existing entries are not rewritten.
 - Validation and sync messages raised while a modal is open appear inside its footer, above the buttons, not blurred behind the backdrop. Overlap errors identify the other sleep's date/times. Overlapping sleeps are still rejected: remove an accidental entry with its editor's Delete button, then reopen the original sleep and choose Still napping/sleeping. Only one sleep can run per child; rejected edits never merge or delete logs automatically.
@@ -47,7 +47,7 @@ Manual starts default to five minutes ago. Adding past sleep defaults to an avai
 
 The timer uses saved timestamps, not a background stopwatch. Closing the app does not stop it. Both sleeping and reliably recorded awake time show large hours/minutes with smaller ticking seconds on the same baseline. Estimated awake time keeps its ~minutes display without seconds; missing/stale wake times show a dash. Seconds update locally without network requests or per-second screen-reader announcements.
 
-History columns are chronological, newest on the right and initially in view. The time axis stays fixed while dates scroll horizontally. By default each column covers **7 AM to the next 7 AM**, with nighttime shading from **8 PM**. Today is emphasized; older columns are quieter. Sleeps crossing a boundary are split visually but remain one editable record. Recent naps uses the full duration for each record intersecting the current period.
+History columns are chronological, newest on the right and initially in view. The time axis stays fixed while dates scroll horizontally. By default each column covers **7 AM to the next 7 AM**, with nighttime shading from **8 PM**. Today is emphasized; older columns are quieter. Sleeps crossing a boundary are split visually but remain one editable record. Recent entries uses the full duration for each record intersecting the current period.
 
 History starts with up to 30 days and automatically adds earlier columns as you scroll to the left edge, stopping at the first recorded day. A Show older days control also lives in the first column when more history is available. This only draws more of the already-loaded data; it does not request more Sheet data. Empty history shows a blank seven-day view. The selected block is outlined, and details below the chart can be dismissed with X.
 
@@ -60,13 +60,17 @@ Durations are actual elapsed time. On daylight-saving transition days, the actua
 | Children and sleep entries | Selected child |
 | Each child's birthday and edited age ranges | Show wake-window info |
 | Day/night schedule and forgotten-timer rules | Style, color theme, animations |
-| Archive/restore state | Temporary Recent naps expansion |
+| Archive/restore state | Temporary Recent entries expansion |
 
 Styles are **Daybook, Orbit, Compact**. Colors are **Original** (periwinkle), **Night, Berry, Mint**. Style/color choices apply immediately; other form fields use Save. The wake visibility toggle also applies immediately.
 
+Each color theme is now a pair: Awake and Sleeping. Diagonally split swatches preview both colors. The page accents, background tint and action buttons switch automatically with the current state; Night stays dark in both states. **Sleeping icon** and **Awake icon** each have four choices in Settings, applied immediately and saved on this device. You can also tap the main mascot to cycle the current state's choices. Sleeping characters have floating Zs; awake characters bounce, peek or hop. Animation preferences still apply.
+
+**Recent entries** uses compact editable tiles, keeping the latest three completed sleeps for the current day and an expand option. Muted **Wake window** separators show the interval between adjacent recorded sleeps. The active sleep stays in the main timer/history, and no current ongoing wake interval is added to the tiles. In Sleep history, **Show wake durations** adds dashed, awake-colored intervals alongside the existing sleep blocks; tap a visible interval for its duration and clock times. This toggle is saved locally and off initially. These gaps describe the logs, not proof the child was awake throughout an unlogged stretch; gaps after auto-ended records are approximate. Sleep and wake details show clock times only, including overnight entries.
+
 The pacifier icon is used for browser tabs and phone installation. **Save / Share** includes iPhone/Android installation instructions and a share link for the selected child. Installed apps use the same website/backend, not a separate native database.
 
-State artwork indicates sleeping/awake, not nighttime/daytime. Sleeping has floating Zs; awake has a playful baby face and sparkles. Completed naps make a curved flight into Recent naps with a landing bounce. Both the app's animation toggle and OS reduced-motion preference are respected.
+State artwork indicates sleeping/awake, not nighttime/daytime. Sleeping has floating Zs; awake has a playful baby face and sparkles. Completed naps make a curved flight into Recent entries with a landing bounce. Both the app's animation toggle and OS reduced-motion preference are respected.
 
 The in-progress sleep block in history has bold drifting Zs at its edges and a gently pulsing inset border. Duration and Now remain readable and tappable; finished sleeps do not animate. Turning off animations or enabling reduced motion stops both effects.
 
@@ -225,4 +229,4 @@ Except the main browser test, start the local server on port 5190 first. Run a t
 
 App/favicon/home-screen icon: [Lucide Lab baby pacifier](https://github.com/lucide-icons/lucide-lab/blob/main/icons/baby-pacifier.svg), with its license in `shared/LUCIDE-LAB-LICENSE`. `node tools/icons.cjs` regenerates the PNG sizes using sharp.
 
-State images: sleeping face `1f634` and baby face `1f476`, Twitter [Twemoji v14.0.2](https://github.com/twitter/twemoji), CC BY 4.0. They are bundled tiny PNGs animated with CSS, not GIFs or remote runtime downloads. Legacy moon/sun assets are unused. UI icons use bundled Lucide; license in `shared/LUCIDE-LICENSE`.
+State images: sleeping face `1f634`, baby `1f476`, teddy `1f9f8`, cat `1f431`, koala `1f428`, smile `1f604`, fox `1f98a`, and chick `1f425`, Twitter [Twemoji v14.0.2](https://github.com/twitter/twemoji), CC BY 4.0. They are bundled tiny PNGs animated with CSS, not GIFs or remote runtime downloads. Legacy moon/sun assets are unused. UI icons use bundled Lucide; license in `shared/LUCIDE-LICENSE`.

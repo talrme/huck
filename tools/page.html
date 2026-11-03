@@ -10,8 +10,8 @@
   <link rel="icon" href="shared/favicon.png?v=20261030-pacifier" type="image/png">
   <link rel="apple-touch-icon" href="shared/apple-touch-icon.png?v=20261030-pacifier">
   <link rel="manifest" href="manifest.webmanifest?v=20261030-main">
-  <link rel="stylesheet" href="shared/styles.css?v=20261101-visible-history-zs">
-  <link rel="stylesheet" href="shared/themes.css?v=20261101-quiet-awake">
+  <link rel="stylesheet" href="shared/styles.css?v=20261102-visuals">
+  <link rel="stylesheet" href="shared/themes.css?v=20261102-paired-colors">
 </head>
 <body data-style="daybook">
   <main>
@@ -24,7 +24,7 @@
       <div class="timer" id="timer">
         <div class="readout">
           <div class="timer-heading"><span class="status-dot"></span><span id="timer-status">Awake</span></div>
-          <span class="timer-mascot" aria-hidden="true"><img id="timer-art" class="timer-art" src="shared/awake.png" alt=""><span class="sleep-zs"><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span></span><span class="awake-sparks"><i data-lucide="sparkles"></i></span></span>
+          <button class="timer-mascot" data-cycle-mascot aria-label="Change awake icon" title="Change icon"><img id="timer-art" class="timer-art" src="shared/awake.png" alt=""><span class="sleep-zs" aria-hidden="true"><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span></span><span class="awake-sparks" aria-hidden="true"><i data-lucide="sparkles"></i></span></button>
           <div id="elapsed" class="elapsed">—</div>
           <div id="timer-detail" class="timer-detail"></div>
         </div>
@@ -35,11 +35,12 @@
         <div class="end-confirmation-body"><button class="receipt-adjust" data-adjust-ended><span id="end-confirmation-text"><span id="end-confirmation-label">Nap ended at</span> <span id="end-confirmation-time" class="receipt-link"></span></span><span class="receipt-link">Adjust time</span></button><button class="receipt-close" data-dismiss-ended aria-label="Dismiss end confirmation" title="Dismiss"><i data-lucide="x"></i></button><button class="receipt-resume" data-resume-ended>Still napping?</button></div>
         <div class="end-confirmation-progress" aria-hidden="true"></div>
       </section>
-      <section id="today-naps" class="today-naps" aria-label="Today’s naps"></section>
+      <section id="today-naps" class="today-naps" aria-label="Recent entries"></section>
     </section>
     <section class="history" aria-label="Sleep history">
       <header class="history-heading"><div><h2>Sleep history</h2><small id="chart-date"></small></div><button class="text-link" data-today>Today <i data-lucide="arrow-right"></i></button></header>
       <div class="chart-shell"><div class="time-axis" id="time-axis" aria-hidden="true"></div><div class="chart-scroll" id="chart-scroll" tabindex="0" aria-label="Sleep timeline; scroll for older days"><div class="chart-days" id="chart-days"></div></div></div>
+      <label class="history-wake-toggle toggle"><span>Show wake durations</span><input type="checkbox" id="history-wake"></label>
       <section id="history-details" class="history-details" aria-label="Selected sleep details" hidden></section>
     </section>
     <footer class="footer"><button data-settings><i data-lucide="settings"></i>Settings</button><button data-share><i data-lucide="share-2"></i>Save / Share</button></footer>
@@ -55,7 +56,8 @@
   <script src="shared/lucide.min.js"></script>
   <script src="shared/core.js"></script>
   <script src="shared/wake.js?v=20261101-quiet-awake"></script>
+  <script src="shared/visuals.js?v=20261102"></script>
   <script src="shared/time-picker.js?v=20261030-scroll-picker"></script>
-  <script src="shared/app.js?v=20261101-clock-retry"></script>
+  <script src="shared/app.js?v=20261102-visuals"></script>
 </body>
 </html>

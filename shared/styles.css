@@ -12,6 +12,17 @@ body[data-style=daybook] .elapsed.has-seconds,body[data-style=compact] .elapsed.
 .sync-activity svg{width:12px;height:12px;color:var(--accent);animation:sync-spin 1.2s linear infinite}
 .timer-mascot{display:inline-block;position:relative;flex:none;width:46px;height:46px;margin:12px 0 0}
 .timer-mascot .timer-art{display:block;width:100%;height:100%;margin:0;transform-origin:center 70%}
+.timer-mascot{min-height:0;padding:0;border:0;background:transparent;overflow:visible;isolation:isolate}
+.timer-mascot:hover{background:transparent}.timer-mascot:active{transform:scale(.94)}
+.mascot-settings{display:grid;gap:16px}.mascot-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.mascot-option{display:flex;flex-direction:column;padding:9px 2px;gap:6px;font-size:10px;font-weight:500;background:var(--bg);min-width:0}
+.mascot-option img{object-fit:contain}.mascot-option[aria-pressed=true]{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.timer[data-asleep=true] .timer-mascot[data-character=teddy] .timer-art,.timer[data-asleep=true] .timer-mascot[data-character=koala] .timer-art{animation:mascot-rock 3.2s ease-in-out infinite}
+.timer[data-asleep=false] .timer-mascot[data-character=fox] .timer-art{animation:mascot-peek 2.6s ease-in-out infinite}
+.timer[data-asleep=false] .timer-mascot[data-character=chick] .timer-art{animation:mascot-hop 2s ease-in-out infinite}
+@keyframes mascot-rock{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg) translateY(-3px)}}
+@keyframes mascot-peek{0%,100%{transform:rotate(-8deg)}45%{transform:rotate(10deg) scale(1.08)}65%{transform:rotate(0)}}
+@keyframes mascot-hop{0%,45%,100%{transform:translateY(0) scale(1)}60%{transform:translateY(-9px) scale(.97,1.06)}75%{transform:translateY(0) scale(1.06,.95)}}
 .timer[data-asleep=true] .timer-art{animation:sleep-breathe 2.8s ease-in-out infinite}
 .timer[data-asleep=false] .timer-art{animation:awake-play 2.6s ease-in-out infinite}
 .sleep-zs{position:absolute;inset:0;pointer-events:none;color:var(--accent);font-weight:800;line-height:1}
@@ -95,12 +106,25 @@ body[data-theme=night] .wake-window[data-phase=range]{--wake-color:#eac680}
 body[data-theme=night] .wake-window[data-phase=past]{--wake-color:#e8a9b7}
 .today-naps{margin-top:36px;padding-top:24px;border-top:1px solid var(--line)}
 .today-naps h2{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:10px}
-.nap-entry{width:100%;border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent;padding:11px 0;justify-content:flex-start;text-align:left;gap:10px}
+.nap-entry{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:12px;justify-content:flex-start;text-align:left;gap:10px;min-width:0}
+.entry-glyph{width:30px;height:34px;flex:none;display:grid;place-items:center;color:var(--sleep-accent);background:var(--sleep-soft);border-radius:6px}
+.entry-glyph svg{width:17px;height:17px}
+.nap-kind{color:var(--muted);font-size:10px;line-height:1}
+.entry-wake{display:flex;align-items:center;justify-content:center;gap:5px;font-size:10px;color:var(--muted);padding:7px 0;font-weight:450}
+.entry-wake:before,.entry-wake:after{content:'';width:18px;height:1px;background:var(--line)}
+.entry-wake span{font-variant-numeric:tabular-nums;font-weight:600}
+.nap-entry+.nap-entry{margin-top:8px}
 .nap-duration{display:grid;gap:2px;flex:0 0 auto}
 .nap-duration strong{font-size:18px;font-weight:750;color:var(--ink);font-variant-numeric:tabular-nums}
 .nap-duration small{font-size:10px;font-weight:500}
 .nap-times{margin-left:auto;font-size:11px;color:var(--muted);font-weight:450;font-variant-numeric:tabular-nums}
 .nap-entry>svg{width:13px;height:13px;color:var(--muted);opacity:.7}
+.history-wake-toggle{justify-content:flex-end;gap:10px;padding:12px 0;font-size:11px;color:var(--muted);font-weight:450}
+.history-wake-toggle input{transform:scale(.85);transform-origin:right center}
+.wake-block{position:absolute;left:8px;right:8px;width:calc(100% - 16px);min-height:0;padding:0 2px;border:1px dashed color-mix(in srgb,var(--awake-accent) 55%,transparent);border-radius:3px;background:color-mix(in srgb,var(--awake-soft) 60%,transparent);color:var(--awake-accent);font-size:9px;font-weight:600;line-height:1;overflow:hidden}
+.wake-block:hover,.wake-block[aria-pressed=true]{background:var(--awake-soft);outline:1px solid var(--awake-accent);outline-offset:-1px}
+.sleep-block{z-index:1}.wake-block{z-index:0}
+body[data-theme=night] .entry-glyph{color:var(--sleep-accent)}
 .day-column.is-today{border-left:1px solid var(--accent);border-right:1px solid var(--accent)}
 .day-column.is-today>header{background:var(--soft);box-shadow:inset 0 3px 0 var(--accent);color:var(--accent);font-size:12px;font-weight:750}
 .day-column.is-today>header strong{font-size:12px;font-weight:800}

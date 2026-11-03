@@ -16,7 +16,7 @@ async function chooseAgo(p,n){await p.locator('[data-custom-start]').click();awa
    assert.equal(await p.locator('#summary').count(),0);assert.equal(await p.locator('#last-entry').count(),0);
    assert.equal(await p.locator('.day-column.is-today').count(),1);assert.equal(await p.locator('.day-column[aria-current="date"]').count(),1);
    assert.equal(await p.locator('.day-column.is-today header').innerText(),'Today\n10/30');
-   assert.equal(await p.locator('#today-naps h2').innerText(),'Recent naps');assert.equal(await p.locator('.nap-entry').count(),1);
+   assert.equal(await p.locator('#today-naps h2').innerText(),'Recent entries');assert.equal(await p.locator('.nap-entry').count(),1);
    assert(await p.locator('#today-naps').evaluate(el=>{const s=getComputedStyle(el);return s.marginTop==='36px'&&parseFloat(s.borderTopWidth)>0;}));
    if(style==='daybook')assert(await p.evaluate(()=>{const a=getComputedStyle(document.querySelector('#today-naps')),b=getComputedStyle(document.querySelector('.history-heading'));return a.borderTopColor===b.borderTopColor&&a.borderTopWidth===b.borderTopWidth&&a.paddingTop===b.paddingTop;}));
    assert.equal(await p.locator('.nap-duration strong').innerText(),'45m');assert((await p.locator('.nap-times').innerText()).includes('8:20 AM'));
