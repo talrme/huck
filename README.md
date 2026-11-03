@@ -68,6 +68,8 @@ Each color theme is now a pair: Awake and Sleeping. Diagonally split swatches pr
 
 **Recent entries** uses compact editable tiles, keeping the latest three completed sleeps for the current day and an expand option. Muted **Wake window** separators show the interval between adjacent recorded sleeps. The active sleep stays in the main timer/history, and no current ongoing wake interval is added to the tiles. In Sleep history, **Show wake durations** adds dashed, awake-colored intervals alongside the existing sleep blocks; tap a visible interval for its duration and clock times. This toggle is saved locally and off initially. These gaps describe the logs, not proof the child was awake throughout an unlogged stretch; gaps after auto-ended records are approximate. Sleep and wake details show clock times only, including overnight entries.
 
+Recent tiles are single44px rows: duration left, clock times right, with no icons or Nap/Sleep labels. Small wake-duration chips overlap the neighboring tile edges. **All today's entries / Show fewer** and the labeled-on-hover **+** add-entry icon share one footer row.
+
 The pacifier icon is used for browser tabs and phone installation. **Save / Share** includes iPhone/Android installation instructions and a share link for the selected child. Installed apps use the same website/backend, not a separate native database.
 
 State artwork indicates sleeping/awake, not nighttime/daytime. Sleeping has floating Zs; awake has a playful baby face and sparkles. Completed naps make a curved flight into Recent entries with a landing bounce. Both the app's animation toggle and OS reduced-motion preference are respected.
