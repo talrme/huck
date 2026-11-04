@@ -9,7 +9,7 @@
     localStorage.setItem('huck-local-backup-v1', JSON.stringify(saved.base));
   }
   let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
-  prefs.language=prefs.language==='es'?'es':'en';HuckI18n.setLanguage(prefs.language);
+  prefs.language=['en','es','he'].includes(prefs.language)?prefs.language:'en';HuckI18n.setLanguage(prefs.language);
   prefs.animations=HuckMotion.normalize(prefs.animations,prefs.motion);
   if(!['off','gentle','playful','custom'].includes(prefs.animationPreset))prefs.animationPreset=prefs.motion?'playful':'off';
   if(!Number.isFinite(prefs.celebrateHours)||prefs.celebrateHours<.5||prefs.celebrateHours>12)prefs.celebrateHours=3;
@@ -405,7 +405,7 @@
       $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
     }
     if(title==='Settings'){
-      $('#modal-body').insertAdjacentHTML('afterbegin',`<label>Language<select id="language"><option value="en" ${prefs.language==='en'?'selected':''} data-no-translate>English</option><option value="es" ${prefs.language==='es'?'selected':''} data-no-translate>Español</option></select></label>`);
+      $('#modal-body').insertAdjacentHTML('afterbegin',`<fieldset class="language-settings"><legend data-no-translate>Language</legend><div id="language" class="language-options" role="group" aria-label="Language" data-no-translate style="--language-index:${['en','es','he'].indexOf(prefs.language)}"><span class="language-thumb" aria-hidden="true"></span>${[['en','English'],['es','Español'],['he','עברית']].map(([id,name])=>`<button type="button" data-language="${id}" lang="${id}" dir="${id==='he'?'rtl':'ltr'}" aria-pressed="${prefs.language===id}">${name}</button>`).join('')}</div></fieldset>`);
       $('#motion').closest('label').outerHTML=animationSettings();
       $('.swatches').closest('fieldset').insertAdjacentHTML('afterend',`<section class="mascot-settings">${['sleep','awake'].map(state=>`<fieldset><legend>${state==='sleep'?'Sleeping icon':'Awake icon'}</legend><div class="mascot-options">${mascots[state].map(([id,name])=>`<button class="mascot-option" data-mascot-state="${state}" data-mascot="${id}" aria-pressed="${prefs[state+'Mascot']===id}"><img src="${new URL('shared/'+id+'.png',root)}" width="36" height="36" alt=""><span>${name}</span></button>`).join('')}</div></fieldset>`).join('')}</section>`);
       $('.swatches').insertAdjacentHTML('afterend','<div class="palette-key"><span>Awake</span><span>Sleeping</span></div>');
@@ -534,6 +534,7 @@
   function share(){const url=new URL(location.href);url.search='';url.searchParams.set('child',prefs.child);modal('Save / Share',`<div class="install-heading"><img src="${new URL('shared/app-icon.png?v=20261103-koala',root)}" width="50" height="50" alt=""><div><h3>Save Huck to your phone</h3><small>${esc(child().name)}’s sleep, one tap away.</small></div></div><h4>iPhone</h4><p>Open in Safari. Tap Share, then Add to Home Screen.</p><h4>Android</h4><p>Open in Chrome. Tap ⋮, then Add to Home screen or Install app.</p><hr><label>Share ${esc(child().name)}’s tracker<input id="share-url" readonly value="${esc(url.href)}"></label>`,'<button class="primary" data-copy>Copy link</button>');}
   document.addEventListener('click',event=>{
     const t=event.target.closest('button,a');if(!t)return;
+    if(t.matches('[data-language]')){prefs.language=t.dataset.language;persist();HuckI18n.setLanguage(prefs.language);$('#language').style.setProperty('--language-index',['en','es','he'].indexOf(prefs.language));document.querySelectorAll('[data-language]').forEach(button=>button.setAttribute('aria-pressed',String(button===t)));}
     if(t.matches('[data-cycle-mascot]')){const state=C.active(projected(),child().id)?'sleep':'awake',options=mascots[state],i=options.findIndex(([id])=>id===prefs[state+'Mascot']);prefs[state+'Mascot']=options[(i+1)%options.length][0];persist();render();if(motionOn('iconPop'))HuckMotion.pop($('#timer-art'));}
     if(t.matches('[data-mascot]')){prefs[t.dataset.mascotState+'Mascot']=t.dataset.mascot;persist();render();document.querySelectorAll('[data-mascot]').forEach(b=>b.setAttribute('aria-pressed',String(prefs[b.dataset.mascotState+'Mascot']===b.dataset.mascot)));if(motionOn('iconPop'))HuckMotion.pop(t.querySelector('img'));}
     if(t.matches('[data-toggle-start]'))setStartExpanded($('#start-fields').hidden);
@@ -593,7 +594,6 @@
   $('#modal').addEventListener('cancel',event=>{event.preventDefault();close();});
   $('#modal').addEventListener('change',event=>{
     const t=event.target;
-    if(t.id==='language'){prefs.language=t.value==='es'?'es':'en';persist();HuckI18n.setLanguage(prefs.language);}
     if(t.id==='motion')setAnimations(HuckMotion.presets[t.checked?'playful':'off'],t.checked?'playful':'off');
     if(t.dataset.animation)setAnimations({...prefs.animations,[t.dataset.animation]:t.checked},'custom');
     if(t.id==='celebrate-hours'){const n=Number(t.value);if(Number.isFinite(n)&&n>=.5&&n<=12){prefs.celebrateHours=n;persist();}else{t.value=prefs.celebrateHours;notice('Choose a celebration threshold from 0.5 to 12 hours.',true);}}

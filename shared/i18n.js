@@ -35,6 +35,7 @@
     [/^(\d+) hours?((?: \d+ minutes?)?)( long)?$/,(_,h,m,long)=>`${h} ${h==='1'?'hora':'horas'}${m?translate(m):''}${long?' de duración':''}`],
     [/^(\d+) minutes?( long)?$/,(_,m,long)=>`${m} ${m==='1'?'minuto':'minutos'}${long?' de duración':''}`],
     [/^(\d+) (weeks|months)$/,(_,n,u)=>`${n} ${u==='weeks'?'semanas':'meses'}`],
+    [/^(\d+ (?:weeks|months))( · .+)$/,(_,age,rest)=>translate(age)+rest],
     [/^(.*) so far$/,(_,n)=>`${n} hasta ahora`], [/^(.*) of sleep!$/,(_,n)=>`¡${n} de sueño!`],
     [/^(.*) (nap|sleep)$/,(_,n,u)=>`${n} de ${u==='nap'?'siesta':'sueño'}`],
     [/^Synced (.+)$/,(_,t)=>`Sincronizado ${t}`],
@@ -57,15 +58,16 @@
     [/^(.+) · Auto-ended$/,(_,s)=>`${translate(s)} · Finalizado automáticamente`]
   ];
   let language='en';
-  function translate(text){const original=String(text),s=original.trim();let result=es[s];if(result===undefined)for(const [pattern,replace] of rules)if(pattern.test(s)){result=s.replace(pattern,replace);break;}return result===undefined?original:original.replace(s,result);}
+  const dictionaries={es,he:HuckHebrew.messages},languageRules={es:rules,he:HuckHebrew.rules(translate)};
+  function translate(text){const original=String(text),s=original.trim(),locale=language==='he'?'he':'es';let result=dictionaries[locale][s];if(result===undefined)for(const [pattern,replace] of languageRules[locale])if(pattern.test(s)){result=s.replace(pattern,replace);break;}return result===undefined?original:original.replace(s,result);}
   const texts=new WeakMap(),attributes=new WeakMap();
   const ignored=el=>el?.closest('script,style,textarea,[data-no-translate],#child-select option,.child-row>span');
-  function textNode(node){if(ignored(node.parentElement)||!node.data.trim())return;const prior=texts.get(node),source=prior&&node.data===prior.output?prior.source:node.data,output=language==='es'?translate(source):source;texts.set(node,{source,output});if(node.data!==output)node.data=output;}
+  function textNode(node){if(ignored(node.parentElement)||!node.data.trim())return;const prior=texts.get(node),source=prior&&node.data===prior.output?prior.source:node.data,output=language!=='en'?translate(source):source;texts.set(node,{source,output});if(node.data!==output)node.data=output;}
   const names=['aria-label','aria-valuetext','title','placeholder','alt'];
-  function attrs(el){if(!el.getAttribute||ignored(el))return;let cache=attributes.get(el);if(!cache){cache={};attributes.set(el,cache);}for(const name of names){const value=el.getAttribute(name);if(value===null)continue;const prior=cache[name],source=prior&&value===prior.output?prior.source:value,output=language==='es'?translate(source):source;cache[name]={source,output};if(value!==output)el.setAttribute(name,output);}}
+  function attrs(el){if(!el.getAttribute||ignored(el))return;let cache=attributes.get(el);if(!cache){cache={};attributes.set(el,cache);}for(const name of names){const value=el.getAttribute(name);if(value===null)continue;const prior=cache[name],source=prior&&value===prior.output?prior.source:value,output=language!=='en'?translate(source):source;cache[name]={source,output};if(value!==output)el.setAttribute(name,output);}}
   function apply(root){if(root.nodeType===3){textNode(root);return;}if(root.nodeType!==1)return;if(ignored(root))return;attrs(root);for(const node of root.childNodes)apply(node);}
   // Observe changed subtrees, not the whole chart on every one-second timer tick.
   const observer=new MutationObserver(records=>{const roots=new Set();for(const r of records){if(r.type==='childList')r.addedNodes.forEach(n=>roots.add(n));else roots.add(r.target);}roots.forEach(apply);});
   observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:names});
-  window.HuckI18n={t:text=>language==='es'?translate(text):String(text),setLanguage(value){language=value==='es'?'es':'en';document.documentElement.lang=language;apply(document.body);},translate,untranslated(root=document.body){const out=new Set();function visit(n){if(n.nodeType===3&&!ignored(n.parentElement)){const s=texts.get(n)?.source.trim();if(s&&/[a-z]/i.test(s)&&translate(s)===s)out.add(s);}else if(n.nodeType===1&&!ignored(n))n.childNodes.forEach(visit);}visit(root);return [...out];}};
+  window.HuckI18n={t:text=>language!=='en'?translate(text):String(text),setLanguage(value){language=['en','es','he'].includes(value)?value:'en';document.documentElement.lang=language;document.documentElement.dir=language==='he'?'rtl':'ltr';apply(document.body);},translate,missingTranslations:locale=>Object.keys(es).filter(key=>!Object.hasOwn(dictionaries[locale]||{},key)),untranslated(root=document.body){const out=new Set();function visit(n){if(n.nodeType===3&&!ignored(n.parentElement)){const s=texts.get(n)?.source.trim();if(s&&/[a-z]/i.test(s)&&translate(s)===s)out.add(s);}else if(n.nodeType===1&&!ignored(n))n.childNodes.forEach(visit);}visit(root);return [...out];}};
 })();

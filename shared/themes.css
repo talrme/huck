@@ -62,3 +62,23 @@ body[data-state=sleep]{--accent:var(--sleep-accent);--soft:var(--sleep-soft);--b
 .style-option[aria-pressed=true]{border-color:var(--accent);color:var(--ink);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}
 body[data-theme=original] input,body[data-theme=original] select{color-scheme:light}
 @media(max-width:350px){body[data-style=compact] .timer{gap:8px;padding:12px 8px}body[data-style=compact] .elapsed{font-size:30px}body[data-style=compact] .timer-detail{font-size:11px}body[data-style=daybook] .timer-mascot{width:44px;height:44px}body[data-style=daybook] .elapsed{font-size:46px}}
+.language-settings{direction:ltr;text-align:left}
+.language-options{position:relative;isolation:isolate;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg);direction:ltr}
+.language-thumb{position:absolute;inset:3px auto 3px 3px;width:calc((100% - 6px)/3);border-radius:5px;background:var(--soft);box-shadow:0 1px 4px #0001;transform:translateX(calc(var(--language-index)*100%));transition:transform .25s cubic-bezier(.22,.8,.3,1);z-index:-1;pointer-events:none}
+.language-options button{border:0;background:transparent;min-width:0;padding:10px 4px;color:var(--muted);font-size:13px;font-weight:500}
+.language-options button[aria-pressed=true]{color:var(--ink);font-weight:750}
+html[dir=rtl] .topbar,html[dir=rtl] .chart-shell,html[dir=rtl] .wheel-picker,html[dir=rtl] .elapsed,html[dir=rtl] .nap-times,html[dir=rtl] #start-summary-value,html[dir=rtl] .end-state,html[dir=rtl] .animation-level-labels,html[dir=rtl] input[type=range],html[dir=rtl] input[type=checkbox],html[dir=rtl] input[type=date],html[dir=rtl] #share-url,html[dir=rtl] .entry-footer-actions{direction:ltr}
+html[dir=rtl] .nap-times,html[dir=rtl] #start-summary-value,html[dir=rtl] .last-time-range{unicode-bidi:isolate;direction:ltr}
+html[dir=rtl] #end-confirmation-time,html[dir=rtl] #chart-date{unicode-bidi:isolate;direction:ltr}
+html[dir=rtl] .nap-duration strong,html[dir=rtl] .wake-chip b{unicode-bidi:isolate;direction:ltr}
+html[dir=rtl] body[data-style=daybook] .readout{border-left:0;border-right:4px solid var(--accent);text-align:right}
+html[dir=rtl] body[data-style=daybook] .timer-mascot{right:auto;left:8px}
+html[dir=rtl] body[data-style=daybook] .elapsed.has-seconds{justify-content:flex-end}
+html[dir=rtl] body[data-style=compact] .timer{text-align:right;border-left:0;border-right:3px solid var(--accent)}
+html[dir=rtl] body[data-style=compact] .elapsed.has-seconds{justify-content:flex-end}
+html[dir=rtl] .start-now{margin-left:0;margin-right:auto}
+html[dir=rtl] .session-time{direction:ltr;unicode-bidi:isolate}
+html[dir=rtl] body[data-style=daybook] .session-time{justify-content:flex-end}
+html[dir=rtl] .wake-age-table{text-align:right}
+html[dir=rtl] .modal-notice{border-left:0;border-right:3px solid var(--accent)}
+html[dir=rtl] .end-state button{font-size:10px;padding-left:3px;padding-right:3px}

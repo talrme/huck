@@ -18,7 +18,7 @@ The app is already configured. The setup instructions below are for recreating o
 
 The compact header has the koala-with-pacifier icon and **Huck** on the left and the selected child's name on the right. Tap the name for directions and a shortcut to Settings; it does not switch children accidentally.
 
-**Settings → Language** switches the interface between English and Español immediately, including dialogs, time wheels, validation, syncing, sharing and accessibility labels. Language is remembered on this device; names, timestamps and shared records are unchanged. Short duration notation (h/m/s) and the familiar AM/PM clock stay the same. Future interface changes must also include Spanish translations and phone-layout checks.
+**Settings → Language** has a sliding, three-part selector: **English / Español / עברית**. The label always says **Language** in English, so it is easy to find after switching. Changes apply immediately and are remembered on this device. Dialogs, time wheels, validation, syncing, sharing and accessibility labels are translated. Hebrew uses a right-to-left layout, while clock values, time wheels, links and the chronological history chart retain their familiar direction. Names, timestamps and shared records are unchanged; short duration notation (h/m/s) and AM/PM stay the same. Future interface changes must include both Spanish and Hebrew translations and phone-layout checks.
 
 Opening, reloading, navigating back to, or returning to the app starts at the top instead of restoring the previous page scroll position. Normal scrolling while using the app is unchanged.
 
@@ -240,6 +240,7 @@ Browser tests need Playwright and Google Chrome. Optional icon regeneration need
 | `tests/performance.cjs` | Synthetic large history, one-request saves, cache expiry, retries/conflicts |
 | `tests/browser.cjs` | Main workflows, styles/themes, simulated two-device sync; starts its own server |
 | `tests/header-language.cjs` | Compact header, koala assets, English/Spanish settings and dialogs, local persistence, five palettes, continuation markers, shared-data preservation and phone/desktop fitting |
+| `tests/hebrew.cjs` | Hebrew translation coverage, sliding selector, RTL, English label, draft/data preservation, persistence, time entry, sharing and layouts across themes/styles/phone-desktop widths |
 | `tests/time-editor.cjs` / `tests/time-wheels.cjs` | Custom wheels, simulated touch/keyboard, Now, explicit Save/Cancel, active-end dismissal regression, validation, themes and phone/desktop fit |
 | `tests/end-controls.cjs` / `tests/end-adjust.cjs` | Immediate End, dismiss/8s expiry, non-expiring Adjust editor, collapsed Start, manual starts, themes/widths and motion |
 | `tests/recent-naps.cjs` | Latest-three expansion, resume sleep, overlap protection, sandbox isolation |
