@@ -16,6 +16,10 @@ The app is already configured. The setup instructions below are for recreating o
 
 ## Everyday use
 
+The compact header has the koala-with-pacifier icon and **Huck** on the left and the selected child's name on the right. Tap the name for directions and a shortcut to Settings; it does not switch children accidentally.
+
+**Settings → Language** switches the interface between English and Español immediately, including dialogs, time wheels, validation, syncing, sharing and accessibility labels. Language is remembered on this device; names, timestamps and shared records are unchanged. Short duration notation (h/m/s) and the familiar AM/PM clock stay the same. Future interface changes must also include Spanish translations and phone-layout checks.
+
 Opening, reloading, navigating back to, or returning to the app starts at the top instead of restoring the previous page scroll position. Normal scrolling while using the app is unchanged.
 
 - **Start nap now / Start sleep now** begins a timer immediately. A matching **Nap started at [time] · Adjust time** bar (Sleep at night) fades over eight seconds. Adjust opens Start expanded; a subtle **Still awake?** link asks for confirmation before canceling that accidental start and returning to the prior awake timer. Canceling removes that new record from visible history rather than creating a zero-minute nap, and preserves older sleeps. X/expiry only dismiss the bar. The start time determines whether it is called a nap or sleep, using the shared day/night schedule.
@@ -59,10 +63,10 @@ Durations are actual elapsed time. On daylight-saving transition days, the actua
 | --- | --- |
 | Children and sleep entries | Selected child |
 | Each child's birthday and edited age ranges | Show wake-window info |
-| Day/night schedule and forgotten-timer rules | Style, color theme, animations |
+| Day/night schedule and forgotten-timer rules | Language, style, color theme, animations |
 | Archive/restore state | Temporary Recent entries expansion |
 
-Styles are **Daybook, Orbit, Compact**. Colors are **Original** (periwinkle), **Night, Berry, Mint**. Style/color choices apply immediately; other form fields use Save. The wake visibility toggle also applies immediately.
+Styles are **Daybook, Orbit, Compact**. Colors are **Original, Night, Berry, Mint, Midnight**. Night and Midnight both stay dark with separate awake/sleep accent colors and black-outlined swatches. Style/color/language choices apply immediately; other form fields use Save. The wake visibility toggle also applies immediately.
 
 Each color theme is now a pair: Awake and Sleeping. Diagonally split swatches preview both colors. The page accents, background tint and action buttons switch automatically with the current state; Night stays dark in both states. **Sleeping icon** and **Awake icon** each have four choices in Settings, applied immediately and saved on this device. You can also tap the main mascot to cycle the current state's choices. Sleeping characters have floating Zs; awake characters bounce, peek or hop. Animation preferences still apply.
 
@@ -70,7 +74,9 @@ Each color theme is now a pair: Awake and Sleeping. Diagonally split swatches pr
 
 Recent tiles are single44px rows: duration left, clock times right, with no icons or Nap/Sleep labels. Small wake-duration chips overlap the neighboring tile edges. **All today's entries / Show fewer** and the labeled-on-hover **+** add-entry icon share one footer row.
 
-The pacifier icon is used for browser tabs and phone installation. **Save / Share** includes iPhone/Android installation instructions and a share link for the selected child. Installed apps use the same website/backend, not a separate native database.
+The koala-with-pacifier icon is used in the header, browser tabs and phone installation. **Save / Share** includes iPhone/Android installation instructions and a share link for the selected child. Installed apps use the same website/backend, not a separate native database. An already-installed home-screen icon may keep its old artwork until the shortcut is removed and added again.
+
+While sleep is running, a small wake-duration chip above the recent tiles shows the recorded gap immediately before this sleep. It is not a new live timer or a fabricated gap. In history, small upward/downward chevrons indicate a sleep continuing from/to another chart day (normally 7 AM–7 AM). Selecting either segment highlights the entire sleep.
 
 State artwork indicates sleeping/awake, not nighttime/daytime. Sleeping has floating Zs; awake has a playful baby face and sparkles. Completed naps make a curved flight into Recent entries with a landing bounce. Both the app's animation toggle and OS reduced-motion preference are respected.
 
@@ -233,6 +239,7 @@ Browser tests need Playwright and Google Chrome. Optional icon regeneration need
 | --- | --- |
 | `tests/performance.cjs` | Synthetic large history, one-request saves, cache expiry, retries/conflicts |
 | `tests/browser.cjs` | Main workflows, styles/themes, simulated two-device sync; starts its own server |
+| `tests/header-language.cjs` | Compact header, koala assets, English/Spanish settings and dialogs, local persistence, five palettes, continuation markers, shared-data preservation and phone/desktop fitting |
 | `tests/time-editor.cjs` / `tests/time-wheels.cjs` | Custom wheels, simulated touch/keyboard, Now, explicit Save/Cancel, active-end dismissal regression, validation, themes and phone/desktop fit |
 | `tests/end-controls.cjs` / `tests/end-adjust.cjs` | Immediate End, dismiss/8s expiry, non-expiring Adjust editor, collapsed Start, manual starts, themes/widths and motion |
 | `tests/recent-naps.cjs` | Latest-three expansion, resume sleep, overlap protection, sandbox isolation |
@@ -244,6 +251,6 @@ Except the main browser test, start the local server on port 5190 first. Run a t
 
 ## Artwork and licenses
 
-App/favicon/home-screen icon: [Lucide Lab baby pacifier](https://github.com/lucide-icons/lucide-lab/blob/main/icons/baby-pacifier.svg), with its license in `shared/LUCIDE-LAB-LICENSE`. `node tools/icons.cjs` regenerates the PNG sizes using sharp.
+App/favicon/home-screen icon: generated koala face with a mint pacifier. The transparent original is preserved in `shared/koala-pacifier-original.png`; `node tools/icons.cjs` regenerates the padded PNG sizes using sharp. Generation prompt and provenance are in AI_README.md. The previous Lucide Lab pacifier asset/license remain bundled but are no longer the app icon.
 
 State images: sleeping face `1f634`, baby `1f476`, teddy `1f9f8`, cat `1f431`, koala `1f428`, smile `1f604`, fox `1f98a`, and chick `1f425`, Twitter [Twemoji v14.0.2](https://github.com/twitter/twemoji), CC BY 4.0. They are bundled tiny PNGs animated with CSS, not GIFs or remote runtime downloads. Legacy moon/sun assets are unused. UI icons use bundled Lucide; license in `shared/LUCIDE-LICENSE`.

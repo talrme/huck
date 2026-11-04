@@ -1,6 +1,22 @@
 # Huck: AI Project Handoff
 
-Last consolidated: October 30, 2026. This describes the current implementation, not an append-only list of old requests. Update it and README.md when behavior changes.
+## November 3 Header, Language And History Update
+
+The header is one row: koala app icon + Huck left, child name right, optional syncing indicator. The child button opens an explanatory modal with a Settings shortcut, not a direct switch. Names are protected from translation with data-no-translate; do not translate user/profile values.
+
+prefs.language is local, en by default or es. shared/i18n.js loads before app.js, translates presentation text nodes and accessible attributes through a central dictionary plus anchored dynamic-message rules, and observes changed subtrees only. WeakMaps retain canonical English for reversible switching without rewriting form values, stored data, API errors or command payloads. Never translate text before canonical app comparisons. Settings Language applies immediately, preserving drafts. English/Español labels and child names stay literal. AM/PM and compact h/m/s remain invariant. Existing external medical source pages are not translated by the app.
+
+MANDATORY for future work: every new/changed user-facing string, error, dynamic template and accessible label must have a Spanish entry/rule and be tested in both languages. Use HuckI18n.untranslated(root) in Spanish to audit canonical strings without translations; explicitly allow names, clock values, URLs and invariant words only. Test visible modal content, scroll wheels, receipt confirmations and phone text fitting, not just Settings. Do not translate dataset values or hidden date/time inputs. No backend deployment is required for this feature.
+
+Recent entries adds .preceding-wake only while active sleep has a recorded preceding gap from HuckVisuals.wakeIntervals. This chip sits above the completed tiles; the active sleep still never becomes a completed recent tile. No new timer, inferred leading gap or backend data is added. History blocks get .continues-before/.continues-after when a saved sleep crosses that column's configured chart-day boundary (normally 7 AM), with small chevrons and accessible continuation labels. All split pieces retain the same data-history-entry ID, so existing selection highlights both; edit remains a separate action.
+
+Palette IDs now include midnight: dark teal awake / lavender sleeping. Both dark swatches have black borders; selected accent outline stays independent. Keep dark error/delete text and primary action contrast readable. Test all five themes in both states, all three styles, 320/390/1280 widths and Spanish.
+
+Brand assets: shared/koala-pacifier-original.png was generated using the built-in image_gen tool (generate mode, transparent original retained). Prompt: "Create a single polished app icon: a cute koala FACE with a mint teal baby pacifier in its mouth. Front-facing, simple flat friendly emoji-like illustration, oversized round fluffy gray ears, dark oval nose, two tiny black eyes, small pale pink inner ears. Pacifier clearly visible below the nose, simple teal shield and ring. Head only, no body, no text, no border, no shadows, no background decorations. Centered square composition, face and ears fill 85 percent of the canvas with safe padding. Bold clean simple shapes, readable at 32px. Transparent background." tools/icons.cjs generates padded, mint-backed install/favicon assets at512/192/180/32px. Keep header, share modal, favicon, apple-touch and manifest version tokens aligned (20261103-koala). Existing phone shortcuts can cache old artwork; re-add if needed. Twemoji sleeping/awake mascot choices remain separate from this generated brand icon.
+
+tests/header-language.cjs covers compact header/help, assets, immediate language switching/persistence, canonical child identity, Spanish start/edit/end/resume/share, dark swatch borders, preceding wake chip, continuation selection and phone/desktop framing. Tests use isolated sample data only.
+
+Last consolidated: November 3, 2026. This describes the current implementation, not an append-only list of old requests. Update it and README.md when behavior changes.
 
 ## Start here
 
@@ -305,7 +321,7 @@ Arrival runs only for a locally validated transition from active to completed vi
 
 For local motion=false or OS reduced motion, skip flights/particles/spinners and keep a concise saved notice/status. Do not make movement necessary to understand a save.
 
-Brand assets: Lucide Lab pacifier and bundled licenses. Twemoji v14.0.2 sleeping1f634/baby1f476, CC BY4.0; credit in README. Old moon/sun files are unused. Keep favicon/apple-touch/manifest references in sync when changing install artwork. Manifest root start_url is ./; child sharing uses ?child=<id>, while selected-child preference is local.
+Brand assets: generated koala/pacifier as documented above; legacy Lucide Lab pacifier and bundled license retained but no longer used for app identity. Twemoji v14.0.2 sleeping1f634/baby1f476, CC BY4.0; credit in README. Old moon/sun files are unused. Keep favicon/apple-touch/manifest references in sync when changing install artwork. Manifest root start_url is ./; child sharing uses ?child=<id>, while selected-child preference is local.
 
 ## Testing and release
 
