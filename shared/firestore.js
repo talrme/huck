@@ -6,6 +6,7 @@
   if(!/^[a-z0-9-]+$/.test(environment||''))throw Error('Invalid Firestore environment.');
   let confirmed=null,unsubscribe=null,consumer=null,onError=null;
   const readers=new Set();
+  const serverTiming=()=>window.dispatchEvent(new CustomEvent('huck-backend-timing',{detail:{phase:'server',action:'snapshot',at:performance.now()}}));
   const initial=()=>{const s=C.initial();s.children[0].name='Test baby';return s;};
   const clone=s=>JSON.parse(JSON.stringify(s));
   const retryable=error=>['unavailable','deadline-exceeded','aborted','cancelled','resource-exhausted'].includes(String(error.code||'').replace('firestore/',''))||error.retryable;
@@ -42,13 +43,15 @@
     const {sdk,records}=await ready;if(unsubscribe||!consumer||document.hidden)return;
     unsubscribe=sdk.onSnapshot(records,{includeMetadataChanges:true},snapshot=>{
       if(snapshot.metadata.fromCache||snapshot.metadata.hasPendingWrites)return;
+      serverTiming();
       try{accept(decode(snapshot));}catch(error){rejectReaders(error);onError?.(failure(error));}
     },error=>{unsubscribe=null;rejectReaders(failure(error));onError?.(failure(error));});
   }
   async function read(){
     const {sdk,records}=await ready;
     // A collection snapshot contains the head and sleeps at one consistent query snapshot.
-    const state=decode(await sdk.getDocsFromServer(records));return clone(accept(state));
+    const snapshot=await sdk.getDocsFromServer(records);serverTiming();
+    const state=decode(snapshot);return clone(accept(state));
   }
   async function snapshot(){
     if(confirmed)return read();
