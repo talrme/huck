@@ -200,6 +200,8 @@ References: [Apps Script web apps](https://developers.google.com/apps-script/gui
 
 See [PERFORMANCE_REVIEW.md](PERFORMANCE_REVIEW.md) for growth concerns and the proposed checkpoint upgrade.
 
+Measured live refresh results are in [benchmarks/README.md](benchmarks/README.md): sixteen November 3 runs, median 2.045 seconds to fresh-data confirmation/next paint opportunity, range 1.411-4.025 seconds. This short desktop sample did not reproduce the reported 5-10-second phone delay. It is not a phone or scaling benchmark. Production remains on Sheets; Firebase staging is planned, not configured.
+
 Frontend layout, artwork, animations, wake-range lookup, and preferences do not require redeployment. Current birthday/age-range metadata uses an already-supported shared-settings action.
 
 Changing backend actions, validation, event replay, or `shared/core.js` rules does require deployment:

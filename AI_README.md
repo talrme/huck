@@ -1,5 +1,11 @@
 # Huck: AI Project Handoff
 
+## November 3 Live Refresh Baseline
+
+See benchmarks/README.md and benchmarks/2026-11-03-sheets.json; reproduction driver tools/benchmark-refresh.cjs. Sixteen serial live snapshot-only opens/reloads around8:20 PM Pacific: four empty contexts + twelve cached reloads. Unthrottled desktop Chrome with390x844 viewport, not a physical phone. Fresh-data confirmation/next paint opportunity median2045ms (1411-4025), backend round trip median1905ms, response-to-synced-DOM median2ms. All sixteen succeeded with no retries/errors,84 entries/revision332/backend2026-11-01-clock-sync. No test commands sent, no real records copied into the report; snapshots retain normal expiry side effects. Empty-context first UI is not real data; warm first UI is cached only. Short grouped runs do not demonstrate cold servers, future scaling, phone latency or uptime. Do not claim to have reproduced the user's5-10-second phone delay.
+
+User approved exploring Firebase staging and is open to literal no-auth access. No Firebase project/configuration is supplied yet, no Firebase backend or staging app is implemented, and production stays on Sheets. Ask owner to create project/Realtime Database and send public web config +databaseURL. Use isolated sample data for publicly writable staging, matching production record count/shape for comparison; do not publish real household history without explicit informed consent. Staging must have a separate localStorage/outbox namespace and no accidental production writes. For Firebase benchmark adapt subscription-start/server receipt instrumentation and require actual server freshness; current driver times JSONP specifically. Test two-browser propagation, conflict/one-active protection, offline queue persistence and acknowledgements before promotion.
+
 ## November 3 Header, Language And History Update
 
 The header is one row: koala app icon + Huck left, child name right, optional syncing indicator. The child button opens an explanatory modal with a Settings shortcut, not a direct switch. Names are protected from translation with data-no-translate; do not translate user/profile values.

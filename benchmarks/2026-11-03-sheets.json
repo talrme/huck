@@ -1,0 +1,454 @@
+{
+  "url": "https://talrme.github.io/huck/",
+  "method": "Unthrottled desktop Chrome, 390x844 viewport, serial runs, no user commands, clean isolated browser storage, durations from navigation start; cross-origin request measured script insertion to JSONP callback",
+  "runs": [
+    {
+      "run": 1,
+      "type": "fresh browser",
+      "started": "2026-11-04T04:20:46.679Z",
+      "failure": null,
+      "initialRenderMs": 553.2000000476837,
+      "cachedAtStart": false,
+      "syncDomMs": 4014.3000000715256,
+      "freshPaintMs": 4025,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 553.2000000476837,
+          "responseMs": 3993,
+          "durationMs": 3439.7999999523163,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 15,
+      "transferredBytes": 182595
+    },
+    {
+      "run": 2,
+      "type": "fresh browser",
+      "started": "2026-11-04T04:20:50.848Z",
+      "failure": null,
+      "initialRenderMs": 211.5,
+      "cachedAtStart": false,
+      "syncDomMs": 2469.2999999523163,
+      "freshPaintMs": 2487.600000023842,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 211.5,
+          "responseMs": 2457.7999999523163,
+          "durationMs": 2246.2999999523163,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 184076
+    },
+    {
+      "run": 3,
+      "type": "fresh browser",
+      "started": "2026-11-04T04:20:53.486Z",
+      "failure": null,
+      "initialRenderMs": 212.5,
+      "cachedAtStart": false,
+      "syncDomMs": 2019.6000000238419,
+      "freshPaintMs": 2028.7000000476837,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 212.60000002384186,
+          "responseMs": 1998.7000000476837,
+          "durationMs": 1786.1000000238419,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 15,
+      "transferredBytes": 182595
+    },
+    {
+      "run": 4,
+      "type": "fresh browser",
+      "started": "2026-11-04T04:20:55.674Z",
+      "failure": null,
+      "initialRenderMs": 299.39999997615814,
+      "cachedAtStart": false,
+      "syncDomMs": 2080.100000023842,
+      "freshPaintMs": 2100,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 299.39999997615814,
+          "responseMs": 2069.2000000476837,
+          "durationMs": 1769.8000000715256,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 184076
+    },
+    {
+      "run": 5,
+      "type": "cached reload",
+      "started": "2026-11-04T04:20:57.796Z",
+      "failure": null,
+      "initialRenderMs": 42.89999997615814,
+      "cachedAtStart": true,
+      "syncDomMs": 2404.600000023842,
+      "freshPaintMs": 2427.7999999523163,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 42.89999997615814,
+          "responseMs": 2402.600000023842,
+          "durationMs": 2359.7000000476837,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 6,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:00.246Z",
+      "failure": null,
+      "initialRenderMs": 35.299999952316284,
+      "cachedAtStart": true,
+      "syncDomMs": 1536.1000000238419,
+      "freshPaintMs": 1562.1000000238419,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 35.39999997615814,
+          "responseMs": 1535.2000000476837,
+          "durationMs": 1499.8000000715256,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 7,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:01.829Z",
+      "failure": null,
+      "initialRenderMs": 40.39999997615814,
+      "cachedAtStart": true,
+      "syncDomMs": 2593.5,
+      "freshPaintMs": 2613.600000023842,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 40.39999997615814,
+          "responseMs": 2592,
+          "durationMs": 2551.600000023842,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 8,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:04.464Z",
+      "failure": null,
+      "initialRenderMs": 43.699999928474426,
+      "cachedAtStart": true,
+      "syncDomMs": 1949.6999999284744,
+      "freshPaintMs": 1976.8999999761581,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 43.799999952316284,
+          "responseMs": 1948.0999999046326,
+          "durationMs": 1904.2999999523163,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 9,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:06.463Z",
+      "failure": null,
+      "initialRenderMs": 44.60000002384186,
+      "cachedAtStart": true,
+      "syncDomMs": 1740.8999999761581,
+      "freshPaintMs": 1763.5,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 44.60000002384186,
+          "responseMs": 1738.2000000476837,
+          "durationMs": 1693.6000000238419,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 10,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:08.247Z",
+      "failure": null,
+      "initialRenderMs": 51.5,
+      "cachedAtStart": true,
+      "syncDomMs": 2035.6000000238419,
+      "freshPaintMs": 2061.9000000953674,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 51.60000002384186,
+          "responseMs": 2034.7000000476837,
+          "durationMs": 1983.1000000238419,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 11,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:10.331Z",
+      "failure": null,
+      "initialRenderMs": 39.60000002384186,
+      "cachedAtStart": true,
+      "syncDomMs": 1661.7000000476837,
+      "freshPaintMs": 1677.8999999761581,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 39.700000047683716,
+          "responseMs": 1659.5,
+          "durationMs": 1619.7999999523163,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 12,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:12.031Z",
+      "failure": null,
+      "initialRenderMs": 43.5,
+      "cachedAtStart": true,
+      "syncDomMs": 2732.5,
+      "freshPaintMs": 2758.2000000476837,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 43.5,
+          "responseMs": 2731.100000023842,
+          "durationMs": 2687.600000023842,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 13,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:14.814Z",
+      "failure": null,
+      "initialRenderMs": 43.09999990463257,
+      "cachedAtStart": true,
+      "syncDomMs": 1387.0999999046326,
+      "freshPaintMs": 1410.8999999761581,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 43.09999990463257,
+          "responseMs": 1385.0999999046326,
+          "durationMs": 1342,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 14,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:16.247Z",
+      "failure": null,
+      "initialRenderMs": 47.799999952316284,
+      "cachedAtStart": true,
+      "syncDomMs": 1641.3999999761581,
+      "freshPaintMs": 1659.8999999761581,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 47.89999997615814,
+          "responseMs": 1640.7999999523163,
+          "durationMs": 1592.8999999761581,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 15,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:17.931Z",
+      "failure": null,
+      "initialRenderMs": 36.300000071525574,
+      "cachedAtStart": true,
+      "syncDomMs": 3025.7000000476837,
+      "freshPaintMs": 3043,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 36.300000071525574,
+          "responseMs": 3024.2000000476837,
+          "durationMs": 2987.899999976158,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    },
+    {
+      "run": 16,
+      "type": "cached reload",
+      "started": "2026-11-04T04:21:20.998Z",
+      "failure": null,
+      "initialRenderMs": 54.60000002384186,
+      "cachedAtStart": true,
+      "syncDomMs": 1962.1000000238419,
+      "freshPaintMs": 1990.1000000238419,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 54.700000047683716,
+          "responseMs": 1959.6000000238419,
+          "durationMs": 1904.8999999761581,
+          "ok": true,
+          "code": null,
+          "backendVersion": "2026-11-01-clock-sync",
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 332
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/",
+      "assetCount": 16,
+      "transferredBytes": 0
+    }
+  ]
+}
