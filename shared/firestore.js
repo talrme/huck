@@ -113,6 +113,7 @@
       tx.set(head,{schema:1,children:state.children,settings:state.settings,revision:1,synthetic:true,updatedAt:sdk.serverTimestamp()});
       for(const entry of state.entries)tx.set(sdk.doc(records,'entry_'+entry.id),{entry});
     });
+    accept(state);
     return read();
   }
   window.HuckFirestore={request,watch,pause,resume:()=>listen().catch(e=>onError?.(failure(e))),seedSamples};
