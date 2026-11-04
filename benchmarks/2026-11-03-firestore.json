@@ -1,0 +1,470 @@
+{
+  "url": "https://talrme.github.io/huck/staging/firebase/",
+  "method": "Unthrottled desktop Chrome, 390x844 viewport, serial runs, no user commands, clean isolated browser storage, durations from navigation start; Sheets request measured script insertion to JSONP callback; Firestore request measured adapter start to server snapshot before decoding/rendering, including SDK initialization",
+  "runs": [
+    {
+      "run": 1,
+      "type": "fresh browser",
+      "started": "2026-11-04T06:07:21.712Z",
+      "failure": null,
+      "initialRenderMs": 381.2000000476837,
+      "cachedAtStart": false,
+      "syncDomMs": 875.7000000476837,
+      "freshPaintMs": 879.7000000476837,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 380.5,
+          "backend": "firestore",
+          "responseMs": 859.2000000476837,
+          "durationMs": 478.7000000476837,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 188604
+    },
+    {
+      "run": 2,
+      "type": "fresh browser",
+      "started": "2026-11-04T06:07:22.732Z",
+      "failure": null,
+      "initialRenderMs": 184,
+      "cachedAtStart": false,
+      "syncDomMs": 849.2999999523163,
+      "freshPaintMs": 853.3999999761581,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 183.39999997615814,
+          "backend": "firestore",
+          "responseMs": 832.6000000238419,
+          "durationMs": 649.2000000476837,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 188604
+    },
+    {
+      "run": 3,
+      "type": "fresh browser",
+      "started": "2026-11-04T06:07:23.731Z",
+      "failure": null,
+      "initialRenderMs": 175.70000004768372,
+      "cachedAtStart": false,
+      "syncDomMs": 777,
+      "freshPaintMs": 781.6000000238419,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 175,
+          "backend": "firestore",
+          "responseMs": 759.6000000238419,
+          "durationMs": 584.6000000238419,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 188604
+    },
+    {
+      "run": 4,
+      "type": "fresh browser",
+      "started": "2026-11-04T06:07:24.646Z",
+      "failure": null,
+      "initialRenderMs": 188.59999990463257,
+      "cachedAtStart": false,
+      "syncDomMs": 768.7999999523163,
+      "freshPaintMs": 773,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 187.89999997615814,
+          "backend": "firestore",
+          "responseMs": 751.2999999523163,
+          "durationMs": 563.3999999761581,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 188604
+    },
+    {
+      "run": 5,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:25.442Z",
+      "failure": null,
+      "initialRenderMs": 43.10000002384186,
+      "cachedAtStart": true,
+      "syncDomMs": 277,
+      "freshPaintMs": 287.89999997615814,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 42.699999928474426,
+          "backend": "firestore",
+          "responseMs": 266.2999999523163,
+          "durationMs": 223.60000002384186,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 6,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:25.763Z",
+      "failure": null,
+      "initialRenderMs": 40.800000071525574,
+      "cachedAtStart": true,
+      "syncDomMs": 248.60000002384186,
+      "freshPaintMs": 267.10000002384186,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 40.40000009536743,
+          "backend": "firestore",
+          "responseMs": 237.70000004768372,
+          "durationMs": 197.29999995231628,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 7,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:26.058Z",
+      "failure": null,
+      "initialRenderMs": 46.90000009536743,
+      "cachedAtStart": true,
+      "syncDomMs": 315.90000009536743,
+      "freshPaintMs": 321.10000002384186,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 46.40000009536743,
+          "backend": "firestore",
+          "responseMs": 303.5,
+          "durationMs": 257.09999990463257,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 8,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:26.418Z",
+      "failure": null,
+      "initialRenderMs": 51.10000002384186,
+      "cachedAtStart": true,
+      "syncDomMs": 320.10000002384186,
+      "freshPaintMs": 328.10000002384186,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 50.700000047683716,
+          "backend": "firestore",
+          "responseMs": 309.5,
+          "durationMs": 258.7999999523163,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 9,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:26.776Z",
+      "failure": null,
+      "initialRenderMs": 37.40000009536743,
+      "cachedAtStart": true,
+      "syncDomMs": 247.40000009536743,
+      "freshPaintMs": 253.70000004768372,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 37.10000002384186,
+          "backend": "firestore",
+          "responseMs": 235.70000004768372,
+          "durationMs": 198.60000002384186,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 10,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:27.051Z",
+      "failure": null,
+      "initialRenderMs": 39.59999990463257,
+      "cachedAtStart": true,
+      "syncDomMs": 648.5999999046326,
+      "freshPaintMs": 660.0999999046326,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 39.199999928474426,
+          "backend": "firestore",
+          "responseMs": 638.7999999523163,
+          "durationMs": 599.6000000238419,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 11,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:27.735Z",
+      "failure": null,
+      "initialRenderMs": 49.300000071525574,
+      "cachedAtStart": true,
+      "syncDomMs": 236,
+      "freshPaintMs": 245.10000002384186,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 48.800000071525574,
+          "backend": "firestore",
+          "responseMs": 225.30000007152557,
+          "durationMs": 176.5,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 12,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:28.001Z",
+      "failure": null,
+      "initialRenderMs": 40.799999952316284,
+      "cachedAtStart": true,
+      "syncDomMs": 250.10000002384186,
+      "freshPaintMs": 262.1999999284744,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 40.39999997615814,
+          "backend": "firestore",
+          "responseMs": 238.89999997615814,
+          "durationMs": 198.5,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 13,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:28.294Z",
+      "failure": null,
+      "initialRenderMs": 47.5,
+      "cachedAtStart": true,
+      "syncDomMs": 232.20000004768372,
+      "freshPaintMs": 252.20000004768372,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 47.200000047683716,
+          "backend": "firestore",
+          "responseMs": 221.20000004768372,
+          "durationMs": 174,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 14,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:28.588Z",
+      "failure": null,
+      "initialRenderMs": 52.89999997615814,
+      "cachedAtStart": true,
+      "syncDomMs": 265.10000002384186,
+      "freshPaintMs": 275.2999999523163,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 52.39999997615814,
+          "backend": "firestore",
+          "responseMs": 253.79999995231628,
+          "durationMs": 201.39999997615814,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 15,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:28.885Z",
+      "failure": null,
+      "initialRenderMs": 39.200000047683716,
+      "cachedAtStart": true,
+      "syncDomMs": 208.80000007152557,
+      "freshPaintMs": 228.5,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 38.90000009536743,
+          "backend": "firestore",
+          "responseMs": 201.60000002384186,
+          "durationMs": 162.69999992847443,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    },
+    {
+      "run": 16,
+      "type": "cached reload",
+      "started": "2026-11-04T06:07:29.153Z",
+      "failure": null,
+      "initialRenderMs": 29.799999952316284,
+      "cachedAtStart": true,
+      "syncDomMs": 243.5,
+      "freshPaintMs": 260.7000000476837,
+      "requests": [
+        {
+          "action": "snapshot",
+          "startMs": 29.5,
+          "backend": "firestore",
+          "responseMs": 236.60000002384186,
+          "durationMs": 207.10000002384186,
+          "responseSource": "server-snapshot",
+          "ok": true,
+          "entryCount": 84,
+          "childCount": 1,
+          "revision": 1,
+          "backendVersion": "firestore-staging-v1"
+        }
+      ],
+      "errors": [],
+      "pageUrl": "https://talrme.github.io/huck/staging/firebase/",
+      "assetCount": 19,
+      "transferredBytes": 0
+    }
+  ]
+}

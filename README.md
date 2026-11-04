@@ -202,7 +202,7 @@ References: [Apps Script web apps](https://developers.google.com/apps-script/gui
 
 See [PERFORMANCE_REVIEW.md](PERFORMANCE_REVIEW.md) for growth concerns and the proposed checkpoint upgrade.
 
-Measured live refresh results are in [benchmarks/README.md](benchmarks/README.md): the initial sixteen November 3 Sheets runs had a median2.045 seconds to fresh-data confirmation/next paint opportunity, range1.411-4.025 seconds. This short desktop sample did not reproduce the reported5-10-second phone delay. It is not a phone or scaling benchmark. Firestore staging is now separately configured for the matched comparison; production remains on Sheets.
+Measured live refresh results are in [benchmarks/README.md](benchmarks/README.md). In the later November3 comparison (16 runs per backend), total first-open medians were3.10s Sheets versus0.82s Firestore; cached-reload medians were1.89s versus0.265s. Both used real Pages URLs on the same desktop connection; production had86 entries versus84 synthetic staging entries. All32 final runs succeeded. These are not physical-phone, long-term reliability or scaling guarantees. The earlier Sheets baseline and raw results are preserved; production still uses Sheets.
 
 Frontend layout, artwork, animations, wake-range lookup, and preferences do not require redeployment. Current birthday/age-range metadata uses an already-supported shared-settings action.
 

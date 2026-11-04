@@ -10,8 +10,8 @@ async function instrument(){
   window.addEventListener('huck-backend-timing',event=>{
     const d=event.detail;
     if(d.phase==='start')b.requests.push({action:d.action,startMs:d.at,backend:'firestore'});
-    else if(d.phase==='server'){const r=b.requests.find(r=>r.backend==='firestore'&&r.action===d.action&&r.responseMs===undefined);if(r){r.responseMs=d.at;r.durationMs=d.at-r.startMs;}}
-    else{const r=b.requests.find(r=>r.backend==='firestore'&&r.startMs===d.startedAt);if(r){if(r.responseMs===undefined){r.responseMs=d.at;r.durationMs=d.at-r.startMs;}r.ok=d.ok;}}
+    else if(d.phase==='server'){const r=b.requests.find(r=>r.backend==='firestore'&&r.action===d.action&&r.responseMs===undefined);if(r){r.responseMs=d.at;r.durationMs=d.at-r.startMs;r.responseSource='server-snapshot';}}
+    else{const r=b.requests.find(r=>r.backend==='firestore'&&r.startMs===d.startedAt);if(r){if(r.responseMs===undefined){r.responseMs=d.at;r.durationMs=d.at-r.startMs;r.responseSource='request-completed';}r.ok=d.ok;}}
   });
   const observed=new WeakSet();
   function check(){
