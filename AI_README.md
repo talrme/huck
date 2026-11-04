@@ -1,24 +1,34 @@
 # Huck: AI Project Handoff
 
+## Firestore Production Cutover: November 3
+
+Owner explicitly approved: "Switch with public access; migrate real history." Root config.js now selects project huck-7a55c, environment production. The real state was replayed from a bounded read of HuckEvents and compared to a fresh Apps Script snapshot before/after migration. Imported86 entries (66 visible/20 soft-deleted), one child, settings, revision339 and339 exact command fingerprints. Full readback matched all entry fields, IDs, timestamps, revisions, children/settings and receipts. Local private exports are /Users/talg/Documents/Codex/huck-sheets-events-backup-2026-11-03{,-snapshot}.json, never committed. tools/migrate-firestore.cjs performs dry-run by default, requires --commit, refuses changed sources/oversized imports and never overwrites an existing differing production. Old Sheet remains intact; new edits are Firestore only. Do NOT rerun migration to overwrite newer Firestore data.
+
+Production retains huck-v1 and legacy huck-local-backup-v1/huck-discarded-changes-v1 keys; first updated launch copies the existing raw huck-v1 to huck-v1-before-firestore without clearing base, prefs or queue. Imported command fingerprints deduplicate already-saved Sheet commands whose acknowledgement was lost. tests/firestore-cutover.cjs verifies this using an isolated test-cutover-* environment, including reload and original backups. Production has no synthetic banner/seed control; seedSamples refuses environment production, and missing production head fails closed. isStaging is explicitly true only in staging config; never infer synthetic behavior from merely having Firebase configured.
+
+Refresh/reopen ALL old clients at cutover: an already-loaded Sheets version can still write to the old endpoint until refreshed. No automatic dual-write or late-Sheet reconciliation exists. Check source revision after deploy, preserve late changes, reconcile explicitly if present. Rollback requires exporting/reconciling new Firestore changes first, NOT merely restoring old config. Public access includes real history with explicit consent, not just test data; outsiders can read/delete/corrupt data/consume quota. Auth/password/admin/trusted rules are NOT implemented. Phone clock remains authoritative for client validation; serverTimestamp is only a receipt timestamp. Full-history record reads still grow with history.
+
+Expanded tests/firestore.cjs covers real isolated two-browser create/edit/cancel/resume/end/delete, shared birthday/custom ranges, archive/restore, duplicate requests, concurrent-start conflict, expiry/settings, offline/reopen, themes/languages/layout. All tests must continue using disposable test-* environments and cleanup must NEVER target production/staging. The earlier benchmark below predates migration; its synthetic staging data remains separate.
+
 ## Firestore Staging Implemented
 
 Live URL verified200 and a real SDK server snapshot verified84 synthetic entries, revision1. Live benchmark around10:03-10:07 PM Pacific Nov3:16 runs each (4 empty contexts+12 cached reloads), Sheets86 entries/rev339 vs Firestore84 synthetic/rev1. Total cold-context medians3.1025s vs0.8175s; cached reload1.8894s vs0.26465s (~7.1x). All32 final runs succeeded, no retries/errors. Raw files benchmarks/2026-11-03-{sheets-comparison,firestore}.json; full interpretation/individual times benchmarks/README.md. Do not add the backend component row to the total rows. Same desktop/connection/390x844 viewport, not physical phones or identical private datasets. Firestore emits server-snapshot timing BEFORE decode/render; initial SDK import time is included. Earlier preliminary completion-based0.3ms timing excluded listener rendering and must NOT be reported as all rendering work. Test fixtures use84 synthetic sleeps, not real logs. Real two-browser smoke propagation~0.4-0.8s includes automation overhead, not a rigorously isolated latency benchmark.
 
-Owner supplied public Firebase web config for huck-7a55c and explicitly requested no-auth public read/write staging, with protection/roles later. New staging/firebase/ path uses the same generated UI and shared app.js, but config.js selects shared/firestore.js and localStorage huck-firestore-staging-v1. Root config.js, Sheet, Apps Script and real logs remain unchanged. This new backend staging is explicitly requested, unlike the deleted visual design options; do not recreate old design staging. Read staging/firebase/README.md for schema, safety and limitations.
+Owner supplied public Firebase web config for huck-7a55c and requested no-auth public read/write staging, then explicitly approved production migration as above. staging/firebase/ uses the same generated UI and shared app.js, with environment staging and localStorage huck-firestore-staging-v1. Sheet and Apps Script remain backup only. This backend staging is explicitly requested, unlike the deleted visual design options; do not recreate old design staging. Read staging/firebase/README.md for schema, safety and limitations.
 
-Official CDN SDK13.2.0 is dynamically imported ONLY by Firestore staging. Records collection huckEnvironments/staging/records has head schema/settings/children/revision and separate entry_ID docs. commands/ID contains command fingerprint/receivedAt/revision; stable IDs dedupe lost acknowledgements. Transactions read head+receipt first and compare the prepared coherent collection snapshot revision; apply shared core, write changed entries/head/receipt atomically, and refetch/retry on concurrent head change. The UI's durable outbox owns offline recovery; native Firestore transactions fail offline. No authentication SDK or privileged key is used. Security rules are intentionally public; client reducer validation is not protection against malicious direct writes.
+Official CDN SDK13.2.0 is dynamically imported for Firestore configs only (main and staging). Records collection huckEnvironments/ENVIRONMENT/records has head schema/settings/children/revision and separate entry_ID docs. commands/ID contains command fingerprint/receivedAt/revision; stable IDs dedupe lost acknowledgements. Transactions read head+receipt first and compare the prepared coherent collection snapshot revision; apply shared core, write changed entries/head/receipt atomically, and refetch/retry on concurrent head change. The UI's durable outbox owns offline recovery; native Firestore transactions fail offline. No authentication SDK or privileged key is used. Security rules are intentionally public; client reducer validation is not protection against malicious direct writes.
 
 Server-confirmed collection onSnapshot listeners ignore fromCache/hasPendingWrites, avoiding false freshness and premature success. Cold opens await the initial server snapshot; later explicit sync/foreground uses getDocsFromServer. Hidden pages unsubscribe; resume reconnects; the idle15s timer only redraws/retries pending commands and does not poll Firestore. Action responses and live snapshots update confirmed state while preserving projected pending changes and modal drafts. Forgotten-timer cleanup is derived by C.settle and persisted together with the next command WITHOUT an extra revision increment before command validation. The Firestore adapter currently uses the phone clock; do NOT claim the Sheets server-clock calibration applies here. Trusted timestamp/shape/access validation and admin/password roles are future work.
 
-Environment/storage/test recovery are explicitly separate. Staging share URL/manifest start_url stay under staging/firebase/, while artwork resolves from the common shared directory. A persistent translated banner identifies shared synthetic data; seedSamples creates84 clearly synthetic sleeps and Test baby only when head is absent, never overwrites existing data. No real record content was copied from Sheets. tests/firestore.cjs creates a unique test-TIMESTAMP environment, exercises real transactions/listeners, simultaneous starts, duplicate delivery, expiry/settings, tab-close/offline retry, three languages/five themes/3203901280, and deletes only that test environment. Inspect logs if cleanup fails. Never point cleanup at staging/household data.
+Environment/storage/test recovery are explicitly separate. Staging share URL/manifest start_url stay under staging/firebase/, while artwork resolves from the common shared directory. Its persistent translated banner identifies synthetic data; seedSamples creates84 synthetic sleeps and Test baby only when staging head is absent, never overwrites history. Real records were copied only into production after explicit approval. tests/firestore.cjs uses a unique test-TIMESTAMP environment and deletes only that test environment. Inspect logs if cleanup fails. Never point cleanup at staging/household data.
 
-Startup currently reads all record docs (but NOT audit receipts); Firestore removes event replay but is not constant-cost with growing history. Add indexed per-profile/date-window queries/pagination, trusted rules and backup/migration safeguards before claiming large-scale readiness. Do not promote the main site or import real household history without explicit approval. Current no-auth access permits outsiders to change/delete test data or consume quota.
+Startup reads all record docs (but NOT audit receipts); Firestore removes event replay but is not constant-cost with growing history. Add indexed per-profile/date-window queries/pagination and trusted rules before claiming large-scale readiness. Public access permits outsiders to change/delete real and test data or consume quota.
 
 ## November 3 Live Refresh Baseline
 
 See benchmarks/README.md and benchmarks/2026-11-03-sheets.json; reproduction driver tools/benchmark-refresh.cjs. Sixteen serial live snapshot-only opens/reloads around8:20 PM Pacific: four empty contexts + twelve cached reloads. Unthrottled desktop Chrome with390x844 viewport, not a physical phone. Fresh-data confirmation/next paint opportunity median2045ms (1411-4025), backend round trip median1905ms, response-to-synced-DOM median2ms. All sixteen succeeded with no retries/errors,84 entries/revision332/backend2026-11-01-clock-sync. No test commands sent, no real records copied into the report; snapshots retain normal expiry side effects. Empty-context first UI is not real data; warm first UI is cached only. Short grouped runs do not demonstrate cold servers, future scaling, phone latency or uptime. Do not claim to have reproduced the user's5-10-second phone delay.
 
-The initial benchmark preceded Firebase setup. The owner subsequently chose Cloud Firestore (NOT Realtime Database) and supplied configuration; staging is now implemented as documented above. Production stays on Sheets. Use isolated sample data for publicly writable staging, matching production record count/shape for comparison; do not publish real household history without explicit informed consent. Staging has a separate localStorage/outbox namespace and no production writes. The benchmark driver now supports adapter timing events for Firestore and requires actual server confirmation rather than cached/optimistic callbacks. Do not ask for a Realtime Database URL or describe Firebase as still unconfigured.
+The initial benchmark preceded Firebase setup and the approved production cutover above. Use isolated sample data for staging/comparison. Staging has a separate localStorage/outbox namespace and no production writes. The benchmark driver supports adapter timing events for Firestore and requires actual server confirmation rather than cached/optimistic callbacks. Do not ask for a Realtime Database URL or describe Firebase as unconfigured.
 
 ## November 3 Header, Language And History Update
 
@@ -54,7 +64,7 @@ Last consolidated: November 3, 2026. This describes the current implementation, 
 
 ## Architecture and file ownership
 
-Static vanilla HTML/CSS/JavaScript on GitHub Pages. No framework, bundler, service worker, or hosted application server. Apps Script provides the shared API over a private Google Sheet.
+Static vanilla HTML/CSS/JavaScript on GitHub Pages. No framework, bundler, service worker, or hosted application server. Cloud Firestore provides production live synchronization; Apps Script/Sheet are the retained legacy backup adapter.
 
 | File | Responsibility |
 | --- | --- |
@@ -64,7 +74,8 @@ Static vanilla HTML/CSS/JavaScript on GitHub Pages. No framework, bundler, servi
 | `shared/wake.js` | Frontend-only age calculations, range lookup and wake-quality cues |
 | `shared/styles.css` | Common components, animation, responsive behavior |
 | `shared/themes.css` | Daybook/Orbit/Compact layouts and default periwinkle palette |
-| `config.js` | Permanent backend endpoint, Sheet URL and live URL |
+| `config.js` | Public Firebase config, production environment, backend console and live URL |
+| `shared/firestore.js` | Firestore listener, coherent snapshots, transactions, stable-ID receipts |
 | `tools/backend-tail.gs` | Apps Script adapter, fixed Sheet ID, locking, event log and JSONP |
 | `tools/build.mjs` | Generates HTML, manifest, standalone script |
 | `tools/serve.cjs` | Port 5190 preview, no-store headers, root and /huck/ support |
@@ -77,7 +88,7 @@ Backend generation concatenates `shared/core.js` + `tools/backend-tail.gs`. Neve
 
 ## Permanent connections and verified state
 
-Use `config.js` as the single source for the deployed /exec URL and URLs. Sheet ID: `1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ`.
+Use `config.js` as the single source for production Firebase configuration and URLs. Legacy Sheet ID: `1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ`; its /exec remains in tools/backend-tail.gs documentation/migration utility, not the active root config.
 
 The backend is deployed, reads work, and real writes were performed during the explicit screenshot import. On October 30, 2026, 24 approximate sleeps from screenshots dated October 19–30 were added to Avi's real logs after Pacific timezone confirmation. Existing records were preserved, all imported records were verified in a fresh snapshot, and blank days were not fabricated.
 
@@ -119,6 +130,8 @@ Example values above illustrate structure, not household data. Range keys are th
 
 ## Event log and deployment
 
+LEGACY SHEETS ONLY: the following log/JSONP/Apps Script deployment details apply to the retained backup adapter, not current production. Firestore deployment is the frontend GitHub Pages push unless security rules change separately. Do not deploy new Sheet code unnecessarily.
+
 HuckEvents columns are exactly `id | receivedAt | command`. Header validation fails closed; never repair by clearing user data. setupHuck is idempotent and leaves unrelated tabs alone.
 
 For each request the adapter takes a script lock, loads/replays the append-only log, settles expired timers, applies/deduplicates a command if present, and returns the authoritative state. Retries with the same request ID are not appended twice. Retain deterministic server-time replay and lock release in finally.
@@ -158,10 +171,10 @@ Triggers:
 - Opening/reload.
 - Visible foreground return; focus checks are throttled to five seconds since last check.
 - Persisted pageshow and online event.
-- Every 15 seconds while visible.
+- Every 15 seconds while visible for Sheets only; Firestore uses a live listener and the interval only redraws/retries pending changes.
 - A local edit when visible and not already busy.
 
-Hidden pages do not start new cycles; already-running requests can finish. There is no websocket/push service or per-second polling. A returning phone may take several seconds to obtain the shared state. The 1-second timer tick is local.
+Hidden pages do not start new cycles; already-running requests can finish. Firestore unsubscribes while hidden and reconnects on return. Its live listener pushes changes; the legacy Sheets fallback polls. The 1-second timer tick is local, never a database write.
 
 `renderSyncActivity` uses existing busy state to show the header's animated Syncing indicator immediately and hide it on completion/failure. Footer status distinguishes syncing/pending/conflict/unavailable/synced. Animation is feedback, not a promise the command reached the server. Keep failure messages truthful even with no pending writes.
 
@@ -396,4 +409,4 @@ Run git diff --check, review diff/status, commit only task changes, push main wh
 
 Sandbox pretend clock, jump-ahead controls, and presets for forgotten timers/missing logs/overnight/boundaries. A fake shared Test child is available for real two-phone dogfooding, but creates real backend records and is not an isolated sandbox. Do not change system time or leak simulated future timestamps into production to emulate time travel.
 
-Future testing controls should use a sandbox-only clock abstraction and preserve production timestamp validation. No new backend, notifications, automatic sleep prediction, or background scheduler has been requested/implemented.
+Future testing controls should use a sandbox-only clock abstraction and preserve production timestamp validation. Firestore is now implemented. Notifications, automatic sleep prediction and a background scheduler are not implemented.

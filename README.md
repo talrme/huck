@@ -4,13 +4,19 @@
 
 **Repository:** [talrme/huck](https://github.com/talrme/huck)
 
-**Firestore staging:** [Try the separate Firebase test version](https://talrme.github.io/huck/staging/firebase/) · [Setup, isolation and limitations](staging/firebase/README.md). It uses shared synthetic test data and intentionally open access. The main site below remains on Google Sheets; no real history has been migrated.
+**Firestore staging:** [Try the separate Firebase test version](https://talrme.github.io/huck/staging/firebase/) · [Setup, isolation and limitations](staging/firebase/README.md). It uses synthetic test data, separate from the real production history.
 
 A phone-first sleep tracker for Tal and Sophie to track Avi's sleep across both phones. Additional children are supported. No account or per-phone backend configuration is required.
 
 ## Current status
 
-The production app is connected to Google Sheets through the Apps Script URL in `config.js`. Daybook, originally design option10, is the default design. The old design staging folders and chooser were removed. The separately requested Firestore backend experiment now lives at staging/firebase/; use the root live link for real logs.
+The production app now uses **Cloud Firestore** in project `huck-7a55c`, environment `production`. Daybook, originally design option10, remains the default design. The old design staging folders are gone; `staging/firebase/` remains an isolated backend test site.
+
+On November 3, with explicit approval for public access, the real Sheet history was migrated and verified field-for-field: **86 stored sleeps (66 visible, 20 previously deleted), one profile, shared settings, and 339 command receipts**. The original Sheet is retained unchanged as a backup, not a second live backend. Private migration exports are kept outside Git. New entries go to Firestore only.
+
+**After this switch, refresh/reopen Huck on every phone and old browser tab.** An already-loaded old version can still write to Sheets; it does not switch backends until refreshed. If an old tab was used afterward, preserve its storage and reconcile late Sheet changes before deleting anything. Browser preferences and pending requests retain the original `huck-v1` storage key, with a one-time local pre-switch recovery copy.
+
+**Access is intentionally public:** anyone can read, change or delete real data or consume project quota. No password, sign-in, administrator roles or trusted server-side input validation are implemented. The Firebase API key is public configuration, not a password. Protection can be added later.
 
 On October 30, 2026, 24 user-approved sleep records were imported from two screenshots covering October 19–30. Times were estimated to about five minutes in Pacific time; blank periods were left alone, existing records were preserved, and the saved entries were verified by reading the backend again. This history is approximate and incomplete, not a complete account of sleep. Automated tests use isolated samples or a simulated backend, not the household Sheet. Two actual phones have not been used in an automated end-to-end test.
 
@@ -130,22 +136,22 @@ Initial rules are **daytime: four-hour cutoff → 90-minute replacement**, and *
 
 These rules correct forgotten records; they do not advise how long a baby should sleep. Corrected entries are labeled Auto-ended and remain editable. New settings can affect still-running sleeps.
 
-With Sheets connected, corrections are persisted during the next backend request, not by a scheduled alarm. There are no background notifications. Local/sample mode derives the same correction on reopening.
+With Firestore, corrections are derived on reopening and persisted atomically with the next edit, not by a scheduled alarm. There are no background notifications. Local/sample mode derives the same correction on reopening.
 
 ## How syncing works
 
-The website talks to a small Apps Script API backed by the private [household Sheet](https://docs.google.com/spreadsheets/d/1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ/edit). The permanent endpoint is in `config.js`; neither phone pastes it.
+The website connects directly to Cloud Firestore using the permanent public configuration in `config.js`; neither phone pastes anything. The [household Sheet](https://docs.google.com/spreadsheets/d/1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ/edit) is the retained pre-migration backup.
 
 1. A valid edit updates the screen and is saved in a durable local outbox before networking.
 2. Pending edits are sent directly and each successful command returns the authoritative state. With no pending edit, sync fetches a snapshot. A rejected edit triggers a fresh read for conflict review.
-3. Request IDs prevent retry duplicates. Backend locks serialize requests; revisions and overlap checks reject conflicting edits.
-4. Network failures and temporary lock/server-busy errors remain pending and retry automatically, using the same request ID. Retries back off from about 5 seconds to at most 47 seconds. Real edit conflicts remain visible for explicit review rather than silently replacing the other phone's work. Old lock errors incorrectly marked for review are recovered automatically on opening the updated app.
+3. Request IDs prevent retry duplicates. Firestore transactions atomically save records, shared revision and request receipts; revisions and overlap checks reject conflicting edits. Migrated Sheet request IDs also deduplicate old pending acknowledgements.
+4. Network failures remain pending and retry automatically, using the same request ID. Retries back off from about 5 seconds to at most 47 seconds. Real edit conflicts remain visible for explicit review rather than silently replacing the other phone's work.
 
-Checks run on opening/reload, foreground return, reconnection, and every 15 seconds while the page is visible. Hidden tabs do not start new sync cycles. Display seconds are independent of polling. A small animated **Syncing** indicator beside the title is visible during requests; the footer reports pending, synced, unavailable, or conflict status. Apps Script requests can take several seconds; this is not instant push synchronization.
+Opening/reload and foreground return obtain fresh server data. While visible, a live listener delivers changes from other devices without polling. Hidden tabs unsubscribe and reconnect on return. The 15-second interval redraws the UI and retries pending changes, not idle database reads. Display seconds are local. The header/footer indicate syncing, pending, synced, unavailable or conflict status; an immediate optimistic change is not proof of a completed save.
 
 Requests time out after 35 seconds. If a phone suspended its timers and returns with a request older than 40 seconds, the app cancels that stale client request and retries safely; the server may already have saved it, so the original request ID is retained. Retry timers pause while hidden. Advanced settings → Check connection and returning online can retry immediately. Do not clear browser storage to fix syncing: it can contain unsent records.
 
-**November 1 clock fix:** A locally valid sleep timestamp rejected with “Choose a time in the past or now” is treated as a clock-timing retry, not a permanent conflict. The original command ID and recorded time stay unchanged, the pending end stays visible, and matching old blocked commands resume automatically on opening. True overlap/revision conflicts still require review. The new backend includes `serverNow` in responses; once deployed, the app calibrates new Start/End/Now timestamps and timer durations against that clock with a conservative one-second buffer. This avoids ordinary phone/server clock skew. Calibration is memory-only and does not rewrite earlier logs. Without the backend update, automatic retry still helps small clock differences, but a significantly wrong phone clock can keep a change pending longer; use the phone's automatic date/time setting.
+**Clock limitation:** Firestore currently validates times using the device clock. Server timestamps record receipt time, but do not calibrate the phone or validate supplied sleep timestamps. Keep automatic date/time enabled. The old Apps Script server-clock calibration applies only when using the legacy Sheets adapter, not Firestore.
 
 Settings writes also check the shared revision. If another phone changed things meanwhile, reopen settings before retrying. A blocked outbox item must be resolved/discarded before new edits can be queued.
 
@@ -163,9 +169,9 @@ For actual two-phone syncing tests, a clearly named Test child in the real track
 
 A pretend clock, jump-ahead buttons, and preset test scenarios have been discussed but are **not implemented**. Do not change your phone clock to test real records.
 
-## Google Sheets setup, step by step
+## Legacy Google Sheets setup, step by step
 
-The current app is already connected. To reproduce it for another project or replace the backend:
+Production no longer needs Apps Script changes or a publicly editable Sheet. These retained instructions describe the old Sheets backend for reuse or a deliberately planned rollback. Do not simply point the frontend back to the old Sheet: new Firestore entries must be exported/reconciled first.
 
 1. Create/open your Sheet in its owner account. Keep it private; no public editing or publishing is needed.
 2. Choose **Extensions → Apps Script**. A new editor tab opens.
@@ -190,6 +196,8 @@ References: [Apps Script web apps](https://developers.google.com/apps-script/gui
 
 ## When Apps Script needs updating
 
+This section is legacy documentation only. The current Firestore site does not call Apps Script; no owner redeployment is needed for this switch. Browser code changes deploy through GitHub Pages; Firebase security rules require a separate rules deployment.
+
 **November 1 clock calibration update:** The deployed backend was still `2026-10-31-lock-retry` when checked. The frontend retry fix works now; server-clock calibration requires replacing Code.gs with the complete latest `backend.sample.gs`, saving, then **Deploy → Manage deployments → pencil → New version → Deploy**, keeping the same URL. The expected new backend version is `2026-11-01-clock-sync`. No Sheet reset or reimport is needed. Do not copy a diff view; use the full file contents.
 
 **October 31 lock recovery update:** The frontend recovery works with the existing backend. The latest generated backend also waits only two seconds for a lock (instead of 25), returns an explicitly retryable busy response, opens the Sheet only once per request, and flushes new events before unlocking. **These backend changes still require the owner to deploy the latest script; a GitHub push does not deploy Apps Script.**
@@ -202,7 +210,7 @@ References: [Apps Script web apps](https://developers.google.com/apps-script/gui
 
 See [PERFORMANCE_REVIEW.md](PERFORMANCE_REVIEW.md) for growth concerns and the proposed checkpoint upgrade.
 
-Measured live refresh results are in [benchmarks/README.md](benchmarks/README.md). In the later November3 comparison (16 runs per backend), total first-open medians were3.10s Sheets versus0.82s Firestore; cached-reload medians were1.89s versus0.265s. Both used real Pages URLs on the same desktop connection; production had86 entries versus84 synthetic staging entries. All32 final runs succeeded. These are not physical-phone, long-term reliability or scaling guarantees. The earlier Sheets baseline and raw results are preserved; production still uses Sheets.
+Measured live refresh results are in [benchmarks/README.md](benchmarks/README.md). In the November3 pre-switch comparison (16 runs per backend), total first-open medians were3.10s Sheets versus0.82s Firestore; cached-reload medians were1.89s versus0.265s. Both used real Pages URLs on the same desktop connection; Sheets had86 entries versus84 synthetic staging entries. All32 final runs succeeded. These are not physical-phone, long-term reliability or scaling guarantees. Firestore still loads all entry documents on opening, so reads and chart work grow with history; pagination is a future improvement.
 
 Frontend layout, artwork, animations, wake-range lookup, and preferences do not require redeployment. Current birthday/age-range metadata uses an already-supported shared-settings action.
 
@@ -215,6 +223,8 @@ Changing backend actions, validation, event replay, or `shared/core.js` rules do
 5. Verify the deployed behavior and tell users clearly when their action is required.
 
 ## Local development and tests
+
+Firestore regressions: `node tests/firestore.cjs` and `node tests/firestore-cutover.cjs` use disposable live `test-*` environments and clean them up. `node tests/firestore-production-readonly.cjs` verifies the real production page without edits; set `HUCK_CHECK_URL` to check Pages instead of localhost. A private snapshot path can be passed to compare migrated fields. Never point write/cleanup tests at real production.
 
 Canonical checkout: `/Users/talg/Desktop/Websites For Fun/huck`. All new personal websites belong under **Websites For Fun** unless explicitly requested elsewhere.
 

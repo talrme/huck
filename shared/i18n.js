@@ -2,6 +2,9 @@
   'use strict';
   // Translate presentation only: saved names, command payloads and API errors stay canonical.
   const es={
+    'This removes the sleep from the chart. Its history remains in the backend.':'Elimina este sueño del gráfico. Su historial se conserva en la base de datos.',
+    'Firestore data is unavailable. Restore the database before making changes.':'Los datos de Firestore no están disponibles. Restaura la base de datos antes de hacer cambios.',
+    'Sample history is disabled in production.':'El historial de ejemplo está desactivado en producción.',
     'Firestore staging · shared test data · not Avi’s real history':'Pruebas de Firestore · datos de ejemplo compartidos · no es el historial real de Avi',
     'Backend database':'Base de datos','Load sample history':'Cargar historial de ejemplo',
     'Firestore access denied. Check database rules.':'Acceso a Firestore denegado. Revisa las reglas de la base de datos.',

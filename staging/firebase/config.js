@@ -9,6 +9,7 @@ window.HUCK_CONFIG = {
     appId: '1:661217808254:web:29cda1a380b21fe5252d2f'
   },
   environment: 'staging',
+  isStaging: true,
   storageKey: 'huck-firestore-staging-v1',
   appPath: 'staging/firebase/',
   sheetUrl: 'https://console.firebase.google.com/project/huck-7a55c/firestore',

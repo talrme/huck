@@ -3,15 +3,19 @@
   const C = HuckCore, $ = s => document.querySelector(s), esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const demo = new URL(location.href).searchParams.get('demo') === '1';
   const firestore=Boolean(HUCK_CONFIG.firestore),backendConnected=Boolean(HUCK_CONFIG.backendUrl||firestore);
+  const firestoreStaging=firestore&&Boolean(HUCK_CONFIG.isStaging);
   const key = HUCK_CONFIG.storageKey ? HUCK_CONFIG.storageKey+(demo?'-sample':'') : demo ? 'huck-sample-v1' : 'huck-v1';
-  const localBackupKey=firestore?key+'-local-backup':'huck-local-backup-v1',discardedKey=firestore?key+'-discarded':'huck-discarded-changes-v1';
+  const localBackupKey=firestoreStaging?key+'-local-backup':'huck-local-backup-v1',discardedKey=firestoreStaging?key+'-discarded':'huck-discarded-changes-v1';
   const root = new URL('../', document.currentScript.src);
   const appRoot=HUCK_CONFIG.appPath?new URL(HUCK_CONFIG.appPath,root):root;
   let saved; try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch { saved = {}; }
-  if(!demo && HUCK_CONFIG.backendUrl && saved.localOnly && saved.base?.entries?.length) {
+  if(firestore&&!firestoreStaging&&!demo&&!localStorage.getItem(key+'-before-firestore')){
+    const previous=localStorage.getItem(key);if(previous)localStorage.setItem(key+'-before-firestore',previous);
+  }
+  if(!demo && backendConnected && saved.localOnly && saved.base?.entries?.length) {
     localStorage.setItem(localBackupKey, JSON.stringify(saved.base));
   }
-  const empty=C.initial();if(firestore)empty.children[0].name='Test baby';
+  const empty=C.initial();if(firestoreStaging)empty.children[0].name='Test baby';
   let base = saved.base || empty, queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
   prefs.language=['en','es','he'].includes(prefs.language)?prefs.language:'en';HuckI18n.setLanguage(prefs.language);
   prefs.animations=HuckMotion.normalize(prefs.animations,prefs.motion);
@@ -94,7 +98,7 @@
     document.body.dataset.theme=prefs.theme;document.body.dataset.style=prefs.style;document.body.classList.toggle('reduce-motion',!prefs.motion);
     document.body.classList.toggle('no-ambient',!prefs.animations.ambient);
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
-    if(firestore&&!demo){$('#sample-note').hidden=false;$('#sample-note').textContent='Firestore staging · shared test data · not Avi’s real history';}
+    if(firestoreStaging&&!demo){$('#sample-note').hidden=false;$('#sample-note').textContent='Firestore staging · shared test data · not Avi’s real history';}
     if($('[data-seed-staging]'))$('[data-seed-staging]').hidden=s.revision>0;
     $('#review').hidden=!queue.some(c=>c.blocked);
     const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(recordNow()), start=wallTime(today), end=wallTime(shiftDate(today,1));
@@ -568,7 +572,7 @@
     if(t.matches('[data-more-naps]')){const napKey=child().id+':'+periodDate(recordNow()),expanding=expandedNaps!==napKey;expandedNaps=expanding?napKey:'';render();if(expanding&&motionOn('listExpand'))HuckMotion.expand([...document.querySelectorAll('.nap-entry')].slice(3));}
     if(t.matches('[data-close]'))close();
     if(t.matches('[data-save-entry]'))saveEntry();
-    if(t.matches('[data-delete-entry]')){const entry={...editor,kind:'delete'};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the Sheet.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
+    if(t.matches('[data-delete-entry]')){const entry={...editor,kind:'delete'};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the backend.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
     if(t.matches('[data-confirm-delete]')){if(enqueue('delete',{id:editor.id,childId:editor.childId,expectedRev:editor.rev}))close();}
     if(t.matches('[data-child-help]')){modal('Child settings','<p>To change the child, open Settings and choose Child. Sleep history stays separate for each child.</p>','<button class="primary" data-settings>Settings</button>');editor=null;}
     if(t.matches('[data-settings]'))settings();
@@ -637,7 +641,7 @@
       const changed=acceptSnapshot(result.state);lastChecked=Date.now();message='';persist();
       if(changed)render();else $('#connection').textContent=stateLabel();
     },error=>{message=error.message;$('#connection').textContent=stateLabel();notice(message,true);});
-    $('.footer').insertAdjacentHTML('afterend','<button class="text-link staging-seed" data-seed-staging>Load sample history</button>');
+    if(firestoreStaging)$('.footer').insertAdjacentHTML('afterend','<button class="text-link staging-seed" data-seed-staging>Load sample history</button>');
   }
   render();reopenAtTop();sync();
   setInterval(()=>{if(!document.hidden)tick();},1000);

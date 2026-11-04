@@ -1,5 +1,14 @@
 window.HUCK_CONFIG = {
-  backendUrl: 'https://script.google.com/macros/s/AKfycbyjK5CG-E70zBeQy4CRF4-0VKBOiRxgdWpT5TudrZ8eVX5FT0FRJ8imGtKKfBZpHUMYnQ/exec',
-  sheetUrl: 'https://docs.google.com/spreadsheets/d/1y7s7IP4Un91hPcqQMFYW6NAZ_S6cEUZBbJdHc9cdWMQ/edit',
+  backendUrl: '',
+  firestore: {
+    apiKey: 'AIzaSyD5tfMB8rjh16bdoPwdjTnXW3y_nIVQbQA',
+    authDomain: 'huck-7a55c.firebaseapp.com',
+    projectId: 'huck-7a55c',
+    storageBucket: 'huck-7a55c.firebasestorage.app',
+    messagingSenderId: '661217808254',
+    appId: '1:661217808254:web:29cda1a380b21fe5252d2f'
+  },
+  environment: 'production',
+  sheetUrl: 'https://console.firebase.google.com/project/huck-7a55c/firestore',
   liveUrl: 'https://talrme.github.io/huck/'
 };

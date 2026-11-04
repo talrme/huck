@@ -7,7 +7,7 @@
   let confirmed=null,unsubscribe=null,consumer=null,onError=null;
   const readers=new Set();
   const serverTiming=()=>window.dispatchEvent(new CustomEvent('huck-backend-timing',{detail:{phase:'server',action:'snapshot',at:performance.now()}}));
-  const initial=()=>{const s=C.initial();s.children[0].name='Test baby';return s;};
+  const initial=()=>{const s=C.initial();if(environment!=='production')s.children[0].name='Test baby';return s;};
   const clone=s=>JSON.parse(JSON.stringify(s));
   const retryable=error=>['unavailable','deadline-exceeded','aborted','cancelled','resource-exhausted'].includes(String(error.code||'').replace('firestore/',''))||error.retryable;
   function failure(error){
@@ -27,14 +27,14 @@
   ready.catch(()=>{});
   function decode(snapshot){
     const head=snapshot.docs.find(d=>d.id==='head')?.data();
-    if(!head){if(snapshot.size)throw Error('Firestore data is invalid. Restore the test database.');return initial();}
-    if(head.schema!==1||!Array.isArray(head.children)||!head.children.some(c=>!c.archived)||!head.settings||!Number.isFinite(head.revision))throw Error('Firestore data is invalid. Restore the test database.');
+    if(!head){if(snapshot.size||environment==='production')throw Error('Firestore data is unavailable. Restore the database before making changes.');return initial();}
+    if(head.schema!==1||!Array.isArray(head.children)||!head.children.some(c=>!c.archived)||!head.settings||!Number.isFinite(head.revision))throw Error('Firestore data is unavailable. Restore the database before making changes.');
     return {children:head.children,settings:head.settings,revision:head.revision,entries:snapshot.docs.filter(d=>d.id!=='head').map(d=>d.data().entry).sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
   }
   function accept(state,notify=true){
     if(confirmed&&state.revision<confirmed.revision)return confirmed;
     confirmed=state;
-    if(notify)consumer?.({ok:true,state:clone(state),backendVersion:'firestore-staging-v1'});
+    if(notify)consumer?.({ok:true,state:clone(state),backendVersion:'firestore-v1'});
     for(const waiter of readers)waiter.resolve(clone(state));readers.clear();
     return state;
   }
@@ -98,7 +98,7 @@
       if(action==='snapshot')state=await snapshot();
       else if(action==='command')state=await commit(command);
       else throw Error('Unknown action.');
-      const result={ok:true,state,backendVersion:'firestore-staging-v1'};
+      const result={ok:true,state,backendVersion:'firestore-v1'};
       window.dispatchEvent(new CustomEvent('huck-backend-timing',{detail:{phase:'end',action,at:performance.now(),startedAt:start,ok:true}}));
       return result;
     }catch(error){
@@ -109,6 +109,7 @@
     }
   }
   async function seedSamples(){
+    if(environment==='production')throw Error('Sample history is disabled in production.');
     const {sdk,db,head,records}=await ready,now=Date.now(),state=initial();state.revision=1;
     for(let i=0;i<84;i++){const end=now-(83-i)*4*3600000-30*60000;state.entries.push({id:'sample-'+String(i).padStart(3,'0'),childId:'avi',start:end-(45+i%4*15)*60000,end,rev:1,autoEnded:false,deleted:false,updatedAt:now});}
     await sdk.runTransaction(db,async tx=>{

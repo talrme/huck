@@ -2,6 +2,9 @@
   'use strict';
   // Keys stay identical to English; household data and timestamps are never translated.
   const messages={
+    'This removes the sleep from the chart. Its history remains in the backend.':'השינה תוסר מהתרשים. ההיסטוריה שלה תישמר במסד הנתונים.',
+    'Firestore data is unavailable. Restore the database before making changes.':'נתוני Firestore אינם זמינים. יש לשחזר את מסד הנתונים לפני ביצוע שינויים.',
+    'Sample history is disabled in production.':'נתוני דוגמה מושבתים באתר הראשי.',
     'Firestore staging · shared test data · not Avi’s real history':'סביבת בדיקה של Firestore · נתוני דוגמה משותפים · לא ההיסטוריה האמיתית של אבי',
     'Backend database':'מסד הנתונים','Load sample history':'טעינת היסטוריית דוגמה',
     'Firestore access denied. Check database rules.':'הגישה ל־Firestore נדחתה. יש לבדוק את כללי מסד הנתונים.',

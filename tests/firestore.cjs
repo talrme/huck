@@ -54,6 +54,31 @@ const URL='http://127.0.0.1:5190/staging/firebase/';
   await a.p.close();await a.c.setOffline(false);a.p=await a.c.newPage();a.p.on('pageerror',e=>errors.push(e.message));await a.p.goto(URL);
   await a.p.waitForFunction(key=>{const s=JSON.parse(localStorage.getItem(key)||'{}');return s.base?.children.some(c=>c.id==='offline-test')&&!s.queue.length;},storageKey,{timeout:45000});
   await b.p.waitForFunction(()=>HuckTest.getState().children.some(c=>c.id==='offline-test'));
+  // Exercise the actual UI against the disposable live backend, not a mock.
+  const acknowledged=()=>a.p.waitForFunction(key=>!JSON.parse(localStorage.getItem(key)).queue.length,storageKey);
+  await a.p.locator('[data-settings]').click();await a.p.getByText('Advanced settings',{exact:true}).click();
+  await a.p.locator('#new-child').fill('UI test');await a.p.locator('[data-add-child]').click();await acknowledged();
+  const uiChild=await a.p.evaluate(()=>HuckTest.getState().children.find(c=>c.name==='UI test').id);
+  await a.p.locator('#child-select').selectOption(uiChild);await a.p.getByText('Wake-window settings',{exact:true}).click();
+  await a.p.locator('#wake-birthday').fill('2026-09-14');await a.p.locator('[data-wake-age="3"] [data-range-max]').fill('125');
+  await a.p.locator('[data-save-settings]').click();await acknowledged();
+  await b.p.waitForFunction(id=>HuckTest.getState().settings.wakeProfiles?.[id]?.ranges?.[3]?.max===125,uiChild);
+  await a.p.locator('[data-add]').click();await a.p.locator('[data-save-entry]').click();await acknowledged();
+  const uiEntry=await a.p.evaluate(id=>HuckTest.getState().entries.find(e=>e.childId===id),uiChild);
+  assert(uiEntry.end);await a.p.locator('.nap-entry').first().click();await a.p.locator('[data-end-state=running]').click();
+  await a.p.locator('.entry-cancel').click();assert(!(await a.p.locator('#modal').isVisible()));
+  assert(await a.p.evaluate(id=>Boolean(HuckTest.getState().entries.find(e=>e.id===id).end),uiEntry.id),'Cancel must not resume a completed sleep');
+  await a.p.locator('.nap-entry').first().click();await a.p.locator('[data-end-state=running]').click();await a.p.locator('[data-save-entry]').click();await acknowledged();
+  await b.p.waitForFunction(id=>Boolean(HuckCore.active(HuckTest.getState(),id)),uiChild);
+  await a.p.locator('[data-end]').click();await acknowledged();
+  await a.p.locator('.nap-entry').first().click();await a.p.locator('[data-delete-entry]').click();await a.p.locator('[data-confirm-delete]').click();await acknowledged();
+  await b.p.waitForFunction(id=>HuckTest.getState().entries.find(e=>e.id===id)?.deleted,uiEntry.id);
+  await a.p.locator('[data-settings]').click();await a.p.getByText('Advanced settings',{exact:true}).click();
+  await a.p.locator(`[data-archive="${uiChild}"]`).click();await a.p.locator('[data-confirm-archive]').click();await acknowledged();
+  await b.p.waitForFunction(id=>HuckTest.getState().children.find(c=>c.id===id)?.archived,uiChild);
+  await a.p.getByText('Advanced settings',{exact:true}).click();await a.p.locator(`[data-archive="${uiChild}"]`).click();await a.p.locator('[data-confirm-archive]').click();await acknowledged();
+  await b.p.waitForFunction(id=>!HuckTest.getState().children.find(c=>c.id===id)?.archived,uiChild);
+  await a.p.locator('[data-save-settings]').click();
   await a.p.locator('[data-settings]').click();
   for(const language of ['en','es','he'])for(const theme of ['original','night','berry','mint','midnight'])for(const width of [320,390,1280]){
    await a.p.setViewportSize({width,height:844});await a.p.locator(`[data-language=${language}]`).click();await a.p.locator(`button[data-theme=${theme}]`).click();assert(await a.p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
@@ -63,7 +88,7 @@ const URL='http://127.0.0.1:5190/staging/firebase/';
   await a.p.screenshot({path:'/tmp/huck-firestore-phone.png'});await a.p.setViewportSize({width:1280,height:900});await a.p.evaluate(()=>window.scrollTo(0,0));await a.p.waitForTimeout(100);await a.p.screenshot({path:'/tmp/huck-firestore-desktop.png'});
   await a.p.locator('[data-share]').click();assert((await a.p.locator('#share-url').inputValue()).includes('/staging/firebase/'));await a.p.locator('.close').click();
   assert.equal(await a.p.evaluate(()=>localStorage.getItem('huck-v1')),'production-sentinel');assert.deepEqual(errors,[]);
-  console.log('PASS Firestore: isolated live test environment, 84 synthetic entries, start/end propagation, reload persistence, edit, concurrent-start conflict, stable-ID dedupe, durable offline retry, production-storage isolation, three languages/five themes/phone-desktop, staging share URL');
+  console.log('PASS Firestore: isolated live test environment, 84 synthetic entries, start/end propagation, reload persistence, manual add/edit/cancel/resume/delete, shared birthday/custom wake ranges, archive/restore, concurrent-start conflict, stable-ID dedupe, expiry/settings, durable offline retry, production-storage isolation, three languages/five themes/phone-desktop, staging share URL');
   console.log('Propagation smoke timings (includes Playwright action/observation overhead): '+JSON.stringify(timings));
  }finally{
   // Delete only this unique test environment; never staging or household data.
