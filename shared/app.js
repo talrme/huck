@@ -645,6 +645,8 @@
   }
   render();reopenAtTop();sync();
   setInterval(()=>{if(!document.hidden)tick();},1000);
-  setInterval(()=>{if(!document.hidden){if(!$('#modal').open)render();if(!firestore||queue.length)sync();}},15000);
+  // Firestore pushes updates; failures already schedule their own outbox retry.
+  // Only the legacy Sheets adapter needs a regular network check.
+  setInterval(()=>{if(!document.hidden){if(!$('#modal').open)render();if(!firestore)sync();}},firestore?60000:15000);
   window.HuckTest={getState:projected,enqueue,sync,periodDate,wallTime,parseInput};
 })();
