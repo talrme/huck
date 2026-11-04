@@ -10,7 +10,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   assert.equal(saved.config.environment,'production');assert.equal(saved.config.project,'huck-7a55c');assert.equal(saved.saved.queue.length,0);
   if(expected){const canonical=s=>({...s,entries:[...s.entries].sort((a,b)=>a.id.localeCompare(b.id))});assert.deepEqual(canonical(saved.saved.base),canonical(expected));}
   assert.equal(await p.locator('#child-name').innerText(),'Avi');assert(!(await p.locator('#sample-note').isVisible()));assert.equal(await p.locator('[data-seed-staging]').count(),0);
-  assert(await p.locator('#timer-art').evaluate(el=>el.complete&&el.naturalWidth>0));assert(await p.locator('.brand img').count()===0||await p.locator('.brand img').first().evaluate(el=>el.complete&&el.naturalWidth>0));
+  await p.waitForFunction(()=>{const image=document.querySelector('#timer-art');return image?.complete&&image.naturalWidth>0;});assert(await p.locator('.brand img').count()===0||await p.locator('.brand img').first().evaluate(el=>el.complete&&el.naturalWidth>0));
   assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await p.screenshot({path:'/tmp/huck-production-phone.png'});
   await p.locator('.sleep-block').first().click();assert(await p.locator('[data-history-edit]').count()||await p.locator('[data-history-entry]').count());
   await p.locator('[data-settings]').click();await p.mouse.click(2,2);assert(!(await p.locator('#modal').isVisible()));
