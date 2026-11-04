@@ -2,6 +2,7 @@
   'use strict';
   // Translate presentation only: saved names, command payloads and API errors stay canonical.
   const es={
+    'Basic settings':'Ajustes básicos',
     'This removes the sleep from the chart. Its history remains in the backend.':'Elimina este sueño del gráfico. Su historial se conserva en la base de datos.',
     'Firestore data is unavailable. Restore the database before making changes.':'Los datos de Firestore no están disponibles. Restaura la base de datos antes de hacer cambios.',
     'Sample history is disabled in production.':'El historial de ejemplo está desactivado en producción.',

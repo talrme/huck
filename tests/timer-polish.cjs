@@ -3,14 +3,14 @@ const now=Date.parse('2026-10-30T18:00:00Z');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{
-  for(const style of ['daybook','orbit','compact']){
+  for(const style of ['daybook']){
    const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await context.newPage(),errors=[];let state=C.initial(),release=null;
    state.entries=[{id:'long-sleep',childId:'avi',start:now-719*60000,end:null,rev:1,deleted:false,autoEnded:false}];
    p.on('pageerror',e=>errors.push(e.message));await p.clock.setFixedTime(now);
    await p.route('**/config.js',r=>r.fulfill({contentType:'text/javascript',body:'window.HUCK_CONFIG={backendUrl:"https://huck-test.invalid/exec",sheetUrl:"https://example.invalid"};'}));
    await p.route('https://huck-test.invalid/**',async r=>{const u=new URL(r.request().url());if(release){const gate=release;release=null;await gate;}if(u.searchParams.get('action')==='command')state=C.apply(state,JSON.parse(u.searchParams.get('payload')),now);await r.fulfill({contentType:'text/javascript',body:`${u.searchParams.get('callback')}(${JSON.stringify({ok:true,state})});`});});
    let finish;release=new Promise(resolve=>finish=resolve);await p.goto('http://127.0.0.1:5190/',{waitUntil:'domcontentloaded'});await p.locator('#sync-activity').waitFor({state:'visible'});assert.equal(await p.locator('#sync-activity').innerText(),'Syncing');finish();await p.locator('#sync-activity').waitFor({state:'hidden'});
-   await p.locator('[data-settings]').click();await p.locator(`button[data-style="${style}"]`).click();await p.locator('[data-save-settings]').click();
+   await p.locator('[data-settings]').click();await p.locator('[data-save-settings]').click();
    assert((await p.locator('#timer-art').getAttribute('src')).endsWith('/shared/sleeping.png'));assert(await p.locator('#timer-art').evaluate(img=>img.complete&&img.naturalWidth>0));
    assert.equal(await p.locator('#elapsed-main').innerText(),'11h 59m');
    for(const width of [320,390,1280]){await p.setViewportSize({width,height:844});await p.waitForTimeout(80);assert(await p.locator('#elapsed').evaluate(el=>{const main=el.querySelector('#elapsed-main').getBoundingClientRect(),seconds=el.querySelector('#elapsed-seconds').getBoundingClientRect(),box=el.getBoundingClientRect();return Math.abs(main.bottom-seconds.bottom)<15&&seconds.left>=main.right&&seconds.right<=box.right+1&&parseFloat(getComputedStyle(el.querySelector('#elapsed-main')).fontSize)>parseFloat(getComputedStyle(el.querySelector('#elapsed-seconds')).fontSize);}));assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));if(style==='daybook')assert(await p.evaluate(()=>document.querySelector('#elapsed-seconds').getBoundingClientRect().right<=document.querySelector('#timer-art').getBoundingClientRect().left-4));}

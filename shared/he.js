@@ -2,6 +2,7 @@
   'use strict';
   // Keys stay identical to English; household data and timestamps are never translated.
   const messages={
+    'Basic settings':'הגדרות בסיסיות',
     'This removes the sleep from the chart. Its history remains in the backend.':'השינה תוסר מהתרשים. ההיסטוריה שלה תישמר במסד הנתונים.',
     'Firestore data is unavailable. Restore the database before making changes.':'נתוני Firestore אינם זמינים. יש לשחזר את מסד הנתונים לפני ביצוע שינויים.',
     'Sample history is disabled in production.':'נתוני דוגמה מושבתים באתר הראשי.',

@@ -3,7 +3,7 @@ const now=Date.parse('2026-11-01T20:00:00Z');
 (async()=>{
  const b=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{
-  for(const style of ['daybook','orbit','compact']){
+  for(const style of ['daybook']){
    const c=await b.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));const state=C.initial();state.entries=[{id:'last',childId:'avi',start:now-90*60000,end:now-45*60000-4000,rev:1,deleted:false,autoEnded:false}];
    await p.addInitScript(({base,style})=>localStorage.setItem('huck-sample-v1',JSON.stringify({base,prefs:{style,motion:false},queue:[]})),{base:state,style});await p.clock.setFixedTime(now);await p.goto('http://127.0.0.1:5190/?demo=1');assert.equal(await p.locator('#elapsed-main').innerText(),'45m');assert.equal(await p.locator('#elapsed-seconds').innerText(),'04s');assert((await p.locator('#elapsed').getAttribute('aria-label')).includes('awake'));assert.equal(await p.locator('#elapsed').getAttribute('aria-live'),'off');
    const main=await p.locator('#elapsed-main').elementHandle();await p.clock.setFixedTime(now+1000);await p.waitForFunction(()=>document.querySelector('#elapsed-seconds').textContent==='05s');assert(await main.evaluate(e=>e.isConnected));

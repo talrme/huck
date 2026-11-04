@@ -9,9 +9,9 @@ async function time(p,prefix,h,m){await wheel(p,prefix,'hour',String(h%12||12));
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{
-  for(const design of ['daybook','orbit','compact']){
+  for(const design of ['daybook']){
    const c=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',hasTouch:true}),p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.clock.setFixedTime(now);
-   await p.goto('http://127.0.0.1:5190/?demo=1');await p.locator('[data-settings]').click();await p.locator(`button[data-style="${design}"]`).click();await p.locator('[data-save-settings]').click();
+   await p.goto('http://127.0.0.1:5190/?demo=1');await p.locator('[data-settings]').click();await p.locator('[data-save-settings]').click();
    const state=()=>p.evaluate(()=>JSON.stringify(HuckTest.getState()));
    await p.locator('[data-custom-start]').click();assert.equal(await p.locator('#start-time').inputValue(),'10:55');assert.equal(await p.locator('#start-date').inputValue(),'2026-10-30');assert.equal(await p.locator('[data-adjust],[data-ago],input[type=time],input[type=date]').count(),0);
    const before=await state();await p.locator('[data-now="start"]').click();assert.equal(await p.locator('#start-time').inputValue(),'11:00');assert(await p.locator('[data-now="start"]').isVisible());

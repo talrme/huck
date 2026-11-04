@@ -28,7 +28,7 @@
     if(!prefs.motion||document.hidden||matchMedia('(prefers-reduced-motion: reduce)').matches)$('#end-confirmation').getAnimations({subtree:true}).forEach(a=>a.cancel());
   }
   let timerJump=false,lastCounter=null;
-  if(!['daybook','orbit','compact'].includes(prefs.style))prefs.style='daybook';
+  prefs.style='daybook';
   const mascots={sleep:[['sleeping','Sleepy face'],['teddy','Teddy'],['cat','Cat'],['koala','Koala']],awake:[['awake','Baby'],['smile','Smile'],['fox','Fox'],['chick','Chick']]};
   for(const state of ['sleep','awake'])if(!mascots[state].some(([id])=>id===prefs[state+'Mascot']))prefs[state+'Mascot']=mascots[state][0][0];
   const gapCache=new WeakMap();
@@ -420,25 +420,24 @@
     $('#modal-footer').classList.remove('entry-footer');
     $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML='<p id="modal-notice" class="modal-notice" role="alert" hidden></p>'+footer;$('#toast').hidden=true;
     if(title==='Settings'&&!demo&&backendConnected&&localStorage.getItem(localBackupKey)){
-      $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
+      $('#settings-advanced').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
     }
     if(title==='Settings'){
       if(firestore){const link=$('[data-backend-link]');link.textContent='Backend database';}
-      $('#modal-body').insertAdjacentHTML('afterbegin',`<fieldset class="language-settings"><legend data-no-translate>Language</legend><div id="language" class="language-options" role="group" aria-label="Language" data-no-translate style="--language-index:${['en','es','he'].indexOf(prefs.language)}"><span class="language-thumb" aria-hidden="true"></span>${[['en','English'],['es','Español'],['he','עברית']].map(([id,name])=>`<button type="button" data-language="${id}" lang="${id}" dir="${id==='he'?'rtl':'ltr'}" aria-pressed="${prefs.language===id}">${name}</button>`).join('')}</div></fieldset>`);
-      $('#motion').closest('label').outerHTML=animationSettings();
-      $('.swatches').closest('fieldset').insertAdjacentHTML('afterend',`<section class="mascot-settings">${['sleep','awake'].map(state=>`<fieldset><legend>${state==='sleep'?'Sleeping icon':'Awake icon'}</legend><div class="mascot-options">${mascots[state].map(([id,name])=>`<button class="mascot-option" data-mascot-state="${state}" data-mascot="${id}" aria-pressed="${prefs[state+'Mascot']===id}"><img src="${new URL('shared/'+id+'.png',root)}" width="36" height="36" alt=""><span>${name}</span></button>`).join('')}</div></fieldset>`).join('')}</section>`);
+      $('#settings-language').innerHTML=`<fieldset class="language-settings"><legend data-no-translate>Language</legend><div id="language" class="language-options" role="group" aria-label="Language" data-no-translate style="--language-index:${['en','es','he'].indexOf(prefs.language)}"><span class="language-thumb" aria-hidden="true"></span>${[['en','English'],['es','Español'],['he','עברית']].map(([id,name])=>`<button type="button" data-language="${id}" lang="${id}" dir="${id==='he'?'rtl':'ltr'}" aria-pressed="${prefs.language===id}">${name}</button>`).join('')}</div></fieldset>`;
+      $('#settings-mascots').innerHTML=`<section class="mascot-settings">${['sleep','awake'].map(state=>`<fieldset><legend>${state==='sleep'?'Sleeping icon':'Awake icon'}</legend><div class="mascot-options">${mascots[state].map(([id,name])=>`<button class="mascot-option" data-mascot-state="${state}" data-mascot="${id}" aria-pressed="${prefs[state+'Mascot']===id}"><img src="${new URL('shared/'+id+'.png',root)}" width="36" height="36" alt=""><span>${name}</span></button>`).join('')}</div></fieldset>`).join('')}</section>`;
       $('.swatches').insertAdjacentHTML('afterend','<div class="palette-key"><span>Awake</span><span>Sleeping</span></div>');
       document.querySelectorAll('button[data-theme]').forEach(b=>b.title=b.dataset.theme+' · awake / sleeping');
       editor.wakeChild=$('#child-select').value;editor.wakeDrafts={};
-      $('#child-select').closest('label').insertAdjacentHTML('afterend',`<section class="wake-settings"><details><summary>Wake-window settings</summary><label class="toggle">Show wake-window info<input id="show-wake-info" type="checkbox" ${prefs.wakeInfo?'checked':''}></label><div id="wake-fields"></div></details></section>`);
+      $('#settings-wake').innerHTML=`<label class="toggle">Show wake-window info<input id="show-wake-info" type="checkbox" ${prefs.wakeInfo?'checked':''}></label><div id="wake-fields"></div>`;
       renderWakeFields();
     }
-    $('#modal').showModal();icons();
+    $('#modal').showModal();$('#modal').scrollTop=0;icons();
   }
   const close=()=>$('#modal').close();
   function animationSettings(){
     const names=['Off','Gentle','Playful','Custom'],index=['off','gentle','playful','custom'].indexOf(prefs.animationPreset);
-    return `<fieldset class="animation-settings"><legend>Animation settings</legend><label class="toggle">Enable animations<input id="motion" type="checkbox" ${prefs.motion?'checked':''}></label><div class="animation-preset-heading"><label for="animation-level">Animation level</label><strong id="animation-level-name">${names[index]}</strong></div><input type="range" id="animation-level" min="0" max="3" step="1" value="${index}" aria-valuetext="${names[index]}"><div class="animation-level-labels">${names.map(n=>`<span>${n}</span>`).join('')}</div><details><summary>Customize effects</summary><div class="animation-options">${Object.entries(HuckMotion.labels).map(([id,label])=>`<label class="toggle">${label}<input type="checkbox" data-animation="${id}" ${prefs.animations[id]?'checked':''}></label>`).join('')}</div></details><label class="celebration-threshold">Celebrate nighttime sleep over<span><input id="celebrate-hours" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" value="${prefs.celebrateHours}"> hours</span></label></fieldset>`;
+    return `<div class="animation-settings"><label class="toggle">Enable animations<input id="motion" type="checkbox" ${prefs.motion?'checked':''}></label><div class="animation-preset-heading"><label for="animation-level">Animation level</label><strong id="animation-level-name">${names[index]}</strong></div><input type="range" id="animation-level" min="0" max="3" step="1" value="${index}" aria-valuetext="${names[index]}"><div class="animation-level-labels">${names.map(n=>`<span>${n}</span>`).join('')}</div><details><summary>Customize effects</summary><div class="animation-options">${Object.entries(HuckMotion.labels).map(([id,label])=>`<label class="toggle">${label}<input type="checkbox" data-animation="${id}" ${prefs.animations[id]?'checked':''}></label>`).join('')}</div></details><label class="celebration-threshold">Celebrate nighttime sleep over<span><input id="celebrate-hours" type="number" inputmode="decimal" min="0.5" max="12" step="0.5" value="${prefs.celebrateHours}"> hours</span></label></div>`;
   }
   function setAnimations(options,preset){
     prefs.animations={...options};if(preset==='custom')prefs.customAnimations={...options};prefs.animationPreset=preset;prefs.motion=Object.values(options).some(Boolean);clearMotionEffects();persist();render();
@@ -513,9 +512,26 @@
     if(unchanged&&editor.id){$('#modal').close();return;}
     if(enqueue(editor.id?'edit':editor.hasEnd?'add':'start',p))$('#modal').close();
   }
-  function settings(){
+  function settings(section){
     const s=projected();editor={settingsRevision:s.revision};
-    modal('Settings',`<fieldset><legend>Style</legend><div class="style-options">${[['daybook','Daybook','notebook-pen'],['orbit','Orbit','circle'],['compact','Compact','columns-2']].map(([id,label,glyph])=>`<button class="style-option" data-style="${id}" aria-pressed="${prefs.style===id}">${icon(glyph)}<span>${label}</span></button>`).join('')}</div></fieldset><fieldset><legend>Color theme</legend><div class="swatches">${['original','night','berry','mint','midnight'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" data-sandbox-link href="${new URL(demo?'./':'?demo=1',appRoot)}" target="_blank" rel="noopener">${demo?'Open real tracker':'Open testing sandbox'}</a><p class="fine">Sandbox uses sample data on this device only. It never changes shared logs.</p><a class="text-link" data-backend-link href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!backendConnected?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
+    modal('Settings',`
+      <details class="settings-section" id="settings-basic" open><summary>Basic settings</summary><div class="settings-content">
+        <fieldset><legend>Color theme</legend><div class="swatches">${['original','night','berry','mint','midnight'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset>
+        <div id="settings-mascots"></div><div id="settings-language"></div>
+      </div></details>
+      <details class="settings-section" id="settings-children"><summary>Child settings</summary><div class="settings-content">
+        <label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
+        <div class="child-management">${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}</div>
+        <label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>
+      </div></details>
+      <details class="settings-section" id="settings-animations"><summary>Animation settings</summary><div class="settings-content">${animationSettings()}</div></details>
+      <section class="wake-settings"><details class="settings-section"><summary>Wake-window settings</summary><div class="settings-content" id="settings-wake"></div></details></section>
+      <details class="settings-section"><summary>Sleep schedule & timer cleanup</summary><div class="settings-content"><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></div></details>
+      <details class="settings-section"><summary>Advanced settings</summary><div class="settings-content" id="settings-advanced"><a class="text-link" data-sandbox-link href="${new URL(demo?'./':'?demo=1',appRoot)}" target="_blank" rel="noopener">${demo?'Open real tracker':'Open testing sandbox'}</a><p class="fine">Sandbox uses sample data on this device only. It never changes shared logs.</p><a class="text-link" data-backend-link href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!backendConnected?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</div></details>`, '<button class="primary" data-save-settings>Save</button>');
+    if(section==='children'){
+      $('#settings-basic').open=false;$('#settings-children').open=true;
+      requestAnimationFrame(()=>{$('#settings-children').scrollIntoView({block:'start'});$('#child-select').focus({preventScroll:true});});
+    }
   }
   function hours(selected){return Array.from({length:24},(_,h)=>`<option value="${h}" ${Number(selected)===h?'selected':''}>${h%12||12}:00 ${h<12?'AM':'PM'}</option>`).join('');}
   function wakeProfile(s,id){const p=s.settings.wakeProfiles?.[id]||{};return {birthday:typeof p.birthday==='string'?p.birthday:'',...(p.ranges?{ranges:p.ranges}:{})};}
@@ -574,16 +590,15 @@
     if(t.matches('[data-save-entry]'))saveEntry();
     if(t.matches('[data-delete-entry]')){const entry={...editor,kind:'delete'};modal('Delete this sleep?','<p>This removes the sleep from the chart. Its history remains in the backend.</p>','<button data-close>Keep sleep</button><button class="danger" data-confirm-delete>Delete sleep</button>');editor=entry;}
     if(t.matches('[data-confirm-delete]')){if(enqueue('delete',{id:editor.id,childId:editor.childId,expectedRev:editor.rev}))close();}
-    if(t.matches('[data-child-help]')){modal('Child settings','<p>To change the child, open Settings and choose Child. Sleep history stays separate for each child.</p>','<button class="primary" data-settings>Settings</button>');editor=null;}
-    if(t.matches('[data-settings]'))settings();
+    if(t.matches('[data-child-help]')){modal('Child settings','<p>To change the child, open Settings and choose Child. Sleep history stays separate for each child.</p>','<button class="text-link" data-close>Close</button><button class="primary" data-settings data-settings-section="children">Settings</button>');editor=null;}
+    if(t.matches('[data-settings]'))settings(t.dataset.settingsSection);
     if(t.matches('[data-wake-details]'))wakeDetails();
     if(t.matches('[data-reset-wake-ranges]')){document.querySelectorAll('[data-wake-age]').forEach(row=>{const r=HuckWake.ranges.find(r=>r.before===Number(row.dataset.wakeAge));row.querySelector('[data-range-min]').value=r.min;row.querySelector('[data-range-max]').value=r.max;});updateWakeProfilePreview();}
     if(t.matches('[data-save-settings]'))saveSettings();
     if(t.matches('[data-theme]')){prefs.theme=t.dataset.theme;persist();render();document.querySelectorAll('button[data-theme]').forEach(b=>{b.classList.toggle('chosen',b===t);b.setAttribute('aria-pressed',b===t);});}
-    if(t.matches('[data-style]')){prefs.style=t.dataset.style;persist();render();document.querySelectorAll('button[data-style]').forEach(b=>b.setAttribute('aria-pressed',String(b===t)));}
-    if(t.matches('[data-add-child]')){const name=$('#new-child').value;if(enqueue('child',{id:'child-'+uuid(),name}))settings();}
+    if(t.matches('[data-add-child]')){const name=$('#new-child').value;if(enqueue('child',{id:'child-'+uuid(),name}))settings('children');}
     if(t.matches('[data-archive]')){const id=t.dataset.archive, archived=t.dataset.archived==='true';modal(archived?'Archive child?':'Restore child?',`<p>${archived?'Sleep history will be kept.':'This child will be available again.'}</p>`,`<button data-close>Cancel</button><button class="primary" data-confirm-archive="${esc(id)}" data-archived="${archived}">${archived?'Archive':'Restore'}</button>`);}
-    if(t.matches('[data-confirm-archive]')){if(enqueue('archive',{childId:t.dataset.confirmArchive,archived:t.dataset.archived==='true'}))settings();}
+    if(t.matches('[data-confirm-archive]')){if(enqueue('archive',{childId:t.dataset.confirmArchive,archived:t.dataset.archived==='true'}))settings('children');}
     if(t.matches('[data-share]'))share();
     if(t.matches('[data-copy]')){const input=$('#share-url');navigator.clipboard?.writeText(input.value).then(()=>notice('Link copied.')).catch(()=>{input.select();notice('Select and copy the link.');});}
     if(t.matches('[data-sync]')){sync(true);notice(HUCK_CONFIG.backendUrl||firestore?'Checking connection…':'Backend not connected yet.');}

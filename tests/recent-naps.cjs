@@ -2,11 +2,11 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{
-  for(const style of ['daybook','orbit','compact']){
+  for(const style of ['daybook']){
    const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await context.newPage(),errors=[];let backendRequests=0;
    p.on('pageerror',e=>errors.push(e.message));await p.route('https://script.google.com/**',r=>{backendRequests++;return r.abort();});
    await p.clock.setFixedTime(Date.parse('2026-10-31T01:00:00Z'));await p.goto('http://127.0.0.1:5190/?demo=1');
-   await p.locator('[data-settings]').click();await p.locator(`button[data-style="${style}"]`).click();await p.getByText('Advanced settings',{exact:true}).click();
+   await p.locator('[data-settings]').click();await p.getByText('Advanced settings',{exact:true}).click();
    assert.equal(await p.locator('[data-sandbox-link]').innerText(),'Open real tracker');assert(!(await p.locator('[data-sandbox-link]').getAttribute('href')).includes('demo=1'));await p.locator('[data-save-settings]').click();
    assert.equal(await p.locator('#today-naps h2').innerText(),'Recent entries');assert.equal(await p.locator('.nap-entry').count(),3);
    assert((await p.locator('.nap-times').first().innerText()).startsWith('5:00 PM'));assert((await p.locator('#timer-detail').innerText()).includes('Last nap: 35 minutes long'));assert.equal(await p.locator('.last-time-range').innerText(),'(5:00 PM–5:35 PM)');

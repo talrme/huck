@@ -7,7 +7,7 @@ const now=Date.parse('2026-11-01T20:00:00Z');
    const state=C.initial();state.settings.wakeProfiles={avi:{birthday:options.noBirthday?'':'2026-09-18',ranges:{3:{min:60,max:75}}}};if(!options.missing)state.entries=[{id:'last',childId:'avi',start:time-90*60000,end:time-45*60000,rev:1,deleted:false,autoEnded:Boolean(options.autoEnded)}];
    const c=await b.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.clock.setFixedTime(time);await p.addInitScript(({base,style})=>localStorage.setItem('huck-sample-v1',JSON.stringify({base,prefs:{style,motion:false,wakeInfo:true},queue:[]})),{base:state,style});await p.goto('http://127.0.0.1:5190/?demo=1');return {p,c,errors};
   }
-  for(const style of ['daybook','orbit','compact']){
+  for(const style of ['daybook']){
    const {p,c,errors}=await open(style);
    for(const [minutes,phase] of [[0,null],[44,null],[45,'early'],[59,'early'],[60,'range'],[75,'range'],[76,'past'],[180,null]]){
     await p.clock.setFixedTime(now+(minutes-45)*60000);await p.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));assert.equal(await p.locator('#wake-window').isVisible(),Boolean(phase),minutes+' minute visibility');assert.equal(await p.locator('#sleep-delay,.delay-row,.wake-meter').count(),0);

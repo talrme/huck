@@ -2,10 +2,10 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{
-  for(const style of ['daybook','orbit','compact'])for(const noun of ['nap','sleep']){
+  for(const style of ['daybook'])for(const noun of ['nap','sleep']){
    const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),page=await context.newPage(),errors=[];
    page.on('pageerror',e=>errors.push(e.message));const now=Date.parse(noun==='nap'?'2026-11-01T20:00:00Z':'2026-11-02T06:00:00Z');await page.clock.install({time:now});await page.clock.pauseAt(now);await page.goto('http://127.0.0.1:5190/?demo=1');
-   await page.locator('[data-settings]').click();await page.locator(`button[data-style=${style}]`).click();await page.locator('[data-save-settings]').click();
+   await page.locator('[data-settings]').click();await page.locator('[data-save-settings]').click();
    const before=await page.evaluate(()=>HuckTest.getState().entries.filter(e=>!e.deleted));
    await page.locator('[data-start="0"]').click();const record=await page.evaluate(()=>HuckTest.getState().entries.find(e=>!e.end&&!e.deleted));
    assert.equal(record.start,now);assert.equal(await page.locator('#end-confirmation-label').innerText(),(noun==='nap'?'Nap':'Sleep')+' started at');assert.equal(await page.locator('[data-resume-ended]').innerText(),'Still awake?');

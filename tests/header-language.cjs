@@ -8,7 +8,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   assert(await p.locator('.brand-icon').evaluate(e=>e.complete&&e.naturalWidth===192));
   assert(await p.locator('.topbar').evaluate(e=>e.getBoundingClientRect().height<=46));
   await p.locator('[data-child-help]').click();assert(await p.locator('#modal-body').innerText().then(s=>s.includes('open Settings')));
-  await p.locator('#modal [data-settings]').click();
+  await p.locator('#modal [data-settings]').click();await p.locator('#settings-basic>summary').click();
   const stateBefore=await p.evaluate(()=>JSON.stringify(HuckTest.getState()));
   await p.locator('[data-language=es]').click();
   await p.waitForFunction(()=>document.documentElement.lang==='es');
@@ -18,18 +18,17 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   const reducerErrors=[...require('node:fs').readFileSync(require('node:path').join(__dirname,'../shared/core.js'),'utf8').matchAll(/throw Error\('([^']+)'\)/g)].map(m=>m[1]);
   assert.deepEqual(await p.evaluate(messages=>messages.filter(s=>HuckI18n.translate(s)===s),reducerErrors),[],'All reducer validation messages translated');
   const unknown=await p.locator('#modal-body').evaluate(root=>HuckI18n.untranslated(root).filter(s=>!/^\d/.test(s)&&!['Koala','Original'].includes(s)));assert.deepEqual(unknown,[],'All settings text has Spanish coverage');
-  for(const style of ['daybook','orbit','compact'])for(const theme of ['original','night','berry','mint','midnight'])for(const width of [320,390,1280]){
-   await p.locator(`button[data-style=${style}]`).click();
+  for(const style of ['daybook'])for(const theme of ['original','night','berry','mint','midnight'])for(const width of [320,390,1280]){
    await p.setViewportSize({width,height:844});await p.locator(`button[data-theme=${theme}]`).click();
    assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
    assert(await p.locator('.swatches').evaluate(e=>e.scrollWidth<=e.clientWidth));
    for(const dark of ['night','midnight'])assert(await p.locator(`button[data-theme=${dark}]`).evaluate(e=>{const c=getComputedStyle(e),fill=getComputedStyle(e.firstElementChild);return c.borderTopColor==='rgb(0, 0, 0)'&&c.backgroundColor==='rgb(0, 0, 0)'&&fill.backgroundImage.includes('rgb(0, 0, 0)');}),'Dark swatches have full black surrounds and dividers, whether selected or not');
   }
-  await p.setViewportSize({width:390,height:844});await p.locator('button[data-style=daybook]').click();await p.locator('[data-save-settings]').click();
+  await p.setViewportSize({width:390,height:844});await p.locator('[data-save-settings]').click();
   assert.equal(await p.locator('#timer-status').innerText(),'Despierto');
   await p.locator('[data-start]').click();assert(await p.locator('.preceding-wake').isVisible());
   assert((await p.locator('.preceding-wake').innerText()).includes('Tiempo despierto'));
-  for(const style of ['daybook','orbit','compact'])for(const theme of ['original','night','berry','mint','midnight'])for(const width of [320,390,1280]){
+  for(const style of ['daybook'])for(const theme of ['original','night','berry','mint','midnight'])for(const width of [320,390,1280]){
    await p.setViewportSize({width,height:844});await p.evaluate(({style,theme})=>{document.body.dataset.style=style;document.body.dataset.theme=theme;},{style,theme});
    assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
    assert(await p.locator('#actions .primary').evaluate(e=>{const c=getComputedStyle(e),rgb=s=>s.match(/[\d.]+/g).slice(0,3).map(Number),lum=s=>rgb(s).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0),a=lum(c.color),b=lum(c.backgroundColor);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5;}),'Primary action contrast');

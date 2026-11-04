@@ -1,12 +1,12 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
- try{for(const style of ['daybook','orbit','compact']){
+ try{for(const style of ['daybook']){
   const c=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles'}),p=await c.newPage(),errors=[];let api=0;p.on('pageerror',e=>errors.push(e.message));await p.route('https://script.google.com/**',r=>{api++;return r.abort();});
   const now=Date.parse('2026-11-02T02:00:00Z');await p.clock.install({time:now});await p.clock.pauseAt(now);await p.goto('http://127.0.0.1:5190/?demo=1');
   assert.equal(await p.locator('#today-naps h2').innerText(),'Recent entries');assert.equal(await p.locator('.nap-entry').count(),3);assert.equal(await p.locator('.entry-wake').count(),2);
   await p.locator('[data-cycle-mascot]').click();assert((await p.locator('#timer-art').getAttribute('src')).endsWith('/smile.png'));
-  await p.locator('[data-settings]').click();await p.locator(`button[data-style=${style}]`).click();assert.equal(await p.locator('[data-mascot]').count(),8);
+  await p.locator('[data-settings]').click();assert.equal(await p.locator('[data-mascot]').count(),8);
   await p.locator('[data-mascot=fox]').click();assert((await p.locator('#timer-art').getAttribute('src')).endsWith('/fox.png'));await p.locator('[data-mascot=teddy]').click();assert.equal(await p.locator('[data-mascot=teddy]').getAttribute('aria-pressed'),'true');
   await p.locator('#modal').screenshot({path:`/tmp/huck-paired-settings-${style}.png`});await p.locator('[data-save-settings]').click();
   for(const theme of ['original','night','berry','mint']){

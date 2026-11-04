@@ -1,9 +1,9 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
- try{for(const style of ['daybook','orbit','compact']){
+ try{for(const style of ['daybook']){
   const c=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await c.newPage();await p.clock.setFixedTime(Date.parse('2026-11-02T02:00:00Z'));await p.goto('http://127.0.0.1:5190/?demo=1');
-  await p.locator('[data-settings]').click();await p.locator(`button[data-style=${style}]`).click();await p.locator('[data-save-settings]').click();
+  await p.locator('[data-settings]').click();await p.locator('[data-save-settings]').click();
   assert.equal(await p.locator('.nap-entry svg,.nap-kind,.entry-glyph').count(),0);
   for(const theme of ['original','night','berry','mint'])for(const width of [320,390,1280]){
    await p.setViewportSize({width,height:844});await p.evaluate(theme=>document.body.dataset.theme=theme,theme);

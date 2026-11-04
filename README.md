@@ -24,7 +24,7 @@ The app is already configured. The setup instructions below are for recreating o
 
 ## Everyday use
 
-The compact header has the koala-with-pacifier icon and **Huck** on the left and the selected child's name on the right. Tap the name for directions and a shortcut to Settings; it does not switch children accidentally.
+The compact header has the koala-with-pacifier icon and **Huck** on the left and the selected child's name on the right. Tap the name for directions, a small Close button, and a Settings shortcut that opens directly to the Child settings section; it does not switch children accidentally.
 
 **Settings → Language** has a sliding, three-part selector: **English / Español / עברית**. The label always says **Language** in English, so it is easy to find after switching. Changes apply immediately and are remembered on this device. Dialogs, time wheels, validation, syncing, sharing and accessibility labels are translated. Hebrew uses a right-to-left layout, while clock values, time wheels, links and the chronological history chart retain their familiar direction. Names, timestamps and shared records are unchanged; short duration notation (h/m/s) and AM/PM stay the same. Future interface changes must include both Spanish and Hebrew translations and phone-layout checks.
 
@@ -71,10 +71,12 @@ Durations are actual elapsed time. On daylight-saving transition days, the actua
 | --- | --- |
 | Children and sleep entries | Selected child |
 | Each child's birthday and edited age ranges | Show wake-window info |
-| Day/night schedule and forgotten-timer rules | Language, style, color theme, animations |
+| Day/night schedule and forgotten-timer rules | Language, color theme, animations |
 | Archive/restore state | Temporary Recent entries expansion |
 
-Styles are **Daybook, Orbit, Compact**. Colors are **Original, Night, Berry, Mint, Midnight**. Night and Midnight both stay dark with separate awake/sleep accent colors. Their preview swatches have solid black outer surrounds and black diagonal dividers, independent of the selected-theme outline. Style/color/language choices apply immediately; other form fields use Save. The wake visibility toggle also applies immediately.
+Settings uses consistent collapsible sections: **Basic settings** (open initially), **Child settings**, **Animation settings**, **Wake-window settings**, **Sleep schedule & timer cleanup**, and **Advanced settings**. Basic starts with colors, followed by sleeping/awake icons, then Language. Child selection, adding a child and archive/restore controls are together in Child settings; Advanced now contains the sandbox, backend link, connection check and any earlier local backups. All animation controls, including presets, detailed effects and celebration threshold, are under Animation settings.
+
+There is one unified Daybook layout; the Style selector and Compact/Orbit choices were removed. Old style preferences normalize to Daybook without changing records or other preferences. Colors remain **Original, Night, Berry, Mint, Midnight**. Night and Midnight stay dark with separate awake/sleep accents. Their previews have black surrounds/dividers independent of selection. Color/language/icon choices apply immediately; shared form fields use Save. The wake visibility toggle also applies immediately.
 
 Each color theme is now a pair: Awake and Sleeping. Diagonally split swatches preview both colors. The page accents, background tint and action buttons switch automatically with the current state; Night stays dark in both states. **Sleeping icon** and **Awake icon** each have four choices in Settings, applied immediately and saved on this device. You can also tap the main mascot to cycle the current state's choices. Sleeping characters have floating Zs; awake characters bounce, peek or hop. Animation preferences still apply.
 
@@ -84,7 +86,7 @@ Recent tiles are single44px rows: duration left, clock times right, with no icon
 
 The koala-with-pacifier icon is used in the header, browser tabs and phone installation. **Save / Share** includes iPhone/Android installation instructions and a share link for the selected child. Installed apps use the same website/backend, not a separate native database. An already-installed home-screen icon may keep its old artwork until the shortcut is removed and added again.
 
-While sleep is running, a small wake-duration chip above the recent tiles shows the recorded gap immediately before this sleep. It is not a new live timer or a fabricated gap. In history, small upward/downward chevrons indicate a sleep continuing from/to another chart day (normally 7 AM–7 AM). Selecting either segment highlights the entire sleep.
+While sleep is running, a wake-duration chip above the recent tiles shows the recorded gap immediately before this sleep. It uses the same small font, line height and padding as the other wake chips. It is not a new live timer or a fabricated gap. In history, small upward/downward chevrons indicate a sleep continuing from/to another chart day (normally 7 AM–7 AM). Selecting either segment highlights the entire sleep.
 
 State artwork indicates sleeping/awake, not nighttime/daytime. Sleeping has floating Zs; awake has a playful baby face and sparkles. Completed naps make a curved flight into Recent entries with a landing bounce. Both the app's animation toggle and OS reduced-motion preference are respected.
 

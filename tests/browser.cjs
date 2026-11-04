@@ -9,9 +9,9 @@ async function chooseAgo(p,n){await p.locator('[data-custom-start]').click();awa
  await new Promise(r=>server.listen(0,'127.0.0.1',r));const base=`http://127.0.0.1:${server.address().port}`;
  const browser=await chromium.launch({headless:true,executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
  try{
-  for(const style of ['daybook','orbit','compact']){ const i=['daybook','orbit','compact'].indexOf(style)+1;
+  for(const style of ['daybook']){ const i=['daybook'].indexOf(style)+1;
    const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'});const p=await context.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.clock.setFixedTime(now);
-   await p.goto(`${base}/?demo=1`);await p.locator('.sleep-block').first().waitFor();await p.locator('[data-settings]').click();await p.locator(`button[data-style="${style}"]`).click();await p.locator('[data-save-settings]').click();assert.equal(await p.locator('body').getAttribute('data-style'),style);
+   await p.goto(`${base}/?demo=1`);await p.locator('.sleep-block').first().waitFor();await p.locator('[data-settings]').click();await p.locator('[data-save-settings]').click();assert.equal(await p.locator('body').getAttribute('data-style'),style);
    assert(await p.locator('#sample-note').isVisible());assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
    assert.equal(await p.locator('#summary').count(),0);assert.equal(await p.locator('#last-entry').count(),0);
    assert.equal(await p.locator('.day-column.is-today').count(),1);assert.equal(await p.locator('.day-column[aria-current="date"]').count(),1);
@@ -39,10 +39,10 @@ async function chooseAgo(p,n){await p.locator('[data-custom-start]').click();awa
     assert.equal(await p.locator('[data-older]').count(),0,'All sample history already fits in the initial window');
     await p.locator('[data-settings]').click();await p.getByText('Sleep schedule & timer cleanup',{exact:true}).click();await p.locator('#dayStart').selectOption('6');await p.locator('[data-save-settings]').click();
     assert.equal(await p.evaluate(()=>HuckTest.getState().settings.dayStart),6);
-    await p.locator('[data-settings]').click();await p.getByText('Advanced settings',{exact:true}).click();await p.locator('#new-child').fill('Test child');await p.locator('[data-add-child]').click();await p.locator('#child-select').selectOption({label:'Test child'});await p.locator('[data-save-settings]').click();assert.equal(await p.locator('#child-name').innerText(),'Test child');
+    await p.locator('[data-settings]').click();await p.locator('#settings-children>summary').click();await p.locator('#new-child').fill('Test child');await p.locator('[data-add-child]').click();await p.locator('#child-select').selectOption({label:'Test child'});await p.locator('[data-save-settings]').click();assert.equal(await p.locator('#child-name').innerText(),'Test child');
     await chooseAgo(p,10);await p.locator('[data-end="0"]').click();
     const childId=await p.evaluate(()=>HuckTest.getState().children.find(c=>c.name==='Test child').id);
-    await p.locator('[data-settings]').click();await p.getByText('Advanced settings',{exact:true}).click();await p.locator(`[data-archive="${childId}"]`).click();await p.locator('[data-confirm-archive]').click();assert.equal(await p.locator('#child-select').inputValue(),'avi');await p.locator('[data-save-settings]').click();assert(await p.evaluate(id=>HuckTest.getState().entries.some(e=>e.childId===id),childId));
+    await p.locator('[data-settings]').click();await p.locator('#settings-children>summary').click();await p.locator(`[data-archive="${childId}"]`).click();await p.locator('[data-confirm-archive]').click();assert.equal(await p.locator('#child-select').inputValue(),'avi');await p.locator('[data-save-settings]').click();assert(await p.evaluate(id=>HuckTest.getState().entries.some(e=>e.childId===id),childId));
    }
    await p.locator('[data-share]').click();assert((await p.locator('#share-url').inputValue()).includes('child=avi'));assert(!(await p.locator('#share-url').inputValue()).includes('demo='));await p.mouse.click(2,2);assert(!(await p.locator('#modal').isVisible()));
    await p.setViewportSize({width:320,height:740});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

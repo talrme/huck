@@ -2,7 +2,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),C=re
 const now=Date.parse('2026-11-01T20:00:00Z');
 (async()=>{
  const b=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
- try{for(const style of ['daybook','orbit','compact']){
+ try{for(const style of ['daybook']){
   const c=await b.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),p=await c.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.clock.setFixedTime(now);
   await p.addInitScript(({base,style})=>localStorage.setItem('huck-sample-v1',JSON.stringify({base,prefs:{style,motion:false},queue:[]})),{base:C.initial(),style});await p.goto('http://127.0.0.1:5190/?demo=1');
   assert((await p.locator('[data-custom-start]').innerText()).includes('Enter nap manually'));await p.locator('[data-custom-start]').click();assert.equal(await p.locator('#modal-title').innerText(),'Add nap');assert(await p.locator('#end-section').isVisible());assert(!(await p.locator('#end-fields').isVisible()));assert.equal(await p.locator('[data-end-state=running]').getAttribute('aria-pressed'),'true');assert.equal(await p.locator('#time-preview').innerText(),'5m so far');

@@ -1,10 +1,10 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
- try{for(const style of ['daybook','orbit','compact']){
+ try{for(const style of ['daybook']){
   const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles',reducedMotion:'reduce'}),page=await context.newPage();
   await page.clock.install({time:Date.parse('2026-10-31T01:00:00Z')});await page.clock.pauseAt(Date.parse('2026-10-31T01:00:00Z'));await page.goto('http://127.0.0.1:5190/?demo=1');
-  await page.locator('[data-settings]').click();await page.locator(`button[data-style=${style}]`).click();await page.locator('[data-save-settings]').click();
+  await page.locator('[data-settings]').click();await page.locator('[data-save-settings]').click();
   const oldId=await page.locator('.nap-entry').first().getAttribute('data-edit');await page.locator('[data-start="0"]').click();
   const active=await page.evaluate(()=>HuckTest.getState().entries.find(e=>!e.deleted&&!e.end));
   await page.locator(`.nap-entry[data-edit="${oldId}"]`).click();await page.locator('[data-end-state=running]').click();await page.locator('[data-save-entry]').click();

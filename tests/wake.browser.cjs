@@ -19,8 +19,8 @@ try{
  assert.equal(state.settings.wakeProfiles.avi.ranges[3].max,100);await b.p.evaluate(()=>HuckTest.sync());assert.equal(await b.p.locator('#wake-window').getAttribute('data-phase'),'past');
  await b.p.locator('[data-settings]').click();await b.p.getByText('Wake-window settings',{exact:true}).click();assert.equal(await b.p.locator('[data-wake-age="3"] [data-range-max]').inputValue(),'100');
  await b.p.locator('[data-reset-wake-ranges]').click();assert.equal(await b.p.locator('[data-wake-age="3"] [data-range-max]').inputValue(),'120');await b.p.locator('[data-save-settings]').click();await b.p.waitForFunction(()=>document.querySelector('#connection').textContent.startsWith('Synced'));assert(!state.settings.wakeProfiles.avi.ranges);await a.p.evaluate(()=>HuckTest.sync());
- for(const style of ['daybook','orbit','compact']){
-  await a.p.locator('[data-settings]').click();await a.p.locator(`button[data-style="${style}"]`).click();
+ for(const style of ['daybook']){
+  await a.p.locator('[data-settings]').click();
   for(const theme of ['original','night','berry','mint']){await a.p.locator(`button[data-theme="${theme}"]`).click();assert(await a.p.locator('#modal').isVisible());}
   await a.p.locator('button[data-theme=original]').click();await a.p.locator('[data-save-settings]').click();await a.p.evaluate(()=>scrollTo(0,0));await a.p.screenshot({path:`/tmp/huck-wake-${style}.png`});
   for(const width of [320,390,1280]){await a.p.setViewportSize({width,height:844});assert(await a.p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}

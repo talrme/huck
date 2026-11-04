@@ -1,9 +1,9 @@
 const {chromium}=require('playwright'),assert=require('node:assert/strict');
 (async()=>{
  const browser=await chromium.launch({headless:true,executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
- try{for(const style of ['daybook','orbit','compact']){
+ try{for(const style of ['daybook']){
   const context=await browser.newContext({viewport:{width:390,height:844},timezoneId:'America/Los_Angeles'}),page=await context.newPage();await page.clock.setFixedTime(Date.parse('2026-11-01T20:00:00Z'));await page.goto('http://127.0.0.1:5190/?demo=1');
-  await page.locator('[data-settings]').click();await page.locator(`button[data-style=${style}]`).click();await page.locator('[data-save-settings]').click();
+  await page.locator('[data-settings]').click();await page.locator('[data-save-settings]').click();
   await page.evaluate(()=>HuckTest.enqueue('start',{id:'history-dream',childId:'avi',start:Date.now()-60*60000}));const block=page.locator('.sleep-block.running');
   assert.equal(await block.locator('.history-zs i').count(),4);assert.equal(await page.locator('.sleep-block:not(.running) .history-zs').count(),0);assert.equal(await block.locator('.history-zs').getAttribute('aria-hidden'),'true');
   const z=block.locator('.history-zs i').first();assert.equal(await z.evaluate(e=>getComputedStyle(e).animationName),'history-dream');assert(await z.evaluate(e=>parseFloat(getComputedStyle(e).fontSize)>=11));assert.equal(await block.evaluate(e=>getComputedStyle(e).animationName),'history-glow');
@@ -15,7 +15,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
   }
   await page.setViewportSize({width:390,height:844});await block.scrollIntoViewIfNeeded();await page.locator('.chart-shell').screenshot({path:`/tmp/huck-history-zs-${style}.png`});
   await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await z.evaluate(e=>getComputedStyle(e).animationName),'none');
-  await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('[data-settings]').click();await page.locator('#motion').uncheck();await page.locator('[data-save-settings]').click();assert.equal(await z.evaluate(e=>getComputedStyle(e).animationName),'none');
+  await page.emulateMedia({reducedMotion:'no-preference'});await page.locator('[data-settings]').click();await page.locator('#settings-animations>summary').click();await page.locator('#motion').uncheck();await page.locator('[data-save-settings]').click();assert.equal(await z.evaluate(e=>getComputedStyle(e).animationName),'none');
   await page.locator('[data-end="0"]').click();assert.equal(await page.locator('.history-zs').count(),0);
   await context.close();console.log('PASS '+style+': active-only moving Zs, readable labels/clicks across themes and widths, OS/app reduced motion, cleanup on end');
  }}finally{await browser.close();}

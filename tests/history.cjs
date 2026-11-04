@@ -23,8 +23,8 @@ function fixture(count){const s=C.initial();for(let i=0;i<count;i++)s.entries.pu
   const oldAnchor=await p.locator('.day-column').nth(30).evaluate(e=>e.getBoundingClientRect().x);assert(Math.abs(anchor-oldAnchor)<2,'Prepending should preserve chart position');
   await p.locator('#chart-scroll').evaluate(e=>e.scrollLeft=0);await p.waitForFunction(()=>document.querySelectorAll('.day-column').length===75);assert.equal(await p.locator('[data-older]').count(),0);assert.equal(await p.locator('.day-column').first().getAttribute('data-date'),'2026-08-17');assert.equal(calls(),0);
   await p.locator('[data-today]').click();
-  for(const style of ['daybook','orbit','compact'])for(const theme of ['original','night','berry','mint']){
-   await p.locator('[data-settings]').click();await p.locator(`button[data-style="${style}"]`).click();await p.locator(`button[data-theme="${theme}"]`).click();await p.locator('[data-save-settings]').click();
+  for(const style of ['daybook'])for(const theme of ['original','night','berry','mint']){
+   await p.locator('[data-settings]').click();await p.locator(`button[data-theme="${theme}"]`).click();await p.locator('[data-save-settings]').click();
    const colors=await p.evaluate(()=>{const a=getComputedStyle(document.querySelector('.running')),b=getComputedStyle(document.querySelector('.is-today .sleep-block:not(.running)'));return [a.backgroundColor,b.backgroundColor,a.color];});assert.notEqual(colors[0],colors[1]);assert.notEqual(colors[0],colors[2]);
    await p.locator('.running').click();
    for(const width of [320,390,1280]){await p.setViewportSize({width,height:900});assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));const box=await p.locator('#history-details').boundingBox();assert(box.x>=0&&box.x+box.width<=width);}
