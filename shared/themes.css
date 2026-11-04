@@ -38,7 +38,7 @@ body[data-theme=midnight] .wake-error,body[data-theme=midnight] .time-invalid,bo
 body[data-theme=midnight] .wake-window[data-phase=early]{--wake-color:#a6d7bd}
 body[data-theme=midnight] .wake-window[data-phase=range]{--wake-color:#eac680}
 body[data-theme=midnight] .wake-window[data-phase=past]{--wake-color:#e8a9b7}
-.swatch[data-theme=night],.swatch[data-theme=midnight]{border:2px solid #000}
+.swatch[data-theme=night],.swatch[data-theme=midnight]{border:2px solid #000;background:#000;--swatch-divider:#000}
 .header-actions{display:flex;align-items:center;gap:10px;min-width:0}
 .header-actions .sync-activity{min-width:0;font-size:10px}
 body[data-theme=midnight] .entry-delete{color:#ffb3c2}
@@ -53,7 +53,7 @@ html[lang=es] .end-state button{font-size:10px;padding-left:5px;padding-right:5p
 html[lang=es] .animation-level-labels{font-size:9px}
 body[data-state=awake]{--accent:var(--awake-accent);--soft:var(--awake-soft);--bg:var(--awake-bg)}
 body[data-state=sleep]{--accent:var(--sleep-accent);--soft:var(--sleep-soft);--bg:var(--sleep-bg)}
-.swatch[data-theme] span{background:linear-gradient(135deg,var(--awake-accent) 0 49%,var(--paper) 49% 52%,var(--sleep-accent) 52% 100%)}
+.swatch[data-theme] span{background:linear-gradient(135deg,var(--awake-accent) 0 49%,var(--swatch-divider,var(--paper)) 49% 52%,var(--sleep-accent) 52% 100%)}
 .palette-key{display:flex;gap:12px;margin-top:8px;color:var(--muted);font-size:10px}
 .palette-key span{display:flex;align-items:center;gap:4px}.palette-key span:before{content:'';width:6px;height:6px;border-radius:50%;background:var(--awake-accent)}
 .palette-key span+span:before{background:var(--sleep-accent)}

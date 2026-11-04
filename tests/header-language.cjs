@@ -23,7 +23,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict');
    await p.setViewportSize({width,height:844});await p.locator(`button[data-theme=${theme}]`).click();
    assert(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
    assert(await p.locator('.swatches').evaluate(e=>e.scrollWidth<=e.clientWidth));
-   if(theme==='night'||theme==='midnight')assert.equal(await p.locator(`button[data-theme=${theme}]`).evaluate(e=>getComputedStyle(e).borderTopColor),'rgb(0, 0, 0)');
+   for(const dark of ['night','midnight'])assert(await p.locator(`button[data-theme=${dark}]`).evaluate(e=>{const c=getComputedStyle(e),fill=getComputedStyle(e.firstElementChild);return c.borderTopColor==='rgb(0, 0, 0)'&&c.backgroundColor==='rgb(0, 0, 0)'&&fill.backgroundImage.includes('rgb(0, 0, 0)');}),'Dark swatches have full black surrounds and dividers, whether selected or not');
   }
   await p.setViewportSize({width:390,height:844});await p.locator('button[data-style=daybook]').click();await p.locator('[data-save-settings]').click();
   assert.equal(await p.locator('#timer-status').innerText(),'Despierto');

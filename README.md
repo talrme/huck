@@ -66,7 +66,7 @@ Durations are actual elapsed time. On daylight-saving transition days, the actua
 | Day/night schedule and forgotten-timer rules | Language, style, color theme, animations |
 | Archive/restore state | Temporary Recent entries expansion |
 
-Styles are **Daybook, Orbit, Compact**. Colors are **Original, Night, Berry, Mint, Midnight**. Night and Midnight both stay dark with separate awake/sleep accent colors and black-outlined swatches. Style/color/language choices apply immediately; other form fields use Save. The wake visibility toggle also applies immediately.
+Styles are **Daybook, Orbit, Compact**. Colors are **Original, Night, Berry, Mint, Midnight**. Night and Midnight both stay dark with separate awake/sleep accent colors. Their preview swatches have solid black outer surrounds and black diagonal dividers, independent of the selected-theme outline. Style/color/language choices apply immediately; other form fields use Save. The wake visibility toggle also applies immediately.
 
 Each color theme is now a pair: Awake and Sleeping. Diagonally split swatches preview both colors. The page accents, background tint and action buttons switch automatically with the current state; Night stays dark in both states. **Sleeping icon** and **Awake icon** each have four choices in Settings, applied immediately and saved on this device. You can also tap the main mascot to cycle the current state's choices. Sleeping characters have floating Zs; awake characters bounce, peek or hop. Animation preferences still apply.
 
