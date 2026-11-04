@@ -2,6 +2,12 @@
   'use strict';
   // Keys stay identical to English; household data and timestamps are never translated.
   const messages={
+    'Firestore staging · shared test data · not Avi’s real history':'סביבת בדיקה של Firestore · נתוני דוגמה משותפים · לא ההיסטוריה האמיתית של אבי',
+    'Backend database':'מסד הנתונים','Load sample history':'טעינת היסטוריית דוגמה',
+    'Firestore access denied. Check database rules.':'הגישה ל־Firestore נדחתה. יש לבדוק את כללי מסד הנתונים.',
+    'Firestore data is invalid. Restore the test database.':'הנתונים ב־Firestore אינם תקינים. יש לשחזר את מסד נתוני הבדיקה.',
+    'Sample history can only be loaded into an empty staging database.':'אפשר לטעון היסטוריית דוגמה רק למסד נתוני בדיקה ריק.',
+    'Request ID already used for a different change.':'מזהה הבקשה כבר שימש לשינוי אחר.',
     'Language':'שפה','Settings':'הגדרות','Save / Share':'שמירה / שיתוף','Save':'שמירה','Cancel':'ביטול','Close':'סגירה','Dismiss':'סגירה','Edit':'עריכה','Delete':'מחיקה','Now':'עכשיו','now':'עכשיו','Today':'היום','Yesterday':'אתמול','Earlier':'קודם','to':'עד',
     'Sleeping':'ישן','Awake':'ער','Awake · estimated':'ער · הערכה','Wake time unknown':'זמן הערות לא ידוע','No sleep logged yet':'עדיין לא תועדה שינה','Recent entries':'רישומים אחרונים','No entries yet today.':'עדיין אין רישומים להיום.','Show fewer':'הצגת פחות','All today’s entries':'כל הרישומים מהיום','Add sleep entry':'הוספת רישום שינה','Sleep history':'היסטוריית שינה','Show older days':'הצגת ימים קודמים','Show wake durations':'הצגת זמני ערות','Wake window':'חלון ערות','Target wake window':'חלון ערות מנחה',
     'Last nap:':'תנומה אחרונה:','Last sleep:':'שינה אחרונה:','Enter end time':'הזנת שעת סיום','Start nap now':'התחלת תנומה עכשיו','Start sleep now':'התחלת שינה עכשיו','End Nap':'סיום תנומה','End Sleep':'סיום שינה','Enter nap manually':'הזנת תנומה ידנית','Enter sleep manually':'הזנת שינה ידנית',

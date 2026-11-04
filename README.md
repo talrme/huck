@@ -4,11 +4,13 @@
 
 **Repository:** [talrme/huck](https://github.com/talrme/huck)
 
+**Firestore staging:** [Try the separate Firebase test version](https://talrme.github.io/huck/staging/firebase/) · [Setup, isolation and limitations](staging/firebase/README.md). It uses shared synthetic test data and intentionally open access. The main site below remains on Google Sheets; no real history has been migrated.
+
 A phone-first sleep tracker for Tal and Sophie to track Avi's sleep across both phones. Additional children are supported. No account or per-phone backend configuration is required.
 
 ## Current status
 
-The production app is connected to Google Sheets through the Apps Script URL in `config.js`. Daybook, originally staging option 10, is the default design. The staging folders and chooser were removed; use the root live link.
+The production app is connected to Google Sheets through the Apps Script URL in `config.js`. Daybook, originally design option10, is the default design. The old design staging folders and chooser were removed. The separately requested Firestore backend experiment now lives at staging/firebase/; use the root live link for real logs.
 
 On October 30, 2026, 24 user-approved sleep records were imported from two screenshots covering October 19–30. Times were estimated to about five minutes in Pacific time; blank periods were left alone, existing records were preserved, and the saved entries were verified by reading the backend again. This history is approximate and incomplete, not a complete account of sleep. Automated tests use isolated samples or a simulated backend, not the household Sheet. Two actual phones have not been used in an automated end-to-end test.
 
@@ -200,7 +202,7 @@ References: [Apps Script web apps](https://developers.google.com/apps-script/gui
 
 See [PERFORMANCE_REVIEW.md](PERFORMANCE_REVIEW.md) for growth concerns and the proposed checkpoint upgrade.
 
-Measured live refresh results are in [benchmarks/README.md](benchmarks/README.md): sixteen November 3 runs, median 2.045 seconds to fresh-data confirmation/next paint opportunity, range 1.411-4.025 seconds. This short desktop sample did not reproduce the reported 5-10-second phone delay. It is not a phone or scaling benchmark. Production remains on Sheets; Firebase staging is planned, not configured.
+Measured live refresh results are in [benchmarks/README.md](benchmarks/README.md): the initial sixteen November 3 Sheets runs had a median2.045 seconds to fresh-data confirmation/next paint opportunity, range1.411-4.025 seconds. This short desktop sample did not reproduce the reported5-10-second phone delay. It is not a phone or scaling benchmark. Firestore staging is now separately configured for the matched comparison; production remains on Sheets.
 
 Frontend layout, artwork, animations, wake-range lookup, and preferences do not require redeployment. Current birthday/age-range metadata uses an already-supported shared-settings action.
 

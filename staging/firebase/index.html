@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <script>if('scrollRestoration' in history)history.scrollRestoration='manual';</script>
+  <title>Huck · Firestore staging</title>
+  <meta name="theme-color" content="#596cc1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="icon" href="../../shared/favicon.png?v=20261103-koala" type="image/png">
+  <link rel="apple-touch-icon" href="../../shared/apple-touch-icon.png?v=20261103-koala">
+  <link rel="manifest" href="manifest.webmanifest?v=20261103-koala">
+  <link rel="stylesheet" href="../../shared/styles.css?v=20261103-firestore">
+  <link rel="stylesheet" href="../../shared/themes.css?v=20261103-firestore">
+</head>
+<body data-style="daybook">
+  <main>
+    <header class="topbar">
+      <div class="identity"><img class="brand-icon" src="../../shared/app-icon-192.png?v=20261103-koala" alt=""><h1>Huck</h1></div>
+      <div class="header-actions">
+      <span id="sync-activity" class="sync-activity" role="status" hidden><i data-lucide="refresh-cw" aria-hidden="true"></i><span>Syncing</span></span>
+      <button class="child-name" data-child-help aria-label="Child settings"><span id="child-name" data-no-translate>Avi</span></button>
+      </div>
+    </header>
+    <p class="sample-note" id="sample-note" hidden>Sample data · only on this browser · never sent to the Sheet</p>
+    <section class="current" aria-label="Current sleep">
+      <div class="timer" id="timer">
+        <div class="readout">
+          <div class="timer-heading"><span class="status-dot"></span><span id="timer-status">Awake</span></div>
+          <button class="timer-mascot" data-cycle-mascot aria-label="Change awake icon" title="Change icon"><img id="timer-art" class="timer-art" src="../../shared/awake.png" alt=""><span class="sleep-zs" aria-hidden="true"><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span><span>Z</span></span><span class="awake-sparks" aria-hidden="true"><i data-lucide="sparkles"></i></span></button>
+          <div id="elapsed" class="elapsed">—</div>
+          <div id="timer-detail" class="timer-detail"></div>
+        </div>
+        <div id="actions" class="actions"></div>
+        <div id="wake-window" class="wake-window" hidden></div>
+      </div>
+      <section id="end-confirmation" class="end-confirmation" aria-label="Sleep ended" hidden>
+        <div class="end-confirmation-body"><button class="receipt-adjust" data-adjust-ended><span id="end-confirmation-text"><span id="end-confirmation-label">Nap ended at</span> <span id="end-confirmation-time" class="receipt-link"></span></span><span class="receipt-link">Adjust time</span></button><button class="receipt-close" data-dismiss-ended aria-label="Dismiss end confirmation" title="Dismiss"><i data-lucide="x"></i></button><button class="receipt-resume" data-resume-ended>Still napping?</button></div>
+        <div class="end-confirmation-progress" aria-hidden="true"></div>
+      </section>
+      <section id="today-naps" class="today-naps" aria-label="Recent entries"></section>
+    </section>
+    <section class="history" aria-label="Sleep history">
+      <header class="history-heading"><div><h2>Sleep history</h2><small id="chart-date"></small></div><button class="text-link" data-today>Today <i data-lucide="arrow-right"></i></button></header>
+      <div class="chart-shell"><div class="time-axis" id="time-axis" aria-hidden="true"></div><div class="chart-scroll" id="chart-scroll" tabindex="0" aria-label="Sleep timeline; scroll for older days"><div class="chart-days" id="chart-days"></div></div></div>
+      <label class="history-wake-toggle toggle"><span>Show wake durations</span><input type="checkbox" id="history-wake"></label>
+      <section id="history-details" class="history-details" aria-label="Selected sleep details" hidden></section>
+    </section>
+    <footer class="footer"><button data-settings><i data-lucide="settings"></i>Settings</button><button data-share><i data-lucide="share-2"></i>Save / Share</button></footer>
+    <p class="connection" id="connection" role="status"></p>
+    <button id="review" class="review text-link" data-review hidden>Review sync issue</button>
+  </main>
+  <dialog id="modal" aria-labelledby="modal-title">
+    <header class="modal-head"><h2 id="modal-title"></h2><button class="close" data-close aria-label="Close"><i data-lucide="x"></i></button></header>
+    <div class="modal-body" id="modal-body"></div><footer class="modal-footer" id="modal-footer"></footer>
+  </dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script src="config.js"></script>
+  <script src="../../shared/lucide.min.js"></script>
+  <script src="../../shared/core.js"></script>
+  <script src="../../shared/firestore.js?v=20261103-staging"></script>
+  <script src="../../shared/wake.js?v=20261101-quiet-awake"></script>
+  <script src="../../shared/visuals.js?v=20261102"></script>
+  <script src="../../shared/motion.js?v=20261102"></script>
+  <script src="../../shared/time-picker.js?v=20261030-scroll-picker"></script>
+  <script src="../../shared/he.js?v=20261103-firestore"></script>
+  <script src="../../shared/i18n.js?v=20261103-firestore"></script>
+  <script src="../../shared/app.js?v=20261103-firestore"></script>
+</body>
+</html>

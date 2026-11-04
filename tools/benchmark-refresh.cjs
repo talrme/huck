@@ -5,7 +5,13 @@ const OUTPUT=process.env.HUCK_BENCH_OUTPUT||'/private/tmp/huck-sheets-refresh-be
 const runs=[];
 async function instrument(){
   const b=window.__refreshBench={initialRenderMs:null,cachedAtStart:false,syncDomMs:null,freshPaintMs:null,requests:[],errors:[]};
-  try{const saved=JSON.parse(localStorage.getItem('huck-v1')||'{}');b.cachedAtStart=Boolean(saved.base?.entries?.length);}catch{}
+  const storageKey=location.pathname.includes('/staging/firebase/')?'huck-firestore-staging-v1':'huck-v1';
+  try{const saved=JSON.parse(localStorage.getItem(storageKey)||'{}');b.cachedAtStart=Boolean(saved.base?.entries?.length);}catch{}
+  window.addEventListener('huck-backend-timing',event=>{
+    const d=event.detail;
+    if(d.phase==='start')b.requests.push({action:d.action,startMs:d.at,backend:'firestore'});
+    else{const r=b.requests.find(r=>r.backend==='firestore'&&r.startMs===d.startedAt);if(r){r.responseMs=d.at;r.durationMs=d.at-r.startMs;r.ok=d.ok;}}
+  });
   const observed=new WeakSet();
   function check(){
     const action=document.querySelector('#actions .primary');
@@ -42,9 +48,9 @@ async function instrument(){
     if(cold)await page.goto(LIVE,{waitUntil:'domcontentloaded',timeout:60000});else await page.reload({waitUntil:'domcontentloaded',timeout:60000});
     await page.waitForFunction(()=>window.__refreshBench?.freshPaintMs!==null,{},{timeout:80000});
    }catch(error){failure=error.message.split('\n')[0];}
-   const measurements=await page.evaluate(()=>({...window.__refreshBench,pageUrl:location.href,assetCount:performance.getEntriesByType('resource').length,transferredBytes:performance.getEntriesByType('resource').reduce((sum,e)=>sum+e.transferSize,0)}));
+   const measurements=await page.evaluate(()=>{const b=window.__refreshBench;if(window.HUCK_CONFIG?.firestore&&window.HuckTest){const state=HuckTest.getState();for(const r of b.requests){r.entryCount=state.entries.length;r.childCount=state.children.length;r.revision=state.revision;r.backendVersion='firestore-staging-v1';}}return {...b,pageUrl:location.href,assetCount:performance.getEntriesByType('resource').length,transferredBytes:performance.getEntriesByType('resource').reduce((sum,e)=>sum+e.transferSize,0)};});
    const row={run:i+1,type:cold?'fresh browser':'cached reload',started,failure,...measurements};runs.push(row);
-   fs.writeFileSync(OUTPUT,JSON.stringify({url:LIVE,method:'Unthrottled desktop Chrome, 390x844 viewport, serial runs, no user commands, clean isolated browser storage, durations from navigation start; cross-origin request measured script insertion to JSONP callback',runs},null,2));
+   fs.writeFileSync(OUTPUT,JSON.stringify({url:LIVE,method:'Unthrottled desktop Chrome, 390x844 viewport, serial runs, no user commands, clean isolated browser storage, durations from navigation start; Sheets request measured script insertion to JSONP callback; Firestore request measured adapter start to server-confirmed snapshot completion, including SDK initialization',runs},null,2));
    console.log(JSON.stringify({run:row.run,type:row.type,cached:row.cachedAtStart,initialMs:Math.round(row.initialRenderMs),freshMs:Math.round(row.freshPaintMs),requests:row.requests.map(r=>({action:r.action,ms:Math.round(r.durationMs),ok:r.ok,code:r.code})),failure}));
   }
  }finally{await browser.close();}

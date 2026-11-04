@@ -2,13 +2,17 @@
   'use strict';
   const C = HuckCore, $ = s => document.querySelector(s), esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const demo = new URL(location.href).searchParams.get('demo') === '1';
-  const key = demo ? 'huck-sample-v1' : 'huck-v1';
+  const firestore=Boolean(HUCK_CONFIG.firestore),backendConnected=Boolean(HUCK_CONFIG.backendUrl||firestore);
+  const key = HUCK_CONFIG.storageKey ? HUCK_CONFIG.storageKey+(demo?'-sample':'') : demo ? 'huck-sample-v1' : 'huck-v1';
+  const localBackupKey=firestore?key+'-local-backup':'huck-local-backup-v1',discardedKey=firestore?key+'-discarded':'huck-discarded-changes-v1';
   const root = new URL('../', document.currentScript.src);
+  const appRoot=HUCK_CONFIG.appPath?new URL(HUCK_CONFIG.appPath,root):root;
   let saved; try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch { saved = {}; }
   if(!demo && HUCK_CONFIG.backendUrl && saved.localOnly && saved.base?.entries?.length) {
-    localStorage.setItem('huck-local-backup-v1', JSON.stringify(saved.base));
+    localStorage.setItem(localBackupKey, JSON.stringify(saved.base));
   }
-  let base = saved.base || C.initial(), queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
+  const empty=C.initial();if(firestore)empty.children[0].name='Test baby';
+  let base = saved.base || empty, queue = saved.queue || [], prefs = { child: 'avi', theme: 'original', style: 'daybook', wakeInfo: true, motion: true, ...saved.prefs };
   prefs.language=['en','es','he'].includes(prefs.language)?prefs.language:'en';HuckI18n.setLanguage(prefs.language);
   prefs.animations=HuckMotion.normalize(prefs.animations,prefs.motion);
   if(!['off','gentle','playful','custom'].includes(prefs.animationPreset))prefs.animationPreset=prefs.motion?'playful':'off';
@@ -70,7 +74,7 @@
   if(demo && !saved.base)base=sample();
   let baseSignature=JSON.stringify(base);
   function acceptSnapshot(state){const signature=JSON.stringify(state);if(signature===baseSignature)return false;base=state;baseSignature=signature;return true;}
-  function persist(){const encoded=JSON.stringify({base,queue,prefs,localOnly:!HUCK_CONFIG.backendUrl});if(encoded!==lastPersisted){localStorage.setItem(key,encoded);lastPersisted=encoded;}}
+  function persist(){const encoded=JSON.stringify({base,queue,prefs,localOnly:!backendConnected});if(encoded!==lastPersisted){localStorage.setItem(key,encoded);lastPersisted=encoded;}}
   function projected(){
     const now=recordNow(),pending=queue.map(c=>c.id+':'+(c.blocked||'')).join('|');
     if(projectionCache&&projectionCache.base===base&&projectionCache.pending===pending&&now>=projectionCache.at&&now<projectionCache.expires)return projectionCache.state;
@@ -82,7 +86,7 @@
   function entries(s=projected()){const id=child(s)?.id;if(!entryLists.has(s))entryLists.set(s,new Map());const lists=entryLists.get(s);if(!lists.has(id))lists.set(id,s.entries.filter(e=>e.childId===id&&!e.deleted).sort((a,b)=>b.start-a.start));return lists.get(id);}
   const icon=(name)=>`<i data-lucide="${name}" aria-hidden="true"></i>`;
   function icons(){window.lucide?.createIcons();}
-  function stateLabel(){return demo?'Sample data · this browser only':!HUCK_CONFIG.backendUrl?'This device only · Sheet not connected':queue.some(c=>c.blocked)?'Sync needs review':queue.length?'Saved here · sync pending':busy?'Syncing…':message?'Connection unavailable · showing saved data':lastChecked?'Synced '+clock(lastChecked):'Connecting…';}
+  function stateLabel(){return demo?'Sample data · this browser only':!backendConnected?'This device only · Sheet not connected':queue.some(c=>c.blocked)?'Sync needs review':queue.length?'Saved here · sync pending':busy?'Syncing…':message?'Connection unavailable · showing saved data':lastChecked?'Synced '+clock(lastChecked):'Connecting…';}
   function renderSyncActivity(){$('#sync-activity').hidden=!busy;}
   function render(){
     renderSyncActivity();
@@ -90,6 +94,8 @@
     document.body.dataset.theme=prefs.theme;document.body.dataset.style=prefs.style;document.body.classList.toggle('reduce-motion',!prefs.motion);
     document.body.classList.toggle('no-ambient',!prefs.animations.ambient);
     $('#child-name').textContent=c.name;$('#sample-note').hidden=!demo;$('#connection').textContent=stateLabel();
+    if(firestore&&!demo){$('#sample-note').hidden=false;$('#sample-note').textContent='Firestore staging · shared test data · not Avi’s real history';}
+    if($('[data-seed-staging]'))$('[data-seed-staging]').hidden=s.revision>0;
     $('#review').hidden=!queue.some(c=>c.blocked);
     const running=C.active(s,c.id), list=entries(s), last=list.find(e=>e.end), today=periodDate(recordNow()), start=wallTime(today), end=wallTime(shiftDate(today,1));
     document.body.dataset.state=running?'sleep':'awake';
@@ -330,11 +336,19 @@
     const wasSleeping=Boolean(C.active(before,child(before).id)),sleeping=Boolean(C.active(next,child(next).id)),rect=$('#actions .primary').getBoundingClientRect();
     const old=before.entries.find(e=>e.id===payload.id&&!e.end&&!e.deleted);
     if(old&&payload.end&&(type==='end'||type==='edit')){arrival={id:old.id,duration:payload.end-old.start,from:$('#elapsed').getBoundingClientRect()};pendingCelebrations.set(command.id,{entryId:old.id,at:performance.now()});}
-    if(demo||!HUCK_CONFIG.backendUrl){base=next;persist();render();celebrateConfirmed(command,base);}
+    if(demo||!backendConnected){base=next;persist();render();celebrateConfirmed(command,base);}
     else{queue.push(command);persist();render();sync();}
     if(wasSleeping!==sleeping){if(motionOn('mascotReaction'))HuckMotion.mascot($('#timer-art'),sleeping);if(motionOn('stateRipple'))HuckMotion.ripple({x:rect.x+rect.width/2,y:rect.y+rect.height/2},getComputedStyle(document.body).getPropertyValue('--accent'));}return true;
   }
-  function request(action,payload){return new Promise((resolve,reject)=>{
+  function request(action,payload){
+    if(firestore)return new Promise((resolve,reject)=>{
+      let finished=false;
+      const done=()=>{if(finished)return false;finished=true;clearTimeout(timer);if(pendingRequest===handle)pendingRequest=null;return true;};
+      const fail=()=>{if(done())reject(Object.assign(Error('Connection timed out. Saved changes will retry.'),{retryable:true}));};
+      const timer=setTimeout(fail,35000),handle={startedAt:Date.now(),cancel:fail};pendingRequest=handle;
+      HuckFirestore.request(action,payload).then(result=>{if(done())resolve(result);},error=>{if(done())reject(error);});
+    });
+    return new Promise((resolve,reject)=>{
     const callback='huck_'+uuid().replaceAll('-',''),url=new URL(HUCK_CONFIG.backendUrl);url.searchParams.set('action',action);url.searchParams.set('callback',callback);url.searchParams.set('_',Date.now());if(payload)url.searchParams.set('payload',JSON.stringify(payload));
     const script=document.createElement('script');let finished=false;
     const done=(late=false)=>{if(finished)return false;finished=true;clearTimeout(timer);pendingRequest=null;script.remove();if(late){window[callback]=()=>{};setTimeout(()=>delete window[callback],60000);}else delete window[callback];return true;};
@@ -353,7 +367,7 @@
     retryTimer=setTimeout(()=>{retryTimer=null;sync();},Math.max(0,retryAt-Date.now()));
   }
   async function sync(force=false){
-    if(demo||!HUCK_CONFIG.backendUrl||document.hidden)return;
+    if(demo||!backendConnected||document.hidden)return;
     if(busy){if(pendingRequest&&Date.now()-pendingRequest.startedAt>40000){pendingRequest.cancel();setTimeout(sync,0);}return;}
     if(force===true)retryAt=0;
     if(Date.now()<retryAt){scheduleRetry();return;}
@@ -390,7 +404,7 @@
   function discardRejectedChange(id){
     const cmd=queue.find(c=>c.id===id&&c.blocked);if(!cmd)return;
     // Preserve a local recovery copy before explicitly removing a rejected command.
-    try{const backup=JSON.parse(localStorage.getItem('huck-discarded-changes-v1')||'[]');backup.push({discardedAt:Date.now(),command:cmd});localStorage.setItem('huck-discarded-changes-v1',JSON.stringify(backup));}
+    try{const backup=JSON.parse(localStorage.getItem(discardedKey)||'[]');backup.push({discardedAt:Date.now(),command:cmd});localStorage.setItem(discardedKey,JSON.stringify(backup));}
     catch{return notice('Could not back up the rejected change. Nothing was discarded.',true);}
     queue=queue.filter(c=>c.id!==id);persist();
     const editing=$('#modal').open&&!$('#modal').dataset.syncReview;
@@ -401,10 +415,11 @@
     delete $('#modal').dataset.syncReview;
     $('#modal-footer').classList.remove('entry-footer');
     $('#modal-title').textContent=title;$('#modal-body').innerHTML=body;$('#modal-footer').innerHTML='<p id="modal-notice" class="modal-notice" role="alert" hidden></p>'+footer;$('#toast').hidden=true;
-    if(title==='Settings'&&!demo&&HUCK_CONFIG.backendUrl&&localStorage.getItem('huck-local-backup-v1')){
+    if(title==='Settings'&&!demo&&backendConnected&&localStorage.getItem(localBackupKey)){
       $('#modal-body').insertAdjacentHTML('beforeend','<details><summary>Earlier local records</summary><button data-import-local>Import local sleep records</button><button class="text-link" data-download-local>Download backup</button></details>');
     }
     if(title==='Settings'){
+      if(firestore){const link=$('[data-backend-link]');link.textContent='Backend database';}
       $('#modal-body').insertAdjacentHTML('afterbegin',`<fieldset class="language-settings"><legend data-no-translate>Language</legend><div id="language" class="language-options" role="group" aria-label="Language" data-no-translate style="--language-index:${['en','es','he'].indexOf(prefs.language)}"><span class="language-thumb" aria-hidden="true"></span>${[['en','English'],['es','Español'],['he','עברית']].map(([id,name])=>`<button type="button" data-language="${id}" lang="${id}" dir="${id==='he'?'rtl':'ltr'}" aria-pressed="${prefs.language===id}">${name}</button>`).join('')}</div></fieldset>`);
       $('#motion').closest('label').outerHTML=animationSettings();
       $('.swatches').closest('fieldset').insertAdjacentHTML('afterend',`<section class="mascot-settings">${['sleep','awake'].map(state=>`<fieldset><legend>${state==='sleep'?'Sleeping icon':'Awake icon'}</legend><div class="mascot-options">${mascots[state].map(([id,name])=>`<button class="mascot-option" data-mascot-state="${state}" data-mascot="${id}" aria-pressed="${prefs[state+'Mascot']===id}"><img src="${new URL('shared/'+id+'.png',root)}" width="36" height="36" alt=""><span>${name}</span></button>`).join('')}</div></fieldset>`).join('')}</section>`);
@@ -496,7 +511,7 @@
   }
   function settings(){
     const s=projected();editor={settingsRevision:s.revision};
-    modal('Settings',`<fieldset><legend>Style</legend><div class="style-options">${[['daybook','Daybook','notebook-pen'],['orbit','Orbit','circle'],['compact','Compact','columns-2']].map(([id,label,glyph])=>`<button class="style-option" data-style="${id}" aria-pressed="${prefs.style===id}">${icon(glyph)}<span>${label}</span></button>`).join('')}</div></fieldset><fieldset><legend>Color theme</legend><div class="swatches">${['original','night','berry','mint','midnight'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" data-sandbox-link href="${new URL(demo?'./':'?demo=1',root)}" target="_blank" rel="noopener">${demo?'Open real tracker':'Open testing sandbox'}</a><p class="fine">Sandbox uses sample data on this device only. It never changes shared logs.</p><a class="text-link" href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!HUCK_CONFIG.backendUrl?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
+    modal('Settings',`<fieldset><legend>Style</legend><div class="style-options">${[['daybook','Daybook','notebook-pen'],['orbit','Orbit','circle'],['compact','Compact','columns-2']].map(([id,label,glyph])=>`<button class="style-option" data-style="${id}" aria-pressed="${prefs.style===id}">${icon(glyph)}<span>${label}</span></button>`).join('')}</div></fieldset><fieldset><legend>Color theme</legend><div class="swatches">${['original','night','berry','mint','midnight'].map(t=>`<button class="swatch ${prefs.theme===t?'chosen':''}" data-theme="${t}" title="${t}" aria-label="${t}" aria-pressed="${prefs.theme===t}"><span></span></button>`).join('')}</div></fieldset><label class="toggle">Animations<input type="checkbox" id="motion" ${prefs.motion?'checked':''}></label><label>Child<select id="child-select">${s.children.filter(c=>!c.archived).map(c=>`<option value="${esc(c.id)}" ${c.id===prefs.child?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label><details><summary>Sleep schedule & timer cleanup</summary><div class="field-grid"><label>Day starts<select id="dayStart">${hours(s.settings.dayStart)}</select></label><label>Night starts<select id="nightStart">${hours(s.settings.nightStart)}</select></label>${[['dayLimit','Day cutoff (min)'],['dayReplace','Day replacement (min)'],['nightLimit','Night cutoff (min)'],['nightReplace','Night replacement (min)']].map(([key,label])=>`<label>${label}<input type="number" id="${key}" min="15" max="1440" value="${s.settings[key]}"></label>`).join('')}</div><p class="fine">Shared across phones. Cleanup corrects forgotten logs, not how long your baby should sleep. Uses ${esc(s.settings.timezone)}.</p></details><details><summary>Advanced settings</summary><label>New child<input id="new-child" maxlength="60" autocomplete="off"></label><button data-add-child>${icon('plus')} Add child</button>${s.children.map(c=>`<div class="child-row"><span>${esc(c.name)}</span><button class="text-link" data-archive="${esc(c.id)}" data-archived="${!c.archived}">${c.archived?'Restore':'Archive'}</button></div>`).join('')}<a class="text-link" data-sandbox-link href="${new URL(demo?'./':'?demo=1',appRoot)}" target="_blank" rel="noopener">${demo?'Open real tracker':'Open testing sandbox'}</a><p class="fine">Sandbox uses sample data on this device only. It never changes shared logs.</p><a class="text-link" data-backend-link href="${HUCK_CONFIG.sheetUrl}" target="_blank" rel="noreferrer">Backend spreadsheet</a><button class="text-link" data-sync>Check connection</button>${!demo&&!backendConnected?'<p class="fine">Sheet not connected. Records currently stay on this browser. See README for setup.</p>':''}${demo?'<button class="text-link" data-reset-demo>Reset sample history</button>':''}</details>`, '<button class="primary" data-save-settings>Save</button>');
   }
   function hours(selected){return Array.from({length:24},(_,h)=>`<option value="${h}" ${Number(selected)===h?'selected':''}>${h%12||12}:00 ${h<12?'AM':'PM'}</option>`).join('');}
   function wakeProfile(s,id){const p=s.settings.wakeProfiles?.[id]||{};return {birthday:typeof p.birthday==='string'?p.birthday:'',...(p.ranges?{ranges:p.ranges}:{})};}
@@ -567,7 +582,8 @@
     if(t.matches('[data-confirm-archive]')){if(enqueue('archive',{childId:t.dataset.confirmArchive,archived:t.dataset.archived==='true'}))settings();}
     if(t.matches('[data-share]'))share();
     if(t.matches('[data-copy]')){const input=$('#share-url');navigator.clipboard?.writeText(input.value).then(()=>notice('Link copied.')).catch(()=>{input.select();notice('Select and copy the link.');});}
-    if(t.matches('[data-sync]')){sync(true);notice(HUCK_CONFIG.backendUrl?'Checking connection…':'Backend not connected yet.');}
+    if(t.matches('[data-sync]')){sync(true);notice(HUCK_CONFIG.backendUrl||firestore?'Checking connection…':'Backend not connected yet.');}
+    if(t.matches('[data-seed-staging]')&&firestore&&!demo){t.disabled=true;HuckFirestore.seedSamples().then(()=>sync(true)).catch(e=>notice(e.message,true)).finally(()=>t.disabled=false);}
     if(t.matches('[data-older]'))loadOlderHistory();
     if(t.matches('[data-history-entry]'))selectHistory(t.dataset.historyEntry);
     if(t.matches('[data-history-wake]')){selectHistory(null);selectedWake=t.dataset.historyWake;renderHistoryDetails();document.querySelectorAll('[data-history-wake]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.historyWake===selectedWake)));$('#history-details').scrollIntoView({block:'nearest',behavior:'instant'});}
@@ -576,10 +592,10 @@
     if(t.matches('[data-review]'))reviewSyncIssue();
     if(t.matches('[data-discard]'))discardRejectedChange(t.dataset.discard);
     if(t.matches('[data-reset-demo]')){base=sample();queue=[];persist();close();render();}
-    if(t.matches('[data-download-local]')){const blob=new Blob([localStorage.getItem('huck-local-backup-v1')],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='huck-local-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+    if(t.matches('[data-download-local]')){const blob=new Blob([localStorage.getItem(localBackupKey)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='huck-local-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
     if(t.matches('[data-import-local]')){
       try{
-        const backup=JSON.parse(localStorage.getItem('huck-local-backup-v1'));let next=projected();const commands=[];
+        const backup=JSON.parse(localStorage.getItem(localBackupKey));let next=projected();const commands=[];
         for(const c of backup.children.filter(c=>!c.archived)){if(!next.children.some(other=>other.id===c.id)){const cmd={id:uuid(),type:'child',payload:{id:c.id,name:c.name},createdAt:Date.now()};next=C.apply(next,cmd,Date.now());commands.push(cmd);}}
         for(const e of backup.entries.filter(e=>!e.deleted).sort((a,b)=>a.start-b.start)){
           if(next.entries.some(other=>other.id===e.id))continue;
@@ -607,7 +623,7 @@
     const reset=()=>window.scrollTo({top:0,left:0,behavior:'instant'});
     reset();requestAnimationFrame(reset);
   }
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){sync();render();reopenAtTop();}else{clearTimeout(retryTimer);retryTimer=null;clearMotionEffects();}});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(firestore&&!demo)HuckFirestore.resume();sync();render();reopenAtTop();}else{if(firestore)HuckFirestore.pause();clearTimeout(retryTimer);retryTimer=null;clearMotionEffects();}});
   $('#chart-scroll').addEventListener('scroll',()=>{if($('#chart-scroll').scrollLeft<60)loadOlderHistory();},{passive:true});
   window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',()=>sync(true));
@@ -616,8 +632,15 @@
   window.addEventListener('pageshow',e=>{reopenAtTop();if(e.persisted)sync();});
   window.addEventListener('load',reopenAtTop,{once:true});
   const requested=new URL(location.href).searchParams.get('child');if(requested)prefs.child=requested;
+  if(firestore&&!demo){
+    HuckFirestore.watch(result=>{
+      const changed=acceptSnapshot(result.state);lastChecked=Date.now();message='';persist();
+      if(changed)render();else $('#connection').textContent=stateLabel();
+    },error=>{message=error.message;$('#connection').textContent=stateLabel();notice(message,true);});
+    $('.footer').insertAdjacentHTML('afterend','<button class="text-link staging-seed" data-seed-staging>Load sample history</button>');
+  }
   render();reopenAtTop();sync();
   setInterval(()=>{if(!document.hidden)tick();},1000);
-  setInterval(()=>{if(!document.hidden){if(!$('#modal').open)render();sync();}},15000);
+  setInterval(()=>{if(!document.hidden){if(!$('#modal').open)render();if(!firestore||queue.length)sync();}},15000);
   window.HuckTest={getState:projected,enqueue,sync,periodDate,wallTime,parseInput};
 })();

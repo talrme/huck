@@ -2,6 +2,12 @@
   'use strict';
   // Translate presentation only: saved names, command payloads and API errors stay canonical.
   const es={
+    'Firestore staging · shared test data · not Avi’s real history':'Pruebas de Firestore · datos de ejemplo compartidos · no es el historial real de Avi',
+    'Backend database':'Base de datos','Load sample history':'Cargar historial de ejemplo',
+    'Firestore access denied. Check database rules.':'Acceso a Firestore denegado. Revisa las reglas de la base de datos.',
+    'Firestore data is invalid. Restore the test database.':'Los datos de Firestore no son válidos. Restaura la base de datos de prueba.',
+    'Sample history can only be loaded into an empty staging database.':'El historial de ejemplo solo puede cargarse en una base de datos de prueba vacía.',
+    'Request ID already used for a different change.':'El identificador de solicitud ya se usó para otro cambio.',
     'Language':'Idioma','Settings':'Ajustes','Save / Share':'Guardar / Compartir','Save':'Guardar','Cancel':'Cancelar','Close':'Cerrar','Dismiss':'Cerrar','Edit':'Editar','Delete':'Eliminar','Now':'Ahora','now':'ahora','Today':'Hoy','Yesterday':'Ayer','Earlier':'Anteriores','to':'a',
     'Sleeping':'Durmiendo','Awake':'Despierto','Awake · estimated':'Despierto · estimado','Wake time unknown':'Tiempo despierto desconocido','No sleep logged yet':'Sin sueño registrado aún','Recent entries':'Registros recientes','No entries yet today.':'Todavía no hay registros de hoy.','Show fewer':'Ver menos','All today’s entries':'Todos los registros de hoy','Add sleep entry':'Añadir registro de sueño','Sleep history':'Historial de sueño','Show older days':'Ver días anteriores','Show wake durations':'Ver duración entre sueños','Wake window':'Tiempo despierto','Target wake window':'Tiempo despierto orientativo',
     'Last nap:':'Última siesta:','Last sleep:':'Último sueño:','Enter end time':'Indicar hora de fin','Start nap now':'Iniciar siesta ahora','Start sleep now':'Iniciar sueño ahora','End Nap':'Terminar Siesta','End Sleep':'Terminar Sueño','Enter nap manually':'Añadir siesta manualmente','Enter sleep manually':'Añadir sueño manualmente',
