@@ -111,20 +111,27 @@ The history chart keeps hour grid lines above nighttime shading in every color s
 
 ## Wake-window guide
 
+The temporary start/end confirmation has a compact **Minutes ago** row (1–10). Tap a number to change that entry's start or end to that many minutes before the current time; the pop-up then dismisses automatically. Choices are absolute, not cumulative; invalid/overlapping choices are disabled. The pop-up expands/collapses its height and spacing smoothly (instant with reduced motion), including on dismissal or eight-second expiry. The full time editor, close button and confirmed undo options remain available. Use `?demo=1` to try it without changing shared history.
+
 Open **Settings → Wake-window settings**. Turn on Show wake-window info and enter the child's birthday. Without a valid birthday, guidance stays hidden and a red birthday-required message appears. A missing birthday does not prevent saving unrelated settings.
 
 There is no separate custom-range mode. The birthday selects a row from the editable age table automatically. Birthday and edited ranges sync to both phones as part of the child's profile. **Reset to defaults** restores the age table when saved, preserving the birthday. Clearing a birthday does not erase edited ranges. No birthday is assumed for Avi.
 
 | Completed age | Initial approximate range |
 | --- | --- |
-| Under 1 month | 30–60 minutes |
-| 1–2 months | 60–120 minutes |
-| 3–4 months | 75–150 minutes |
-| 5–6 months | 120–240 minutes |
-| 7–9 months | 150–270 minutes |
-| 10–11 months | 180–360 minutes |
+| 0–4 weeks | 45–60 minutes |
+| 4–8 weeks | 60–75 minutes |
+| 2–3 months | 75–90 minutes |
+| 4 months | 90–120 minutes |
+| 5–6 months | 120–150 minutes |
+| 7–8 months | 150–180 minutes |
+| 9–12 months | 180–240 minutes |
 
-From 12 months there is currently no supported age band. These broad ranges are adapted from [Cleveland Clinic](https://health.clevelandclinic.org/wake-windows-by-age); see also [AAP infant sleep guidance](https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx). They are approximate cues, not deadlines, predictions, or instructions to keep a baby awake. Follow sleepy/hunger cues and ask your pediatrician about individual needs or prematurity.
+Defaults match the **Target Wake Window** column in the first section of the [family sleep guide](https://docs.google.com/document/d/1qQL-HxmINgJCCvArtJ-SCII5kObWh8WlR1K6LfQDQXg/edit?tab=t.0#heading=h.xsxr01xg3wdc), as of 11/5/2026. That section is linked from both wake-window settings and the in-app guide. This is a static copy of the ranges, not a live Google Doc sync. The link requires whatever Google Doc access the owner grants; no sharing permissions were changed.
+
+The first two boundaries use exactly 28 and 56 days; at 56 days, use the 2–3-month row until the fourth calendar-month birthday. Other bands use completed calendar months, with the final band ending at 13 months. Existing profiles with customized legacy ranges keep their original six-band table and values. Choose **Reset to defaults**, then **Save**, to adopt this seven-band table while preserving the birthday; the new profile configuration syncs across devices.
+
+These are the family's configurable reference ranges, not medically validated deadlines. No feeding, nap-cap, or sleep-training rules from the document are automated. For general guidance, see [Cleveland Clinic](https://health.clevelandclinic.org/wake-windows-by-age) and [AAP infant sleep guidance](https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx). Follow sleepy/hunger cues and ask your pediatrician about individual needs or prematurity.
 
 The main wake-window cue is a single subtle line **below the buttons**, shown only while awake during daytime with reliable logs and a configured birthday/range. It starts **15 minutes before the lower end** of the range. For a60–75-minute range: before45 minutes show nothing;45–59 show a muted green dot/range;60–75 use amber; after75 use muted rose until the log becomes stale. The wording stays **Target wake window 60–75 min**; only the small dot and range text change color. Tap it for the guide. There is no progress bar, extra status copy or nighttime message.
 

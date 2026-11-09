@@ -191,13 +191,20 @@ body[data-theme=mint] .day-column .sleep-block.running{background:#f4dfa1;color:
 #start-summary-value{flex:0 1 auto;min-width:0;color:var(--ink);font-variant-numeric:tabular-nums}
 .start-edit{min-height:36px;width:32px;padding:6px;border:0;background:transparent;color:var(--accent)}
 .start-edit svg{width:14px;height:14px}.start-now{display:inline-flex;margin-left:auto}
-.end-confirmation{margin-top:10px;background:var(--soft);border-radius:6px;overflow:hidden;animation:enter .2s ease-out;transition:opacity .18s,transform .18s}
-.end-confirmation.is-closing{opacity:0;transform:translateY(4px)}
+.end-confirmation{margin-top:10px;background:var(--soft);border-radius:6px;overflow:hidden}
+.end-confirmation.is-closing{pointer-events:none}
 .end-confirmation:focus-within:not(.is-closing){opacity:1!important}
 @media(hover:hover){.end-confirmation:hover:not(.is-closing){opacity:1!important}}
 .end-confirmation-body{display:grid;grid-template-columns:minmax(0,1fr) 32px;align-items:stretch;min-height:44px;font-size:12px}
 .receipt-resume{grid-column:1;padding:0 12px 10px;justify-self:start;min-height:32px;border:0;background:transparent;color:var(--muted);font-size:11px;font-weight:450;text-decoration:underline;text-underline-offset:3px}
 .receipt-resume:hover{color:var(--accent)}
+.receipt-quick{grid-column:1/-1;padding:8px 12px 14px;min-width:0}
+#receipt-quick-label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px}
+#receipt-quick-buttons{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:3px}
+#receipt-quick-buttons button{min-width:0;min-height:32px;padding:0;border:0;border-radius:4px;background:color-mix(in srgb,var(--accent) 7%,transparent);color:var(--muted);font-size:11px;font-weight:500;transition:background .15s,color .15s,transform .15s}
+#receipt-quick-buttons button:hover:not(:disabled),#receipt-quick-buttons button[aria-pressed="true"]{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--ink)}
+#receipt-quick-buttons button:active:not(:disabled){transform:scale(.92)}
+#receipt-quick-buttons button:disabled{opacity:.3;cursor:default}
 .receipt-adjust{flex:1;min-width:0;display:flex;justify-content:space-between;gap:10px;padding:10px 12px;min-height:46px;border:0;border-radius:0;background:transparent;text-align:left;font-size:12px;font-weight:450}
 .receipt-adjust:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
 #end-confirmation-text{color:var(--ink)}

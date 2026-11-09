@@ -25,7 +25,11 @@
   function clearMotionEffects(){
     HuckMotion.clear();
     document.querySelectorAll('.sleep-transfer,.nap-entry').forEach(node=>{node.getAnimations().forEach(a=>a.cancel());if(node.classList.contains('sleep-transfer'))node.remove();});
-    if(!prefs.motion||document.hidden||matchMedia('(prefers-reduced-motion: reduce)').matches)$('#end-confirmation').getAnimations({subtree:true}).forEach(a=>a.cancel());
+    if(!prefs.motion||document.hidden||matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const box=$('#end-confirmation');
+      if(box.classList.contains('is-closing'))dismissEndConfirmation(false);
+      else{box.getAnimations({subtree:true}).forEach(a=>a.cancel());receiptLayoutAnimation=null;}
+    }
   }
   let timerJump=false,lastCounter=null;
   prefs.style='daybook';
@@ -46,7 +50,7 @@
   // Older versions mistakenly persisted temporary lock failures as edit conflicts.
   for(const command of queue)if(command.blocked&&(temporaryError(command.blocked)||clockRejection(command,command.blocked)))delete command.blocked;
   let historyChild=null,selectedSleep=null,selectedWake=null;
-  let arrival=null,endReceipt=null,receiptTimer=null,receiptHideTimer=null;
+  let arrival=null,endReceipt=null,receiptTimer=null,receiptLayoutAnimation=null;
   const formatters=new Map(),entryLists=new WeakMap();let projectionCache=null,chartCache=null,lastPersisted=localStorage.getItem(key)||'';
   function formatter(kind,timezone=base.settings.timezone){
     const id=kind+':'+timezone;if(!formatters.has(id))formatters.set(id,new Intl.DateTimeFormat(kind==='parts'?'en-CA':'en-US',kind==='parts'?{timeZone:timezone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}:{timeZone:timezone,hour:'numeric',minute:'2-digit'}));return formatters.get(id);
@@ -135,11 +139,16 @@
     if($('#manual-action'))$('#manual-action').textContent='Enter '+noun+' manually';
   }
   function dismissEndConfirmation(animate=true){
-    clearTimeout(receiptTimer);clearTimeout(receiptHideTimer);endReceipt=null;
-    const box=$('#end-confirmation');
+    clearTimeout(receiptTimer);endReceipt=null;
+    const box=$('#end-confirmation'),height=box.getBoundingClientRect().height,style=getComputedStyle(box),opacity=style.opacity,marginTop=style.marginTop;
     box.getAnimations({subtree:true}).forEach(a=>a.cancel());
-    if(animate&&prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){box.classList.add('is-closing');receiptHideTimer=setTimeout(()=>{box.hidden=true;box.classList.remove('is-closing');},180);}
-    else{box.hidden=true;box.classList.remove('is-closing');}
+    receiptLayoutAnimation=null;
+    if(animate&&!box.hidden&&height>0&&prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      box.classList.add('is-closing');box.inert=true;
+      const closing=box.animate([{height:height+'px',marginTop,opacity},{height:'0px',marginTop:'0px',opacity:0}],{duration:260,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
+      receiptLayoutAnimation=closing;
+      closing.onfinish=()=>{if(receiptLayoutAnimation!==closing)return;box.hidden=true;box.classList.remove('is-closing');box.inert=false;receiptLayoutAnimation=null;closing.cancel();};
+    }else{box.hidden=true;box.classList.remove('is-closing');box.inert=false;}
   }
   function renderEndConfirmation(s=projected()){
     if(!endReceipt)return;
@@ -152,6 +161,22 @@
     $('[data-resume-ended]').textContent=starting?'Still awake?':noun==='nap'?'Still napping?':'Still sleeping?';
     $('#end-confirmation').setAttribute('aria-label',(noun==='nap'?'Nap':'Sleep')+(starting?' started':' ended'));
     $('#end-confirmation-time').textContent=clock(starting?entry.start:entry.end);
+    const quick=$('#receipt-quick-buttons');
+    if(!quick.childElementCount)quick.innerHTML=Array.from({length:10},(_,i)=>`<button type="button" data-receipt-minutes="${i+1}" aria-pressed="false">${i+1}</button>`).join('');
+    quick.querySelectorAll('button').forEach(button=>{
+      const minutes=Number(button.dataset.receiptMinutes),label=(starting?'Start':'End')+' · '+minutes+' '+(minutes===1?'minute ago':'minutes ago');
+      button.disabled=!receiptAdjustment(minutes,s);button.setAttribute('aria-label',label);button.title=label;
+      button.setAttribute('aria-pressed',String(endReceipt.quickMinutes===minutes));
+    });
+  }
+  function receiptAdjustment(minutes,s=projected()){
+    const entry=s.entries.find(e=>e.id===endReceipt?.id&&!e.deleted);
+    if(!entry||!Number.isInteger(minutes)||minutes<1||minutes>10)return null;
+    const at=recordNow()-minutes*60000,starting=endReceipt.kind==='start';
+    const start=starting?at:entry.start,end=starting?entry.end:at;
+    if(at<=0||(starting?entry.end:!entry.end)||end&&end<=start)return null;
+    if(s.entries.some(other=>!other.deleted&&other.id!==entry.id&&other.childId===entry.childId&&start<(other.end||Infinity)&&(end||Infinity)>other.start))return null;
+    return {id:entry.id,childId:entry.childId,start,end,expectedRev:entry.rev};
   }
   function showEndConfirmation(id,kind='end'){
     dismissEndConfirmation(false);const s=projected(),entry=entries(s).find(e=>e.id===id);if(!entry||(kind==='end'?!entry.end:entry.end||C.active(s,entry.childId)?.id!==id))return;
@@ -160,6 +185,8 @@
     const box=$('#end-confirmation');box.hidden=false;renderEndConfirmation(s);
     const meter=$('.end-confirmation-progress');meter.getAnimations().forEach(a=>a.cancel());
     if(prefs.motion&&!matchMedia('(prefers-reduced-motion: reduce)').matches){
+      const opening=box.animate([{height:'0px',marginTop:'0px'},{height:box.getBoundingClientRect().height+'px',marginTop:getComputedStyle(box).marginTop}],{duration:300,easing:'cubic-bezier(.2,.8,.2,1)'});
+      receiptLayoutAnimation=opening;opening.onfinish=()=>{if(receiptLayoutAnimation===opening)receiptLayoutAnimation=null;};
       meter.animate([{transform:'scaleX(1)'},{transform:'scaleX(0)'}],{duration:lifetime,easing:'linear',fill:'forwards'});
       box.animate([{opacity:1},{opacity:.55}],{duration:lifetime,easing:'linear',fill:'forwards'});
     }
@@ -168,8 +195,8 @@
   function pauseEndConfirmation(paused){
     if(!endReceipt||Boolean(endReceipt.pausedAt)===paused)return;
     const box=$('#end-confirmation');
-    if(paused){endReceipt.pausedAt=Date.now();clearTimeout(receiptTimer);box.getAnimations({subtree:true}).forEach(a=>a.pause());}
-    else{endReceipt.until+=Date.now()-endReceipt.pausedAt;delete endReceipt.pausedAt;box.getAnimations({subtree:true}).forEach(a=>a.play());receiptTimer=setTimeout(()=>dismissEndConfirmation(),Math.max(0,endReceipt.until-Date.now()));}
+    if(paused){endReceipt.pausedAt=Date.now();clearTimeout(receiptTimer);box.getAnimations({subtree:true}).filter(a=>a!==receiptLayoutAnimation).forEach(a=>a.pause());}
+    else{endReceipt.until+=Date.now()-endReceipt.pausedAt;delete endReceipt.pausedAt;box.getAnimations({subtree:true}).filter(a=>a!==receiptLayoutAnimation).forEach(a=>a.play());receiptTimer=setTimeout(()=>dismissEndConfirmation(),Math.max(0,endReceipt.until-Date.now()));}
   }
   const receiptBox=$('#end-confirmation');
   let receiptHover=false;
@@ -260,7 +287,8 @@
   }
   function wakeDetails(){
     const s=projected(),info=wakeState(s,entries(s).find(e=>e.end));
-    modal('Wake-window guide',`<p class="callout">Broad ranges, not deadlines. Follow sleepy and hunger cues; don’t keep baby awake to reach a number.</p>${info.age?`<p>${esc(child(s).name)} · ${esc(info.age.label)}${info.window?` · ${duration(info.window.min*60000)}–${duration(info.window.max*60000)}`:''}</p>`:'<p>Add a birthday in Settings to use the age-based guide.</p>'}<p class="fine">Based on the last recorded sleep, not a prediction. Missing entries and auto-ended timers make wake time uncertain. For premature babies or individual sleep concerns, ask your pediatrician which timing to use.</p><table class="wake-ranges"><thead><tr><th>Age</th><th>Approximate range</th></tr></thead><tbody>${HuckWake.configuredRanges(s.settings.wakeProfiles?.[child(s).id]).map(r=>`<tr><td>${r.label}</td><td>${duration(r.min*60000)}–${duration(r.max*60000)}</td></tr>`).join('')}</tbody></table><a href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Source: Cleveland Clinic</a><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx" target="_blank" rel="noreferrer">AAP: infant sleep guidance</a>`, '<button class="primary" data-settings>Settings</button>');editor=null;
+    // Keep the shared family reference separate from general medical guidance.
+    modal('Wake-window guide',`<p class="callout">Broad ranges, not deadlines. Follow sleepy and hunger cues; don’t keep baby awake to reach a number.</p>${info.age?`<p>${esc(child(s).name)} · ${esc(info.age.label)}${info.window?` · ${duration(info.window.min*60000)}–${duration(info.window.max*60000)}`:''}</p>`:'<p>Add a birthday in Settings to use the age-based guide.</p>'}<p><a href="${HuckWake.guideUrl}" target="_blank" rel="noreferrer">Family sleep guide · overview</a></p><p class="fine">Based on the last recorded sleep, not a prediction. Missing entries and auto-ended timers make wake time uncertain. For premature babies or individual sleep concerns, ask your pediatrician which timing to use.</p><table class="wake-ranges"><thead><tr><th>Age</th><th>Approximate range</th></tr></thead><tbody>${HuckWake.configuredRanges(s.settings.wakeProfiles?.[child(s).id]).map(r=>`<tr><td>${r.label}</td><td>${duration(r.min*60000)}–${duration(r.max*60000)}</td></tr>`).join('')}</tbody></table><a href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Cleveland Clinic: general wake-window guidance</a><a href="https://www.healthychildren.org/English/ages-stages/baby/sleep/Pages/getting-your-baby-to-sleep.aspx" target="_blank" rel="noreferrer">AAP: infant sleep guidance</a>`, '<button class="primary" data-settings>Settings</button>');editor=null;
   }
   function renderChart(s){
     const id=child(s).id;
@@ -534,16 +562,16 @@
     }
   }
   function hours(selected){return Array.from({length:24},(_,h)=>`<option value="${h}" ${Number(selected)===h?'selected':''}>${h%12||12}:00 ${h<12?'AM':'PM'}</option>`).join('');}
-  function wakeProfile(s,id){const p=s.settings.wakeProfiles?.[id]||{};return {birthday:typeof p.birthday==='string'?p.birthday:'',...(p.ranges?{ranges:p.ranges}:{})};}
+  function wakeProfile(s,id){const p=s.settings.wakeProfiles?.[id]||{};return {birthday:typeof p.birthday==='string'?p.birthday:'',...(p.ranges?{ranges:p.ranges}:{}),...(p.rangesVersion?{rangesVersion:p.rangesVersion}:{})};}
   function wakeFormProfile(){
-    const ranges={};document.querySelectorAll('[data-wake-age]').forEach(row=>{const key=row.dataset.wakeAge,min=Number(row.querySelector('[data-range-min]').value),max=Number(row.querySelector('[data-range-max]').value),original=HuckWake.ranges.find(r=>String(r.before)===key);if(min!==original.min||max!==original.max)ranges[key]={min,max};});
-    return {birthday:$('#wake-birthday').value,...(Object.keys(ranges).length?{ranges}:{})};
+    const ranges={},version=Number($('.wake-age-table').dataset.wakeVersion);document.querySelectorAll('[data-wake-age]').forEach(row=>{const key=row.dataset.wakeAge,min=Number(row.querySelector('[data-range-min]').value),max=Number(row.querySelector('[data-range-max]').value),original=HuckWake.defaults(version).find(r=>String(r.before)===key);if(min!==original.min||max!==original.max)ranges[key]={min,max};});
+    return {birthday:$('#wake-birthday').value,...(Object.keys(ranges).length?{ranges,rangesVersion:version}:{})};
   }
   function captureWakeDraft(){if($('#wake-birthday'))editor.wakeDrafts[editor.wakeChild]=wakeFormProfile();}
-  function ageRangeFields(p){return `<div class="wake-age-heading"><h4>Age ranges</h4><button type="button" class="text-link wake-reset" data-reset-wake-ranges>Reset to defaults</button></div><table class="wake-age-table"><thead><tr><th>Age</th><th>Min · minutes</th><th>Max · minutes</th></tr></thead><tbody>${HuckWake.configuredRanges(p).map(r=>`<tr data-wake-age="${r.before}"><td>${r.label}</td><td><input type="number" inputmode="numeric" min="5" max="720" data-range-min aria-label="${r.label} minimum minutes" value="${r.min}"></td><td><input type="number" inputmode="numeric" min="5" max="720" data-range-max aria-label="${r.label} maximum minutes" value="${r.max}"></td></tr>`).join('')}</tbody></table>`;}
+  function ageRangeFields(p){return `<div class="wake-age-heading"><h4>Age ranges</h4><button type="button" class="text-link wake-reset" data-reset-wake-ranges>Reset to defaults</button></div><table class="wake-age-table" data-wake-version="${HuckWake.version(p)}"><thead><tr><th>Age</th><th>Min · minutes</th><th>Max · minutes</th></tr></thead><tbody>${HuckWake.configuredRanges(p).map(r=>`<tr data-wake-age="${r.before}"><td>${r.label}</td><td><input type="number" inputmode="numeric" min="5" max="720" data-range-min aria-label="${r.label} minimum minutes" value="${r.min}"></td><td><input type="number" inputmode="numeric" min="5" max="720" data-range-max aria-label="${r.label} maximum minutes" value="${r.max}"></td></tr>`).join('')}</tbody></table>`;}
   function renderWakeFields(){
     const s=projected(),p=editor.wakeDrafts[editor.wakeChild]||wakeProfile(s,editor.wakeChild);
-    $('#wake-fields').innerHTML=`<label>Birthday<input id="wake-birthday" type="date" data-native-picker max="${dateKey(Date.now())}" value="${esc(p.birthday)}" aria-describedby="wake-birthday-error"></label><p id="wake-birthday-error" class="wake-error" role="status" hidden></p>${ageRangeFields(p)}<p id="wake-profile-preview" class="fine"></p><p class="fine">Birthday and age ranges are shared across phones.</p><p class="fine">Approximate cues, not deadlines. Follow baby’s sleepy and hunger cues.</p><a class="text-link" href="https://health.clevelandclinic.org/wake-windows-by-age" target="_blank" rel="noreferrer">Age ranges & source</a>`;
+    $('#wake-fields').innerHTML=`<label>Birthday<input id="wake-birthday" type="date" data-native-picker max="${dateKey(Date.now())}" value="${esc(p.birthday)}" aria-describedby="wake-birthday-error"></label><p id="wake-birthday-error" class="wake-error" role="status" hidden></p><div id="wake-age-fields">${ageRangeFields(p)}</div><p id="wake-profile-preview" class="fine"></p><p class="fine">Birthday and age ranges are shared across phones.</p><p class="fine">Approximate cues, not deadlines. Follow baby’s sleepy and hunger cues.</p><a class="text-link" href="${HuckWake.guideUrl}" target="_blank" rel="noreferrer">Family sleep guide · overview</a>`;
     updateWakeProfilePreview();
   }
   function updateWakeProfilePreview(){
@@ -574,6 +602,10 @@
     if(t.matches('[data-mascot]')){prefs[t.dataset.mascotState+'Mascot']=t.dataset.mascot;persist();render();document.querySelectorAll('[data-mascot]').forEach(b=>b.setAttribute('aria-pressed',String(prefs[b.dataset.mascotState+'Mascot']===b.dataset.mascot)));if(motionOn('iconPop'))HuckMotion.pop(t.querySelector('img'));}
     if(t.matches('[data-toggle-start]'))setStartExpanded($('#start-fields').hidden);
     if(t.matches('[data-adjust-ended]')){const id=endReceipt?.id,starting=endReceipt?.kind==='start';dismissEndConfirmation(false);if(id){openEntry(id);if(starting)setStartExpanded(true);}}
+    if(t.matches('[data-receipt-minutes]')){
+      const minutes=Number(t.dataset.receiptMinutes),payload=receiptAdjustment(minutes);
+      if(payload&&enqueue('edit',payload))dismissEndConfirmation();
+    }
     if(t.matches('[data-resume-ended]')){if(endReceipt?.kind==='start')confirmCancelStarted();else confirmResumeEnded();}
     if(t.matches('[data-confirm-resume]')&&editor.kind==='resume'){if(enqueue('edit',{id:editor.id,childId:editor.childId,start:editor.start,end:null,expectedRev:editor.rev}))close();}
     if(t.matches('[data-confirm-cancel-start]')&&editor.kind==='cancel-start'){if(enqueue('delete',{id:editor.id,childId:editor.childId,expectedRev:editor.rev}))close();}
@@ -593,7 +625,7 @@
     if(t.matches('[data-child-help]')){modal('Child settings','<p>To change the child, open Settings and choose Child. Sleep history stays separate for each child.</p>','<button class="text-link" data-close>Close</button><button class="primary" data-settings data-settings-section="children">Settings</button>');editor=null;}
     if(t.matches('[data-settings]'))settings(t.dataset.settingsSection);
     if(t.matches('[data-wake-details]'))wakeDetails();
-    if(t.matches('[data-reset-wake-ranges]')){document.querySelectorAll('[data-wake-age]').forEach(row=>{const r=HuckWake.ranges.find(r=>r.before===Number(row.dataset.wakeAge));row.querySelector('[data-range-min]').value=r.min;row.querySelector('[data-range-max]').value=r.max;});updateWakeProfilePreview();}
+    if(t.matches('[data-reset-wake-ranges]')){$('#wake-age-fields').innerHTML=ageRangeFields({});updateWakeProfilePreview();}
     if(t.matches('[data-save-settings]'))saveSettings();
     if(t.matches('[data-theme]')){prefs.theme=t.dataset.theme;persist();render();document.querySelectorAll('button[data-theme]').forEach(b=>{b.classList.toggle('chosen',b===t);b.setAttribute('aria-pressed',b===t);});}
     if(t.matches('[data-add-child]')){const name=$('#new-child').value;if(enqueue('child',{id:'child-'+uuid(),name}))settings('children');}
