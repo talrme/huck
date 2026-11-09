@@ -49,6 +49,8 @@ Backdated entries use the manual editor; there are no minutes-ago sliders on the
 
 The editor uses in-page scrolling wheels for **day, hour, minute, and AM/PM**, with a curved/faded appearance and a highlighted selection row. Swipe or scroll each column, tap a nearby value, or focus a column and use arrow keys. The day wheel includes the past two years and preserves an older record's original date when editing. Today and Yesterday are labeled. Phone-native date/time sheets and the old +/-5m/5m ago shortcuts are not used.
 
+The minute wheel loops continuously between **59 and 00** in either direction for both Start and End. This changes the minute only, not the hour, day, or AM/PM. Changes remain a draft until Save.
+
 A matching **Now** button stays visible in both the Start and End headers. It resets that field's date and time, but does not save the record. Use Save at the bottom to apply the draft.
 
 The modal labels its sections **Start** and **End**, each with a matching rounded Now button in the same place. End has a compact, inline sliding **Still napping / Nap ended** selector (Still sleeping / Sleep ended at night). Choosing Now for End also selects the ended state. Switching back and forth preserves the drafted end time. The duration stays visible above the footer buttons, including time so far for a running nap. Large **Save** is on the left, with smaller Cancel and an existing-record Delete icon on the right. Nothing is saved until Save is pressed.

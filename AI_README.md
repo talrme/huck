@@ -67,7 +67,7 @@ Last consolidated: November 3, 2026. This describes the current implementation, 
 - Family use: Tal and Sophie tracking Avi; other children supported. Do not infer Avi's birthday from old chats or synthetic test fixtures.
 - All personal websites should be created in `/Users/talg/Desktop/Websites For Fun` unless the user explicitly chooses elsewhere.
 - Read the code before editing. Preserve unrelated work and real records. Keep changes scoped.
-- The user expects actual implementation, phone-first visual checks, useful regression tests, and usually commit/push for incremental changes. Honor any explicit local-only/approval-first request.
+- The user expects actual implementation, phone-first visual checks and useful regression tests. On 11/9/2026 the owner explicitly approved assuming commit/push for future incremental Huck site changes; publish tested changes by default. A newer local-only/approval-first request always takes precedence. This does not authorize unrelated work, destructive data changes, or changes to real sleep records.
 - The original ten staging apps are gone. Daybook (staging 10) is production. Do not resurrect staging folders/chooser or reset storage.
 
 ## Architecture and file ownership
@@ -279,6 +279,8 @@ Entry footer contains #time-preview above .entry-footer-actions, so duration/err
 IMPORTANT: The prior autosave-on-dismiss was explicitly reversed by the user. Cancel, X, backdrop and Escape close WITHOUT writing anything, even if the draft is valid or invalid. Only Save calls saveEntry/enqueue. Opening Enter end time suggests now but must NEVER finish the sleep just by dismissing. Footer: Delete (existing records only, with confirmation), Cancel, Save. Unchanged existing records preserve timestamps/revision. Keep editor.kind separate for entry/settings/delete confirmation. Guard updateTimePreview against closed/non-entry dialogs so delayed scroll events cannot touch another modal.
 
 Wheel scrolls update only local draft fields and preview, never per-scroll network writes. Native time/date inputs, picker-opening/blur handlers and automatic Now hiding were removed.
+
+11/9/2026: Only the minute wheel now loops in both directions (59 ↔ 00), without carrying into the hour/day/period. `shared/time-picker.js` renders five copies of its 60 values, starts in the middle copy, and recenters matching rows when entering an outer copy, preserving fractional offset and logical index. `w.row` is the physical row; `w.index` and accessible aria-valuenow/valuetext remain the logical 0–59 minute. Paint styles physical nearby rows; refresh returns to the center copy; click selects a physical row and arrow/Page keys move relative to the current physical row. Home/End still select 00/59. Other columns remain bounded. Existing test helpers that select the first matching label still work because paint recenters immediately. `tests/minute-wrap.cjs` is self-hosting, uses sample data only, and checks both fields, repeated turns, touch gestures, keyboard, boundary recentering, unchanged hour, cancel and phone/desktop sizing. No new text or backend schema is needed.
 
 All dialogs are centered, solid, readable in every theme, close on outside click/X/Escape, and use a rotating X. Entry dialogs discard unsaved drafts on every dismissal route.
 
