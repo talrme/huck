@@ -35,4 +35,10 @@ const modern={...profile,rangesVersion:2,ranges:{2:{min:55,max:80}}};
 assert.equal(W.range(modern,today).max,80);assert.equal(W.version(modern),2);
 assert.equal(W.range({...modern,ranges:{}},today).max,75);
 assert(W.guideUrl.endsWith('#heading=h.xsxr01xg3wdc'));
+// An owner-requested reset must discard old keyed overrides, not relabel them as v2.
+const aviLegacy={birthday:'2026-09-14',ranges:{3:{min:60,max:75},10:{min:160,max:270}}};
+assert.deepEqual([W.range(aviLegacy,'2026-11-14').min,W.range(aviLegacy,'2026-11-14').max],[60,75]);
+const aviReset={birthday:aviLegacy.birthday,rangesVersion:2};
+assert.deepEqual([W.range(aviReset,'2026-11-14').min,W.range(aviReset,'2026-11-14').max],[75,90]);
+assert.deepEqual(W.configuredRanges(aviReset).map(r=>[r.min,r.max]),[[45,60],[60,75],[75,90],[90,120],[120,150],[150,180],[180,240]]);
 console.log('PASS wake logic: seven source ranges, exact week/month boundaries, legacy and new custom ranges, invalid birthdays, cue phases and suppression');
