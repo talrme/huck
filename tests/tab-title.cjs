@@ -27,10 +27,13 @@ const server=spawn(process.execPath,['tools/serve.cjs'],{cwd:require('node:path'
   await page.evaluate(()=>{const state=HuckTest.getState(),now=Date.now();state.children.push({id:'other',name:'Other child',archived:false});state.entries.push({id:'other-sleep',childId:'other',start:now-65000,end:null,rev:1,deleted:false});localStorage.setItem('huck-sample-v1',JSON.stringify({base:state,prefs:{child:'other',language:'en',motion:false}}));});
   await page.reload();await page.waitForFunction(()=>document.title==='1:05 💤');
   await page.goto('http://127.0.0.1:5291/?demo=1&child=avi');await page.waitForFunction(()=>document.title==='Huck');
-  // Nighttime sleep uses the same compact format; minutes continue past 59.
+  // Check both sides of the hour boundary and the reported 104-minute case.
   await page.clock.setFixedTime(Date.parse('2026-11-21T06:59:59Z'));await page.locator('[data-start]').click();
   await page.waitForFunction(()=>document.title==='0:00 💤');
-  await page.clock.setFixedTime(Date.parse('2026-11-21T08:00:00Z'));await page.waitForFunction(()=>document.title==='60:01 💤');
+  for(const [seconds,title] of [[3599,'59:59 💤'],[3600,'1:00:00 💤'],[3601,'1:00:01 💤'],[6244,'1:44:04 💤'],[36000,'10:00:00 💤']]){
+   await page.clock.setFixedTime(Date.parse('2026-11-21T06:59:59Z')+seconds*1000);
+   await page.waitForFunction(title=>document.title===title,title);
+  }
   for(const width of [320,390,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:`/tmp/huck-tab-title-${width}.png`});}
   assert.deepEqual(requests,[],'Title ticks never read or write the real backend');assert.deepEqual(errors,[]);
   await context.close();console.log('PASS tab title: start/end, seconds/hours, hidden local-only updates, timestamp catch-up, EN/ES/HE, child isolation, reload, compact night format, phone/desktop, zero backend requests');

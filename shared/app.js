@@ -45,7 +45,9 @@
   function updateTabTitle(s=projected()){
     const selected=child(s),running=C.active(s,selected.id);
     const ms=running?Math.max(0,recordNow()-running.start):0;
-    const title=running?`${Math.floor(ms/60000)}:${String(Math.floor(ms/1000)%60).padStart(2,'0')} 💤`:defaultTabTitle;
+    const totalSeconds=Math.floor(ms/1000),minutes=Math.floor(totalSeconds/60),seconds=String(totalSeconds%60).padStart(2,'0');
+    const elapsed=minutes>=60?`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,'0')}:${seconds}`:`${minutes}:${seconds}`;
+    const title=running?`${elapsed} 💤`:defaultTabTitle;
     if(document.title!==title)document.title=title;
   }
   function clockRejection(command,error){
