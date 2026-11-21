@@ -41,6 +41,14 @@
   let retryAt=0,retryFailures=0,retryTimer=null,pendingRequest=null;
   let clockOffset=0;
   const recordNow=()=>Date.now()+clockOffset;
+  const defaultTabTitle=document.title;
+  function updateTabTitle(s=projected()){
+    const selected=child(s),running=C.active(s,selected.id);
+    const ms=running?Math.max(0,recordNow()-running.start):0;
+    const label=running?HuckI18n.t(sleepName(running.start,s)==='nap'?'Nap':'Sleep'):'';
+    const title=running?`💤 ${label} ${duration(ms)} ${String(Math.floor(ms/1000)%60).padStart(2,'0')}s · ${selected.name} · ${defaultTabTitle}`:defaultTabTitle;
+    if(document.title!==title)document.title=title;
+  }
   function clockRejection(command,error){
     if(!/^Choose a time in the past or now\.$/.test(String(error))||!['start','end','edit','add'].includes(command.type)||!Number.isFinite(command.createdAt))return false;
     const times=[command.payload?.start,command.payload?.end].filter(t=>t!==undefined&&t!==null);
@@ -234,6 +242,7 @@
   }
   function tick(){
     const s=projected(),r=C.active(s,child(s).id),last=entries(s).find(e=>e.end),elapsed=$('#elapsed');
+    updateTabTitle(s);
     const info=r?null:wakeState(s,last),counting=Boolean(r)||info.quality==='recorded';
     elapsed.classList.toggle('has-seconds',counting);
     elapsed.setAttribute('role','timer');elapsed.setAttribute('aria-live','off');
@@ -676,11 +685,11 @@
   }
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(firestore&&!demo)HuckFirestore.resume();sync();render();reopenAtTop();}else{if(firestore)HuckFirestore.pause();clearTimeout(retryTimer);retryTimer=null;clearMotionEffects();}});
   $('#chart-scroll').addEventListener('scroll',()=>{if($('#chart-scroll').scrollLeft<60)loadOlderHistory();},{passive:true});
-  window.addEventListener('focus',()=>{if(Date.now()-lastChecked>5000)sync();});
+  window.addEventListener('focus',()=>{updateTabTitle();if(Date.now()-lastChecked>5000)sync();});
   window.addEventListener('online',()=>sync(true));
   window.addEventListener('resize',()=>requestAnimationFrame(fitElapsed));
   matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',event=>{if(event.matches){clearMotionEffects();tick();}});
-  window.addEventListener('pageshow',e=>{reopenAtTop();if(e.persisted)sync();});
+  window.addEventListener('pageshow',e=>{updateTabTitle();reopenAtTop();if(e.persisted)sync();});
   window.addEventListener('load',reopenAtTop,{once:true});
   const requested=new URL(location.href).searchParams.get('child');if(requested)prefs.child=requested;
   if(firestore&&!demo){
@@ -691,7 +700,8 @@
     if(firestoreStaging)$('.footer').insertAdjacentHTML('afterend','<button class="text-link staging-seed" data-seed-staging>Load sample history</button>');
   }
   render();reopenAtTop();sync();
-  setInterval(()=>{if(!document.hidden)tick();},1000);
+  // Hidden tabs only refresh their local title; do not resume Firestore or render the UI.
+  setInterval(()=>{if(!document.hidden)tick();else updateTabTitle();},1000);
   // Firestore pushes updates; failures already schedule their own outbox retry.
   // Only the legacy Sheets adapter needs a regular network check.
   setInterval(()=>{if(!document.hidden){if(!$('#modal').open)render();if(!firestore)sync();}},firestore?60000:15000);
