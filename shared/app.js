@@ -45,8 +45,7 @@
   function updateTabTitle(s=projected()){
     const selected=child(s),running=C.active(s,selected.id);
     const ms=running?Math.max(0,recordNow()-running.start):0;
-    const label=running?HuckI18n.t(sleepName(running.start,s)==='nap'?'Nap':'Sleep'):'';
-    const title=running?`💤 ${label} ${duration(ms)} ${String(Math.floor(ms/1000)%60).padStart(2,'0')}s · ${selected.name} · ${defaultTabTitle}`:defaultTabTitle;
+    const title=running?`${Math.floor(ms/60000)}:${String(Math.floor(ms/1000)%60).padStart(2,'0')} 💤`:defaultTabTitle;
     if(document.title!==title)document.title=title;
   }
   function clockRejection(command,error){
